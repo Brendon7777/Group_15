@@ -68,27 +68,6 @@
 			box-shadow: 0 6px 14px rgba(3, 94, 130, .24);
 		}
 		.inventory-page .inventory-action-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
-		.inventory-page .stats-grid { margin: 0; gap: 1rem; }
-		.inventory-page .stat-card {
-			min-height: 148px;
-			padding: 1.2rem;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-			gap: .75rem;
-			border: 0;
-			border-radius: 10px;
-			color: #fff;
-			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
-		}
-		.inventory-page .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
-		.inventory-page .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
-		.inventory-page .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
-		.inventory-page .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
-		.inventory-page .stat-label, .inventory-page .stat-note { margin: 0; color: #e5f2f5; }
-		.inventory-page .stat-label { font-size: .84rem; font-weight: 650; }
-		.inventory-page .stat-value { color: #fff; font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
-		.inventory-page .stat-note { font-size: .8rem; line-height: 1.4; }
 		.inventory-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 1.25rem; align-items: start; }
 		.inventory-page .panel {
 			min-width: 0;
@@ -150,7 +129,7 @@
 			.inventory-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
 			.inventory-page .page-heading::after { right: -150px; }
 			.inventory-page .page-heading .inventory-action-button { width: 190px; }
-			.inventory-page .stats-grid, .inventory-page .form-grid { grid-template-columns: 1fr; }
+			.inventory-page .form-grid { grid-template-columns: 1fr; }
 			.inventory-page .panel { padding: 1rem; }
 		}
 		@media (prefers-reduced-motion: reduce) {
@@ -165,12 +144,6 @@
 		<div><p class="eyebrow">Committee tools</p><h1>Manage inventory</h1><p>Review stock levels and keep the school resource catalogue up to date.</p></div>
 		<a class="button inventory-action-button" href="#add-item">＋ Add inventory item</a>
 	</header>
-	<section class="stats-grid" aria-label="Inventory summary">
-		<article class="stat-card"><span class="stat-label">Total items</span><strong class="stat-value">1,248</strong><span class="stat-note">Across all categories</span></article>
-		<article class="stat-card"><span class="stat-label">In stock</span><strong class="stat-value">1,106</strong><span class="stat-note">Available to the school</span></article>
-		<article class="stat-card"><span class="stat-label">Low stock</span><strong class="stat-value">5</strong><span class="stat-note">At or below reorder level</span></article>
-		<article class="stat-card"><span class="stat-label">Out of stock</span><strong class="stat-value">2</strong><span class="stat-note">Replenishment needed</span></article>
-	</section>
 	<div class="content-grid">
 		<section class="panel">
 			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Sample stock records for the frontend preview.</p></div></div>

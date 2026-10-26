@@ -79,12 +79,25 @@
 		.maintenance-page .panel > h2, .maintenance-page .panel-heading h2 { margin-bottom: .3rem; color: #035e82; font-size: 1.25rem; }
 		.maintenance-page .panel > h2 { margin-bottom: 1rem; }
 		.maintenance-page .notice { border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
-		.maintenance-page .form-grid { column-gap: 1rem; }
+		.maintenance-page .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1rem; }
 		.maintenance-page .form-field { margin-bottom: 1.1rem; }
 		.maintenance-page .form-field label { color: #344b55; font-weight: 650; }
 		.maintenance-page .form-field input,
-		.maintenance-page .form-field select,
+		.maintenance-page .form-field select {
+			box-sizing: border-box;
+			display: block;
+			width: 100%;
+			height: 46px;
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
 		.maintenance-page .form-field textarea {
+			box-sizing: border-box;
+			display: block;
+			width: 100%;
+			min-height: 110px;
 			border-color: #d5dfe4;
 			border-radius: 7px;
 			background: #fff;
@@ -154,7 +167,7 @@
 			</form>
 		</section>
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Recent maintenance</h2><p>Sample service records.</p></div></div>
+			<div class="panel-heading"><div><h2>Maintenance logbook</h2><p>Sample service records.</p></div></div>
 			<div class="table-wrap">
 				<table><thead><tr><th>Item</th><th>Issue</th><th>Reported</th><th>Status</th></tr></thead>
 					<tbody>

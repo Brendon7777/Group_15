@@ -111,6 +111,23 @@
 		.committee-dashboard table td { color: #46545d; }
 		.committee-dashboard .action-link { border-color: #e0e3e9; border-radius: 7px; }
 		.committee-dashboard .action-link:hover { border-color: #b7d8e0; background: #eaf6f7; }
+		.committee-dashboard .request-decision-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+		.committee-dashboard .request-decision-button {
+			min-height: 36px;
+			padding: .4rem .65rem;
+			border: 1px solid #0b9678;
+			border-radius: 6px;
+			background: #0b9678;
+			color: #fff;
+			font: inherit;
+			font-size: .8rem;
+			font-weight: 700;
+			cursor: pointer;
+		}
+		.committee-dashboard .request-decision-button:hover { background: #087b67; }
+		.committee-dashboard .request-decision-button--decline { border-color: #a63b32; background: #a63b32; }
+		.committee-dashboard .request-decision-button--decline:hover { background: #872f28; }
+		.committee-dashboard .request-decision-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
 		.committee-dashboard {
 			display: grid;
 			gap: 1.35rem;
@@ -173,45 +190,35 @@
 		.committee-dashboard .action-list { gap: .7rem; }
 		.committee-dashboard .action-link { min-height: 52px; padding: .8rem .9rem; }
 		.committee-dashboard .colored-action-list {
-			display: flex;
-			flex-direction: column;
-			gap: 0;
+			margin: 0;
+			padding: 0;
+			display: grid;
+			gap: .3rem 1rem;
+			list-style: none;
 		}
-		.committee-dashboard .colored-action-list > li + li { margin-top: 1rem; }
+		.committee-dashboard .management-action-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.committee-dashboard .colored-action-list > li { min-width: 0; }
 		.committee-dashboard .colored-action-list .action-link {
-			min-height: 52px;
-			border-color: transparent;
-			color: #fff;
-			font-weight: 700;
-			box-shadow: 0 4px 10px rgba(40, 55, 70, .12);
-			transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+			width: 100%;
+			min-width: 0;
+			min-height: 0;
+			padding: .4rem 0;
+			border: 0;
+			border-radius: 0;
+			background: transparent !important;
+			color: #007a9d !important;
+			box-shadow: none;
+			overflow-wrap: anywhere;
+			font-weight: 650;
+			text-decoration: underline;
+			text-underline-offset: 3px;
+			transition: color .15s ease;
 		}
-		.committee-dashboard .colored-action-list .action-link:hover {
-			transform: translateY(-1px);
-			color: #fff;
-			box-shadow: 0 7px 15px rgba(40, 55, 70, .18);
-		}
-		.committee-dashboard .low-stock-list li:nth-child(1) .action-link,
-		.committee-dashboard .management-action-list li:nth-child(1) .action-link {
-			background: linear-gradient(135deg, #f2cf68, #e8b83f);
-			color: #3c3425;
-		}
-		.committee-dashboard .low-stock-list li:nth-child(1) .action-link:hover,
-		.committee-dashboard .management-action-list li:nth-child(1) .action-link:hover { background: linear-gradient(135deg, #e8b83f, #d5a62e); color: #3c3425; }
-		.committee-dashboard .low-stock-list li:nth-child(2) .action-link,
-		.committee-dashboard .management-action-list li:nth-child(2) .action-link { background: linear-gradient(135deg, #0daa88, #0b9678); }
-		.committee-dashboard .low-stock-list li:nth-child(2) .action-link:hover,
-		.committee-dashboard .management-action-list li:nth-child(2) .action-link:hover { background: linear-gradient(135deg, #0b9678, #087b67); }
-		.committee-dashboard .low-stock-list li:nth-child(3) .action-link,
-		.committee-dashboard .management-action-list li:nth-child(3) .action-link { background: linear-gradient(135deg, #3157a4, #29478b); }
-		.committee-dashboard .low-stock-list li:nth-child(3) .action-link:hover,
-		.committee-dashboard .management-action-list li:nth-child(3) .action-link:hover { background: linear-gradient(135deg, #29478b, #203a73); }
-		.committee-dashboard .management-action-list li:nth-child(4) .action-link { background: linear-gradient(135deg, #e98236, #cc6124); }
-		.committee-dashboard .management-action-list li:nth-child(4) .action-link:hover { background: linear-gradient(135deg, #cc6124, #ad4d1c); }
+		.committee-dashboard .colored-action-list .action-link:hover { color: #035e82 !important; }
+		.committee-dashboard .colored-action-list .action-link:focus-visible { outline: 2px solid #008bb2; outline-offset: 3px; }
 		.committee-dashboard .colored-action-list .badge { background: rgba(255, 255, 255, .88); color: #33414a; }
 		@media (prefers-reduced-motion: reduce) {
 			.committee-dashboard .colored-action-list .action-link { transition: none; }
-			.committee-dashboard .colored-action-list .action-link:hover { transform: none; }
 		}
 		@media (max-width: 850px) {
 			.committee-dashboard .content-grid { grid-template-columns: 1fr; }
@@ -223,6 +230,7 @@
 			.committee-dashboard { gap: 1rem; }
 			.committee-dashboard .panel { padding: 1rem; }
 			.committee-dashboard .panel-heading { flex-wrap: wrap; }
+			.committee-dashboard .management-action-list { grid-template-columns: 1fr; }
 		}
 	</style>
 {% endblock %}
@@ -232,8 +240,6 @@
 		<div class="committee-nav__inner">
 			<a class="committee-nav__link" href="ltsm-dashboard.html" aria-current="page">Dashboard</a>
 			<a class="committee-nav__link" href="manage-inventory.html">Inventory</a>
-			<a class="committee-nav__link" href="my-requests.html">Requests</a>
-			<a class="committee-nav__link" href="book-equipment.html">Equipment bookings</a>
 			<a class="committee-nav__link" href="issue-return.html">Issue / return</a>
 			<a class="committee-nav__link" href="maintenance.html">Maintenance</a>
 			<a class="committee-nav__link" href="reports.html">Reports</a>
@@ -276,27 +282,27 @@
 	<div class="content-grid">
 		<div class="stack">
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Review requests and record the next action.</p></div><a href="my-requests.html">All requests</a></div>
+				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Accept or decline each request for committee review.</p></div></div>
 				<div class="table-wrap">
-					<table>
+					<table id="committee-requests-table">
 						<thead><tr><th>Request</th><th>Requested by</th><th>Date</th><th>Priority</th><th>Action</th></tr></thead>
 						<tbody>
-							<tr><td>Grade 8 science workbooks</td><td>A. Mokoena</td><td>26 Oct</td><td><span class="badge badge--warning">Medium</span></td><td><a href="my-requests.html">Review</a></td></tr>
-							<tr><td>Whiteboard markers (class pack)</td><td>S. Naidoo</td><td>25 Oct</td><td><span class="badge">Normal</span></td><td><a href="my-requests.html">Review</a></td></tr>
-							<tr><td>Calculator set</td><td>T. Dlamini</td><td>24 Oct</td><td><span class="badge badge--danger">High</span></td><td><a href="my-requests.html">Review</a></td></tr>
+							<tr><td>Grade 8 science workbooks</td><td>A. Mokoena</td><td>26 Oct</td><td><span class="badge badge--warning">Medium</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Grade 8 science workbooks request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Grade 8 science workbooks request">Decline</button></div></td></tr>
+							<tr><td>Whiteboard markers (class pack)</td><td>S. Naidoo</td><td>25 Oct</td><td><span class="badge">Normal</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Whiteboard markers request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Whiteboard markers request">Decline</button></div></td></tr>
+							<tr><td>Calculator set</td><td>T. Dlamini</td><td>24 Oct</td><td><span class="badge badge--danger">High</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Calculator set request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Calculator set request">Decline</button></div></td></tr>
 						</tbody>
 					</table>
 				</div>
 			</section>
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Equipment bookings</h2><p>Upcoming reservations that need attention.</p></div><a href="book-equipment.html">Manage bookings</a></div>
+				<div class="panel-heading"><div><h2>Equipment bookings</h2><p>Upcoming reservations that need attention.</p></div></div>
 				<div class="table-wrap">
-					<table>
-						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th></tr></thead>
+					<table id="committee-bookings-table">
+						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th><th>Action</th></tr></thead>
 						<tbody>
-							<tr><td>Projector · Room 12</td><td>J. Smith</td><td>28 Oct, 10:00</td><td><span class="badge">Confirmed</span></td></tr>
-							<tr><td>Tablet set · Library</td><td>P. Khumalo</td><td>29 Oct, 09:00</td><td><span class="badge badge--warning">Awaiting approval</span></td></tr>
-							<tr><td>Portable speaker</td><td>L. Molefe</td><td>30 Oct, 12:00</td><td><span class="badge">Confirmed</span></td></tr>
+							<tr><td>Projector · Room 12</td><td>J. Smith</td><td>28 Oct, 10:00</td><td><span class="badge">Confirmed</span></td><td>—</td></tr>
+							<tr><td>Tablet set · Library</td><td>P. Khumalo</td><td>29 Oct, 09:00</td><td><span class="badge badge--warning">Awaiting approval</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Confirmed" aria-label="Accept Tablet set booking">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Tablet set booking">Decline</button></div></td></tr>
+							<tr><td>Portable speaker</td><td>L. Molefe</td><td>30 Oct, 12:00</td><td><span class="badge">Confirmed</span></td><td>—</td></tr>
 						</tbody>
 					</table>
 				</div>
@@ -323,4 +329,25 @@
 		</aside>
 	</div>
 	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		document.querySelector(".committee-dashboard .content-grid").addEventListener("click", (event) => {
+			const button = event.target.closest("button[data-decision]");
+			if (!button) return;
+
+			const actionCell = button.closest("td");
+			const decision = button.dataset.decision;
+			const status = document.createElement("span");
+			status.className = decision === "Declined" ? "badge badge--danger" : "badge";
+			status.setAttribute("role", "status");
+			status.textContent = decision;
+			if (button.closest("#committee-bookings-table")) {
+				button.closest("tr").cells[3].replaceChildren(status);
+				actionCell.textContent = "—";
+			} else {
+				actionCell.replaceChildren(status);
+			}
+		});
+	</script>
 {% endblock %}

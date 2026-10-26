@@ -94,7 +94,7 @@
 		.form-field input, .form-field select, .form-field textarea { width: 100%; min-height: 44px; padding: .6rem .75rem; border: 1px solid #d5dfd9; border-radius: 8px; background: #fff; color: var(--ink); }
 		.form-field textarea { min-height: 100px; resize: vertical; }
 		.form-field small { margin-top: .35rem; display: block; color: var(--muted); font-size: .78rem; }
-		.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+		.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 		.notice { margin-bottom: 1rem; padding: .8rem 1rem; border-left: 4px solid var(--gold); border-radius: 7px; background: #fbf6e9; color: #5c4b28; font-size: .88rem; }
 		.notice--success { border-color: var(--green-mid); background: var(--green-light); color: var(--green); }
 		.notice--error { border-color: var(--red); background: var(--red-light); color: var(--red); }
@@ -132,8 +132,6 @@
 				{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}
 					<a class="nav-link" href="ltsm-dashboard.html">Dashboard</a>
 					<a class="nav-link" href="manage-inventory.html" {% if active_page == 'inventory' %}aria-current="page"{% endif %}>Inventory</a>
-					<a class="nav-link" href="my-requests.html">Requests</a>
-					<a class="nav-link" href="book-equipment.html" {% if active_page == 'bookings' %}aria-current="page"{% endif %}>Equipment bookings</a>
 					<a class="nav-link" href="issue-return.html" {% if active_page == 'issue-return' %}aria-current="page"{% endif %}>Issue / return</a>
 					<a class="nav-link" href="maintenance.html" {% if active_page == 'maintenance' %}aria-current="page"{% endif %}>Maintenance</a>
 					<a class="nav-link" href="reports.html" {% if active_page == 'reports' %}aria-current="page"{% endif %}>Reports</a>
