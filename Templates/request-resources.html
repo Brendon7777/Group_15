@@ -4,6 +4,7 @@
 {% block title %}Request Resources | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Resource request theme, form controls and responsive layout. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.request-resource-page) { background: #f4f5f8; }
@@ -148,12 +149,14 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Request page heading and details form. -->
 	<div class="request-resource-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Resource support</p><h1>Request a resource</h1><p>Tell the LTSM committee what you need and how it will be used.</p></div>
 	</header>
 
 	<div class="content-grid">
+		<!-- SECTION 3: Capture resource details and validate the request. -->
 		<section class="panel">
 			<h2>Request details</h2>
 			<form id="request-form">
@@ -172,6 +175,7 @@
 				<div class="form-actions"><button class="button request-primary-button" type="submit">Review request</button><a class="button request-primary-button" href="my-requests.html">Track my requests</a></div>
 			</form>
 		</section>
+		<!-- SECTION 4: Explain the review process and link to the catalogue. -->
 		<aside class="stack">
 			<section class="panel"><h2>What happens next?</h2><ul><li>The committee reviews your request.</li><li>You can check its progress on My Requests.</li><li>Approved resources will be arranged for collection.</li></ul></section>
 			<section class="panel"><h2>Need something already listed?</h2><p style="color:var(--muted)">Check availability in the catalogue before making a request.</p><a class="button request-primary-button request-catalogue-button" href="view-resources.html">Browse catalogue</a></section>
@@ -180,6 +184,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 5: Enforce the requested-by date and show validation feedback. -->
 	<script>
 		const requestForm = document.getElementById("request-form");
 		const neededByInput = document.getElementById("needed-by");

@@ -5,6 +5,7 @@
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Committee dashboard theme, actions and responsive styles. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.committee-dashboard) { background: #f4f5f8; }
@@ -235,6 +236,7 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Committee navigation and dashboard heading. -->
 	<div class="committee-dashboard">
 	<nav class="committee-nav" aria-label="LTSM committee navigation">
 		<div class="committee-nav__inner">
@@ -258,6 +260,7 @@
 		<h2 class="dashboard-overview__heading" id="committee-activity-heading">Committee activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of inventory, requests, stock alerts and bookings.</p>
 	</section>
+	<!-- SECTION 3: Inventory, request, low-stock and booking summary cards. -->
 	<div class="dashboard-stats-viewport">
 		<section class="stats-grid" aria-label="Committee summary">
 			<article class="stat-card">
@@ -279,6 +282,7 @@
 		</section>
 	</div>
 
+	<!-- SECTION 4: Pending request decisions and equipment booking actions. -->
 	<div class="content-grid">
 		<div class="stack">
 			<section class="panel">
@@ -331,6 +335,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 5: Apply committee decisions to the sample request and booking rows. -->
 	<script>
 		document.querySelector(".committee-dashboard .content-grid").addEventListener("click", (event) => {
 			const button = event.target.closest("button[data-decision]");

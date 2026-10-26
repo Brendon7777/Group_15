@@ -5,6 +5,7 @@
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Maintenance page theme, form controls and responsive layout. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.maintenance-page) { background: #f4f5f8; }
@@ -139,6 +140,7 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Maintenance page heading and service summary. -->
 	<div class="maintenance-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Equipment care</p><h1>Maintenance log</h1><p>Report faults and follow equipment through repair and return to service.</p></div>
@@ -151,6 +153,7 @@
 		<article class="stat-card"><span class="stat-label">Out of service</span><strong class="stat-value">2</strong><span class="stat-note">Unavailable for booking</span></article>
 	</section>
 	<div class="content-grid">
+		<!-- SECTION 3: Maintenance issue report form. -->
 		<section class="panel">
 			<h2>Log a maintenance issue</h2>
 			<div class="notice">Sample frontend only. This form does not notify a technician or change equipment availability.</div>
@@ -166,6 +169,7 @@
 				<button class="button" type="submit">Validate maintenance report</button>
 			</form>
 		</section>
+		<!-- SECTION 4: Maintenance logbook of recent service records. -->
 		<section class="panel">
 			<div class="panel-heading"><div><h2>Maintenance logbook</h2><p>Sample service records.</p></div></div>
 			<div class="table-wrap">
@@ -182,6 +186,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 5: Set the report date limit and validate submitted details. -->
 	<script>
 		const maintenanceForm = document.getElementById("maintenance-form");
 		const reportDate = document.getElementById("issue-date");

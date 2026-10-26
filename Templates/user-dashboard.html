@@ -4,6 +4,7 @@
 {% block title %}My Dashboard | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
+	<!-- SECTION 1: User dashboard theme, activity cards and responsive layout. -->
 	<style>
 		body, body * { font-family: var(--font-body); }
 		.dashboard-heading {
@@ -257,6 +258,7 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: User navigation and personalized dashboard heading. -->
 	<nav class="dashboard-nav" aria-label="Dashboard navigation">
 		<div class="dashboard-nav__inner">
 			<a class="dashboard-nav__link" href="user-dashboard.html" aria-current="page">Dashboard</a>
@@ -274,6 +276,7 @@
 		</div>
 	</header>
 
+	<!-- SECTION 3: Summary of resources, requests, bookings and loans. -->
 	<section class="dashboard-overview" aria-labelledby="activity-heading">
 		<h2 class="dashboard-overview__heading" id="activity-heading">Your activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of your resources, requests, bookings and issued items.</p>
@@ -299,6 +302,7 @@
 		</section>
 	</div>
 
+	<!-- SECTION 4: Resource categories available to browse. -->
 	<section class="dashboard-launchpad" aria-labelledby="resources-heading">
 		<header class="dashboard-launchpad-heading">
 			<div>
@@ -315,6 +319,7 @@
 		</div>
 	</section>
 
+	<!-- SECTION 5: Items currently issued to the signed-in user. -->
 	<section class="panel dashboard-panel issued-items-panel" aria-labelledby="issued-heading">
 		<div class="panel-heading"><div><h2 id="issued-heading">Items issued to you</h2><p>Keep track of borrowed school materials.</p></div><span class="badge">3 active items</span></div>
 		<div class="table-wrap">
@@ -329,6 +334,7 @@
 		</div>
 	</section>
 
+	<!-- SECTION 6: The user's next equipment booking. -->
 	<div class="content-grid dashboard-columns">
 		<aside class="stack dashboard-side-column" aria-label="Your bookings">
 			<section class="panel dashboard-panel">

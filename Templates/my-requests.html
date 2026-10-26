@@ -4,6 +4,7 @@
 {% block title %}My Requests | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Request tracking page theme and responsive table styles. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.requests-page) { background: #f4f5f8; }
@@ -88,6 +89,7 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Request tracking heading and sample-data notice. -->
 	<div class="requests-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Request tracking</p><h1>My requests</h1><p>Review the status and latest update for each submitted request.</p></div>
@@ -95,6 +97,7 @@
 	</header>
 
 	<div class="notice">The requests shown here are sample records for the frontend preview.</div>
+	<!-- SECTION 3: Filterable table of submitted request statuses and updates. -->
 	<section class="panel">
 		<div class="toolbar">
 			<label for="request-status" style="position:absolute;left:-10000px">Filter requests by status</label>
@@ -119,6 +122,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 4: Filter visible requests by their current status. -->
 	<script>
 		const statusFilter = document.querySelector("[data-status-filter]");
 		const requestRows = document.querySelectorAll("#requests-table tbody tr");

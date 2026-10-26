@@ -4,6 +4,7 @@
 {% block title %}Equipment Bookings | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Booking page theme, form styling and responsive layout. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.booking-page) { background: #f4f5f8; }
@@ -101,6 +102,7 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Booking page heading and reservation preview notice. -->
 	<div class="booking-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Shared equipment</p><h1>Equipment bookings</h1><p>Check availability and request equipment for a lesson or school activity.</p></div>
@@ -108,6 +110,7 @@
 	</header>
 	<div class="notice">Booking records and availability are sample data. Submitting the form will validate the details but will not reserve equipment.</div>
 	<div class="content-grid">
+		<!-- SECTION 3: Equipment booking request form. -->
 		<section class="panel">
 			<h2>Request a booking</h2>
 			<form id="booking-form">
@@ -127,6 +130,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 4: Validate booking dates and time ranges in the browser. -->
 	<script>
 		const bookingForm = document.getElementById("booking-form");
 		const bookingDate = document.getElementById("booking-date");

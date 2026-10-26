@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="theme-color" content="#123b35">
 	<title>{% block title %}LTSM Portal{% endblock %}</title>
+	<!-- SECTION 1: Shared design tokens, components and responsive layout. -->
 	<style>
 		:root {
 			color-scheme: light;
@@ -114,6 +115,7 @@
 	{% block head %}{% endblock %}
 </head>
 <body>
+	<!-- SECTION 2: Portal identity and signed-in user actions. -->
 	<header class="site-header">
 		<div class="header-inner">
 			<a class="site-brand" href="user-dashboard.html" aria-label="LTSM Portal dashboard">
@@ -126,6 +128,7 @@
 			</div>
 		</div>
 	</header>
+	<!-- SECTION 3: Navigation changes according to the active user role. -->
 	{% if active_page not in ['dashboard', 'committee'] %}
 		<nav class="site-navigation {% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
 			<div class="nav-inner">
@@ -145,9 +148,11 @@
 			</div>
 		</nav>
 	{% endif %}
+	<!-- SECTION 4: Page-specific content is inserted into the shared shell. -->
 	<main id="main-content" class="page-shell">
 		{% block content %}{% endblock %}
 	</main>
+	<!-- SECTION 5: Shared footer and page-specific scripts. -->
 	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials · Sample-data preview</p></footer>
 	{% block scripts %}{% endblock %}
 </body>

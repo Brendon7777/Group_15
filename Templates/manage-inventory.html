@@ -5,6 +5,7 @@
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Inventory page theme, catalogue and responsive styles. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.inventory-page) { background: #f4f5f8; }
@@ -139,12 +140,14 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Inventory heading and add-item shortcut. -->
 	<div class="inventory-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Committee tools</p><h1>Manage inventory</h1><p>Review stock levels and keep the school resource catalogue up to date.</p></div>
 		<a class="button inventory-action-button" href="#add-item">＋ Add inventory item</a>
 	</header>
 	<div class="content-grid">
+		<!-- SECTION 3: Searchable and filterable inventory catalogue. -->
 		<section class="panel">
 			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Sample stock records for the frontend preview.</p></div></div>
 			<div class="toolbar">
@@ -166,6 +169,7 @@
 				<p class="empty-state" id="no-items" hidden>No inventory items match your filters.</p>
 			</div>
 		</section>
+		<!-- SECTION 4: Validate details for a proposed inventory item. -->
 		<aside class="panel" id="add-item">
 			<h2>Add an inventory item</h2>
 			<form id="inventory-form">
@@ -183,6 +187,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 5: Filter catalogue records and validate the item form. -->
 	<script>
 		const inventorySearch = document.querySelector("[data-filter-input]");
 		const categoryFilter = document.querySelector("[data-category-filter]");

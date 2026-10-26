@@ -5,6 +5,7 @@
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Reports page theme, summary tables and print styles. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.reports-page) { background: #f4f5f8; }
@@ -159,11 +160,13 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Report heading and print action. -->
 	<div class="reports-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Analyze stock coverage, low-stock categories and the current request queue.</p></div>
 		<button class="button" id="print-report" type="button">Print report</button>
 	</header>
+	<!-- SECTION 3: Committee action summary and stock-category breakdown. -->
 	<section class="panel insights-panel" aria-labelledby="committee-summary-heading">
 		<div class="panel-heading"><div><h2 id="committee-summary-heading">Committee action summary</h2><p>Key findings from stock availability and the request queue.</p></div></div>
 		<div class="table-wrap">
@@ -178,6 +181,7 @@
 		</div>
 	</section>
 	<div class="content-grid">
+		<!-- SECTION 4: Request statuses and shortcuts to committee tools. -->
 		<section class="panel">
 			<div class="panel-heading"><div><h2>Category stock summary</h2><p>Sample distribution by resource category.</p></div></div>
 			<div class="table-wrap">
@@ -218,6 +222,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 5: Open the browser print dialog for the report. -->
 	<script>
 		document.getElementById("print-report").addEventListener("click", () => window.print());
 	</script>

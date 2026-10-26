@@ -4,6 +4,7 @@
 {% block title %}Browse Resources | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
+	<!-- SECTION 1: Catalogue page theme, resource table and responsive styles. -->
 	<style>
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.resource-catalogue-page) { background: #f4f5f8; }
@@ -133,12 +134,14 @@
 	</style>
 {% endblock %}
 {% block content %}
+	<!-- SECTION 2: Catalogue heading and sample availability notice. -->
 	<div class="resource-catalogue-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">School catalogue</p><h1>Browse resources</h1><p>Search textbooks, stationery and shared school equipment.</p></div>
 	</header>
 
 	<div class="notice">Availability below is sample data for the frontend preview. Confirm stock with the LTSM committee before collecting an item.</div>
+	<!-- SECTION 3: Searchable resource catalogue and request shortcut. -->
 	<section class="panel" aria-label="Resource catalogue">
 		<div class="toolbar">
 			<label for="resource-search" class="sr-only" style="position:absolute;left:-10000px">Search resources</label>
@@ -166,6 +169,7 @@
 	</div>
 {% endblock %}
 {% block scripts %}
+	<!-- SECTION 4: Filter catalogue rows by search text and category. -->
 	<script>
 		const searchInput = document.querySelector("[data-filter-input]");
 		const categoryFilter = document.querySelector("[data-category-filter]");
