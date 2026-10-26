@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- SECTION 1: Page title, character encoding and responsive settings. -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LTSM | Consumables review</title>
+  <!-- SECTION 2: CSS controls layout, table appearance and risk colours. -->
+  <style>
+    /* General page layout and typography. */
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f6f5; color: #203532; font-family: Arial, sans-serif; }
+    main { max-width: 1400px; margin: 56px auto; padding: 0 28px; }
+    .eyebrow { color: #36685d; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+    h1 { font-size: 34px; margin: 12px 0; }
+    .subtitle, footer { color: #586b65; line-height: 1.6; }
+    /* Cards showing review interval, lead time and ordering months. */
+    .settings { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
+    .settings span { background: #e3ede8; border-radius: 6px; padding: 12px 16px; }
+    /* Horizontal scrolling keeps wide tables usable on small screens. */
+    .table-wrap { background: white; border: 1px solid #d5dfda; border-radius: 10px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    caption { text-align: left; padding: 22px; font-size: 18px; font-weight: bold; }
+    thead { background: #204f44; color: white; }
+    th, td { padding: 18px 14px; text-align: right; border-bottom: 1px solid #e3e9e6; line-height: 1.4; }
+    th:first-child, td:nth-child(2), th:nth-child(2), td:last-child, th:last-child { text-align: left; }
+    tbody th { text-align: left; }
+    tbody tr:last-child > * { border-bottom: none; }
+    /* Risk badges apply only to Paper and Sellotape. Text also names the risk. */
+    .badge { display: inline-block; padding: 6px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .red { background: #fee2e2; color: #991b1b; }
+    .yellow { background: #fff0bb; color: #745000; }
+    .green { background: #dcf3e3; color: #175a32; }
+    footer { margin-top: 20px; font-size: 13px; }
+  section { margin: 36px 0 48px; } .notice { background: #fff0bb; padding: 16px; line-height: 1.6; border-radius: 8px; }
+  </style>
+  <!-- END SECTION 2: Styling. -->
+</head>
+<body>
+  <main>
+    <!-- SECTION 3: Shared heading for both inventory models. -->
+    <div class="eyebrow">LTSM committee · Consumables</div>
+    <h1>Inventory review</h1>
+    <!-- SECTION 4: Six-month model, using monthly demand records. -->
+    <!-- Marked placeholders are replaced by write_html() in inventory_model.py. -->
+    <section>
+      <h2>Six-month review · Paper and Sellotape</h2>
+      <p class="subtitle">January–June · Stock position at the end-of-June review</p>
+      <div class="settings">
+        <span>Review interval: <strong><!-- REVIEW_INTERVAL --> months</strong></span>
+        <span>Lead time: <strong><!-- LEAD_TIME --> month</strong></span>
+        <span>Service level: <strong><!-- SERVICE_LEVEL --></strong></span>
+        <span>Order: <strong><!-- ORDER_MONTH --></strong> · Receive: <strong><!-- RECEIPT_MONTH --></strong></span>
+      </div>
+      <div class="table-wrap"><table><caption>Consumables summary</caption>
+        <thead><tr>
+          <th scope="col">Product</th><th scope="col">Unit</th>
+          <th scope="col">On hand<br>(A)</th><th scope="col">Average monthly<br>demand</th>
+          <th scope="col">Safety stock<br>(SS)</th><th scope="col">Target stock<br>(S)</th>
+          <th scope="col">Recommended<br>order</th><!-- Unit price comes from the product input dictionary. -->
+          <th scope="col">Unit<br>price</th><th scope="col">Purchasing<br>cost</th>
+          <th scope="col">Risk of stockout<br>before delivery</th>
+        </tr></thead>
+        <!-- Python inserts one calculated row per consumable at PRODUCT_ROWS. -->
+        <tbody><!-- PRODUCT_ROWS --></tbody>
+      </table></div>
+    </section>
+    <!-- END SECTION 4: Paper and Sellotape table. -->
+
+    <!-- SECTION 5: Annual books model, using three annual demand totals. -->
+    <section>
+      <h2>Annual review · Activity books</h2>
+      <p class="subtitle">December–November stock cycle · Three years of annual demand records · One January distribution</p>
+      <div class="settings">
+        <span>Review interval: <strong><!-- ANNUAL_REVIEW_INTERVAL --> months</strong></span>
+        <span>Lead time: <strong><!-- ANNUAL_LEAD_TIME --> months</strong></span>
+        <span>Service level: <strong><!-- SERVICE_LEVEL --></strong></span>
+        <span>Order: <strong><!-- ANNUAL_ORDER_MONTH --></strong> · Receive: <strong><!-- ANNUAL_RECEIPT_MONTH --></strong></span>
+      </div>
+      <div class="table-wrap"><table><caption>Activity-book summary</caption>
+        <thead><tr>
+          <th scope="col">Product</th><th scope="col">Unit</th>
+          <th scope="col">On hand<br>(A)</th><th scope="col">Average annual<br>demand</th>
+          <th scope="col">Safety stock<br>(SS)</th><th scope="col">Target stock<br>(S)</th>
+          <th scope="col">Recommended<br>order</th><!-- Unit price comes from the product input dictionary. -->
+          <th scope="col">Unit<br>price</th><th scope="col">Purchasing<br>cost</th>
+        </tr></thead>
+        <!-- Python inserts Grade 2 and Grade 3 results at ANNUAL_ROWS. -->
+        <!-- No risk column: delivery is assumed to precede the annual issue. -->
+        <tbody><!-- ANNUAL_ROWS --></tbody>
+      </table></div>
+      <p class="subtitle">The order covers one annual issue. Delivery is assumed to occur before January distribution. Low carry-over is expected but not capped.</p>
+    </section>
+    <!-- END SECTION 5: Activity-book table. -->
+
+    <!-- SECTION 6: Display conventions and model assumptions. -->
+    <footer>
+      <p>Quantities use the unit shown. A is calculated on-hand stock at review, not a live stock count. Averages are displayed to the nearest unit; SS and S are rounded up. Calculations retain precision.</p>
+      <p>Demonstration records and example prices. Full delivery and fulfilled demand are assumed, with no outstanding old orders or backorders. Consumable risk colours are warning categories, not probabilities.</p>
+    </footer>
+    <!-- END SECTION 6: Explanatory notes. -->
+  </main>
+</body>
+</html>
