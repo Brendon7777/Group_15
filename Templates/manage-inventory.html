@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% set active_page = "inventory" %}
+{% block title %}Manage Inventory | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.inventory-page) { background: #f4f5f8; }
+		body:has(.inventory-page) .site-navigation { background: #035e82; }
+		body:has(.inventory-page) .nav-link { color: #eaf6f9; }
+		body:has(.inventory-page) .nav-link:hover,
+		body:has(.inventory-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.inventory-page { display: grid; gap: 1.35rem; }
+		.inventory-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.inventory-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.inventory-page .page-heading > div,
+		.inventory-page .page-heading > .button { position: relative; z-index: 1; }
+		.inventory-page .page-heading .eyebrow { color: #a9e9db; }
+		.inventory-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.inventory-page .page-heading p:last-child { color: #e5f2f5; }
+		.inventory-page .page-heading .button {
+			border-color: rgba(255, 255, 255, .35);
+			border-radius: 8px;
+			background: #0daa88;
+			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		}
+		.inventory-page .page-heading .button:hover { background: #0b9678; }
+		.inventory-page .stats-grid { margin: 0; gap: 1rem; }
+		.inventory-page .stat-card {
+			min-height: 148px;
+			padding: 1.2rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: .75rem;
+			border: 0;
+			border-radius: 10px;
+			color: #fff;
+			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
+		}
+		.inventory-page .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.inventory-page .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.inventory-page .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
+		.inventory-page .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
+		.inventory-page .stat-label, .inventory-page .stat-note { margin: 0; color: #e5f2f5; }
+		.inventory-page .stat-label { font-size: .84rem; font-weight: 650; }
+		.inventory-page .stat-value { color: #fff; font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
+		.inventory-page .stat-note { font-size: .8rem; line-height: 1.4; }
+		.inventory-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 1.25rem; align-items: start; }
+		.inventory-page .panel {
+			min-width: 0;
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.inventory-page .panel-heading { margin-bottom: 1.2rem; }
+		.inventory-page .panel-heading h2, .inventory-page .panel > h2 { margin-bottom: .3rem; color: #035e82; font-size: 1.25rem; }
+		.inventory-page .panel-heading p { line-height: 1.5; }
+		.inventory-page .toolbar { gap: .75rem; }
+		.inventory-page .search-input {
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.inventory-page .search-input:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.inventory-page .table-wrap { border: 1px solid #e5e9ed; border-radius: 8px; }
+		.inventory-page table { min-width: 580px; }
+		.inventory-page table thead { background: #eaf2f5; }
+		.inventory-page table th { padding: .85rem .75rem; color: #035e82; }
+		.inventory-page table td { padding: .95rem .75rem; color: #46545d; }
+		.inventory-page tbody tr { transition: background .15s ease; }
+		.inventory-page tbody tr:hover { background: #f7fafb; }
+		.inventory-page .notice { border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.inventory-page .form-field { margin-bottom: 1rem; }
+		.inventory-page .form-field label { color: #344b55; font-weight: 650; }
+		.inventory-page .form-field input, .inventory-page .form-field select {
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.inventory-page .form-field input:focus, .inventory-page .form-field select:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.inventory-page form > .button { min-height: 46px; border-color: #035e82; border-radius: 7px; background: #035e82; }
+		.inventory-page form > .button:hover { background: #007a9d; }
+		.inventory-page .empty-state { margin: 0; }
+		@media (max-width: 850px) {
+			.inventory-page .content-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 560px) {
+			.inventory-page { gap: 1rem; }
+			.inventory-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.inventory-page .page-heading::after { right: -150px; }
+			.inventory-page .page-heading .button { width: 100%; justify-content: center; }
+			.inventory-page .stats-grid, .inventory-page .form-grid { grid-template-columns: 1fr; }
+			.inventory-page .panel { padding: 1rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.inventory-page tbody tr { transition: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="inventory-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Committee tools</p><h1>Manage inventory</h1><p>Review stock levels and keep the school resource catalogue up to date.</p></div>
+		<a class="button" href="#add-item">＋ Add inventory item</a>
+	</header>
+	<section class="stats-grid" aria-label="Inventory summary">
+		<article class="stat-card"><span class="stat-label">Total items</span><strong class="stat-value">1,248</strong><span class="stat-note">Across all categories</span></article>
+		<article class="stat-card"><span class="stat-label">In stock</span><strong class="stat-value">1,106</strong><span class="stat-note">Available to the school</span></article>
+		<article class="stat-card"><span class="stat-label">Low stock</span><strong class="stat-value">5</strong><span class="stat-note">At or below reorder level</span></article>
+		<article class="stat-card"><span class="stat-label">Out of stock</span><strong class="stat-value">2</strong><span class="stat-note">Replenishment needed</span></article>
+	</section>
+	<div class="content-grid">
+		<section class="panel">
+			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Sample stock records for the frontend preview.</p></div></div>
+			<div class="toolbar">
+				<label for="inventory-search" style="position:absolute;left:-10000px">Search inventory</label>
+				<input id="inventory-search" class="search-input" type="search" placeholder="Search inventory" data-filter-input="inventory-table">
+				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option></select>
+			</div>
+			<div class="table-wrap">
+				<table id="inventory-table">
+					<thead><tr><th>Item</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Status</th></tr></thead>
+					<tbody>
+						<tr data-category="Textbooks"><td>Natural Sciences Grade 8</td><td>Textbooks</td><td>18</td><td>10</td><td><span class="badge">In stock</span></td></tr>
+						<tr data-category="Textbooks"><td>Mathematics Grade 7</td><td>Textbooks</td><td>4</td><td>8</td><td><span class="badge badge--danger">Low stock</span></td></tr>
+						<tr data-category="Stationery"><td>A4 exercise books</td><td>Stationery</td><td>8</td><td>15</td><td><span class="badge badge--warning">Low stock</span></td></tr>
+						<tr data-category="Stationery"><td>Whiteboard markers</td><td>Stationery</td><td>12</td><td>10</td><td><span class="badge">In stock</span></td></tr>
+						<tr data-category="Equipment"><td>Classroom projector</td><td>Equipment</td><td>2</td><td>1</td><td><span class="badge">In stock</span></td></tr>
+					</tbody>
+				</table>
+				<p class="empty-state" id="no-items" hidden>No inventory items match your filters.</p>
+			</div>
+		</section>
+		<aside class="panel" id="add-item">
+			<h2>Add an inventory item</h2>
+			<div class="notice">Preview only: item details are validated but not stored.</div>
+			<form id="inventory-form">
+				<div class="form-field"><label for="item-name">Item name</label><input id="item-name" name="item_name" required maxlength="100"></div>
+				<div class="form-field"><label for="item-category">Category</label><select id="item-category" name="category" required><option value="" selected disabled>Select category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select></div>
+				<div class="form-grid">
+					<div class="form-field"><label for="item-quantity">Quantity</label><input id="item-quantity" name="quantity" type="number" min="0" max="10000" required></div>
+					<div class="form-field"><label for="reorder-level">Reorder level</label><input id="reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
+				</div>
+				<div id="inventory-feedback" class="notice notice--success" role="status" hidden>Item details validated. No changes were saved in this preview.</div>
+				<button class="button" type="submit">Validate item</button>
+			</form>
+		</aside>
+	</div>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const inventorySearch = document.querySelector("[data-filter-input]");
+		const categoryFilter = document.querySelector("[data-category-filter]");
+		const inventoryRows = document.querySelectorAll("#inventory-table tbody tr");
+		const noItems = document.getElementById("no-items");
+
+		function filterInventory() {
+			const query = inventorySearch.value.trim().toLowerCase();
+			let count = 0;
+			for (const row of inventoryRows) {
+				const visible = row.textContent.toLowerCase().includes(query) && (!categoryFilter.value || row.dataset.category === categoryFilter.value);
+				row.hidden = !visible;
+				if (visible) count++;
+			}
+			noItems.hidden = count > 0;
+		}
+		inventorySearch.addEventListener("input", filterInventory);
+		categoryFilter.addEventListener("change", filterInventory);
+
+		document.getElementById("inventory-form").addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (event.currentTarget.reportValidity()) document.getElementById("inventory-feedback").hidden = false;
+		});
+	</script>
+{% endblock %}

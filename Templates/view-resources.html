@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% set active_page = "resources" %}
+{% block title %}Browse Resources | LTSM Portal{% endblock %}
+{% block role %}Teacher / Learner{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.resource-catalogue-page) { background: #f4f5f8; }
+		body:has(.resource-catalogue-page) .site-navigation { background: #035e82; }
+		body:has(.resource-catalogue-page) .nav-link { color: #eaf6f9; }
+		body:has(.resource-catalogue-page) .nav-link:hover,
+		body:has(.resource-catalogue-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.resource-catalogue-page { display: grid; gap: 1.35rem; }
+		.resource-catalogue-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.resource-catalogue-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.resource-catalogue-page .page-heading > div,
+		.resource-catalogue-page .page-heading > .button { position: relative; z-index: 1; }
+		.resource-catalogue-page .page-heading .eyebrow { color: #a9e9db; }
+		.resource-catalogue-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.resource-catalogue-page .page-heading p:last-child { color: #e5f2f5; }
+		.resource-catalogue-page .page-heading .button {
+			border-color: rgba(255, 255, 255, .35);
+			border-radius: 8px;
+			background: #0daa88;
+			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		}
+		.resource-catalogue-page .page-heading .button:hover { background: #0b9678; }
+		.resource-catalogue-page > .notice { margin: 0; border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.resource-catalogue-page .panel {
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.resource-catalogue-page .toolbar { gap: .75rem; }
+		.resource-catalogue-page .search-input {
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.resource-catalogue-page .search-input:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.resource-catalogue-page .card-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 1rem;
+		}
+		.resource-catalogue-page .resource-card {
+			min-height: 230px;
+			padding: 1.25rem;
+			border: 1px solid #e0e3e9;
+			border-top: 3px solid #035e82;
+			border-radius: 10px;
+			background: #fff;
+			box-shadow: 0 5px 14px rgba(40, 55, 70, .08);
+			transition: transform .16s ease, box-shadow .16s ease;
+		}
+		.resource-catalogue-page .resource-card:nth-child(3n + 2) { border-top-color: #0daa88; }
+		.resource-catalogue-page .resource-card:nth-child(3n) { border-top-color: #2f519e; }
+		.resource-catalogue-page .resource-icon {
+			width: 46px;
+			height: 46px;
+			margin-bottom: 1rem;
+			border-radius: 10px;
+			background: #eaf2f5;
+			color: #035e82;
+		}
+		.resource-catalogue-page .resource-card:nth-child(3n + 2) .resource-icon { background: #e2f4ee; color: #0b9678; }
+		.resource-catalogue-page .resource-card:nth-child(3n) .resource-icon { background: #e8edf8; color: #2f519e; }
+		.resource-catalogue-page .resource-card h3 { margin: 1rem 0 .4rem; color: #035e82; font-size: 1.02rem; }
+		.resource-catalogue-page .resource-card p { min-height: 2.6em; color: #62727a; line-height: 1.5; }
+		.resource-catalogue-page .resource-meta { margin-top: auto; color: #52636b; }
+		.resource-catalogue-page .resource-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(40, 55, 70, .12); }
+		.resource-catalogue-page .empty-state { margin: 0; }
+		@media (max-width: 850px) {
+			.resource-catalogue-page .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		}
+		@media (max-width: 560px) {
+			.resource-catalogue-page { gap: 1rem; }
+			.resource-catalogue-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.resource-catalogue-page .page-heading::after { right: -150px; }
+			.resource-catalogue-page .page-heading .button { width: 100%; justify-content: center; }
+			.resource-catalogue-page .panel { padding: 1rem; }
+			.resource-catalogue-page .toolbar { align-items: stretch; }
+			.resource-catalogue-page .card-grid { grid-template-columns: 1fr; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.resource-catalogue-page .resource-card { transition: none; }
+			.resource-catalogue-page .resource-card:hover { transform: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="resource-catalogue-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">School catalogue</p><h1>Browse resources</h1><p>Search textbooks, stationery and shared school equipment.</p></div>
+		<a class="button" href="request-resources.html">＋ Request an item</a>
+	</header>
+
+	<div class="notice">Availability below is sample data for the frontend preview. Confirm stock with the LTSM committee before collecting an item.</div>
+	<section class="panel" aria-label="Resource catalogue">
+		<div class="toolbar">
+			<label for="resource-search" class="sr-only" style="position:absolute;left:-10000px">Search resources</label>
+			<input class="search-input" id="resource-search" type="search" placeholder="Search by item or category" data-filter-input="resource-list">
+			<select class="search-input" id="category-filter" aria-label="Filter by category" data-category-filter="resource-list">
+				<option value="">All categories</option><option value="Textbooks">Textbooks</option><option value="Stationery">Stationery</option><option value="Equipment">Equipment</option>
+			</select>
+		</div>
+		<div id="resource-list" class="card-grid">
+			<article class="resource-card" data-search="natural sciences grade 8 textbook learning materials" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><div class="resource-meta"><span class="badge badge--blue">Textbooks</span><span class="badge">Available</span></div><h3>Natural Sciences · Grade 8</h3><p>Student textbook · 3rd edition</p><div class="resource-meta"><span>Available copies</span><strong>18</strong></div></article>
+			<article class="resource-card" data-search="mathematics grade 7 textbook learning materials" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><div class="resource-meta"><span class="badge badge--blue">Textbooks</span><span class="badge badge--warning">Limited</span></div><h3>Mathematics · Grade 7</h3><p>Core learning textbook · 2nd edition</p><div class="resource-meta"><span>Available copies</span><strong>4</strong></div></article>
+			<article class="resource-card" data-search="a4 exercise books stationery supplies" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><div class="resource-meta"><span class="badge badge--blue">Stationery</span><span class="badge badge--warning">Limited</span></div><h3>A4 Exercise Books</h3><p>72-page ruled books · packs of 10</p><div class="resource-meta"><span>Available packs</span><strong>8</strong></div></article>
+			<article class="resource-card" data-search="whiteboard markers stationery supplies" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><div class="resource-meta"><span class="badge badge--blue">Stationery</span><span class="badge">Available</span></div><h3>Whiteboard Markers</h3><p>Assorted colours · classroom pack</p><div class="resource-meta"><span>Available packs</span><strong>12</strong></div></article>
+			<article class="resource-card" data-search="classroom projector equipment av booking" data-category="Equipment"><span class="resource-icon" aria-hidden="true">⌁</span><div class="resource-meta"><span class="badge badge--blue">Equipment</span><span class="badge badge--warning">Bookable</span></div><h3>Classroom Projector</h3><p>HD projector with HDMI connection</p><div class="resource-meta"><span>Units available</span><strong>2</strong></div></article>
+			<article class="resource-card" data-search="tablet set equipment devices booking" data-category="Equipment"><span class="resource-icon" aria-hidden="true">▣</span><div class="resource-meta"><span class="badge badge--blue">Equipment</span><span class="badge badge--warning">Bookable</span></div><h3>Tablet Set · 10 devices</h3><p>Shared tablet set for classroom activities</p><div class="resource-meta"><span>Sets available</span><strong>1</strong></div></article>
+		</div>
+		<p class="empty-state" id="no-results" hidden>No resources match your search. Try another keyword or category.</p>
+	</section>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const searchInput = document.querySelector("[data-filter-input]");
+		const categoryFilter = document.querySelector("[data-category-filter]");
+		const resourceList = document.getElementById("resource-list");
+		const emptyMessage = document.getElementById("no-results");
+
+		function filterResources() {
+			const term = searchInput.value.trim().toLowerCase();
+			const category = categoryFilter.value;
+			let visibleCount = 0;
+			for (const card of resourceList.children) {
+				const matches = card.dataset.search.includes(term) && (!category || card.dataset.category === category);
+				card.hidden = !matches;
+				if (matches) visibleCount++;
+			}
+			emptyMessage.hidden = visibleCount > 0;
+		}
+
+		searchInput.addEventListener("input", filterResources);
+		categoryFilter.addEventListener("change", filterResources);
+	</script>
+{% endblock %}

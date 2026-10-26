@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set active_page = "bookings" %}
+{% block title %}Equipment Bookings | LTSM Portal{% endblock %}
+{% block role %}Teacher / Learner{% endblock %}
+{% block content %}
+	<header class="page-heading">
+		<div><p class="eyebrow">Shared equipment</p><h1>Equipment bookings</h1><p>Check availability and request equipment for a lesson or school activity.</p></div>
+		<a class="button button-secondary" href="view-resources.html">Browse all resources</a>
+	</header>
+	<div class="notice">Booking records and availability are sample data. Submitting the form will validate the details but will not reserve equipment.</div>
+	<div class="content-grid">
+		<section class="panel">
+			<h2>Request a booking</h2>
+			<form id="booking-form">
+				<div class="form-grid">
+					<div class="form-field"><label for="equipment">Equipment</label><select id="equipment" name="equipment" required><option value="" selected disabled>Select equipment</option><option>Classroom projector (2 available)</option><option>Tablet set · 10 devices (1 set available)</option><option>Portable speaker (3 available)</option><option>Document camera (1 available)</option></select></div>
+					<div class="form-field"><label for="booking-date">Date</label><input id="booking-date" name="booking_date" type="date" required></div>
+					<div class="form-field"><label for="start-time">Start time</label><input id="start-time" name="start_time" type="time" required></div>
+					<div class="form-field"><label for="end-time">End time</label><input id="end-time" name="end_time" type="time" required></div>
+					<div class="form-field"><label for="room">Room / location</label><input id="room" name="room" maxlength="80" placeholder="e.g. Room 12" required></div>
+					<div class="form-field"><label for="booking-purpose">Purpose</label><input id="booking-purpose" name="purpose" maxlength="160" placeholder="e.g. Grade 8 science lesson" required></div>
+				</div>
+				<div id="booking-feedback" class="notice notice--success" role="status" hidden>Booking details validated. This preview did not create a reservation.</div>
+				<div class="form-actions"><button class="button" type="submit">Check booking details</button></div>
+			</form>
+		</section>
+		<aside class="panel">
+			<div class="panel-heading"><div><h2>Upcoming bookings</h2><p>Sample reservation schedule.</p></div></div>
+			<ul class="action-list">
+				<li class="action-link"><span><strong>Classroom projector</strong><br><small>Room 12 · 28 Oct, 10:00–12:00</small></span><span class="badge">Confirmed</span></li>
+				<li class="action-link"><span><strong>Tablet set</strong><br><small>Library · 29 Oct, 09:00–10:30</small></span><span class="badge badge--warning">Pending</span></li>
+				<li class="action-link"><span><strong>Portable speaker</strong><br><small>Hall · 30 Oct, 12:00–14:00</small></span><span class="badge">Confirmed</span></li>
+			</ul>
+		</aside>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const bookingForm = document.getElementById("booking-form");
+		const bookingDate = document.getElementById("booking-date");
+		const startTime = document.getElementById("start-time");
+		const endTime = document.getElementById("end-time");
+		const bookingFeedback = document.getElementById("booking-feedback");
+		const now = new Date();
+		bookingDate.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+		function validateTimeRange() {
+			const valid = !startTime.value || !endTime.value || endTime.value > startTime.value;
+			endTime.setCustomValidity(valid ? "" : "End time must be after start time.");
+			return valid;
+		}
+		startTime.addEventListener("input", validateTimeRange);
+		endTime.addEventListener("input", validateTimeRange);
+		bookingForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (validateTimeRange() && bookingForm.reportValidity()) bookingFeedback.hidden = false;
+		});
+	</script>
+{% endblock %}

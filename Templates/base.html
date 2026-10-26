@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#123b35">
+	<title>{% block title %}LTSM Portal{% endblock %}</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--green: #123b35;
+			--green-mid: #315b50;
+			--green-light: #eaf2ef;
+			--gold: #e8b95b;
+			--ink: #172b28;
+			--muted: #62716d;
+			--paper: #fbfaf6;
+			--line: #e1e9e4;
+			--white: #fff;
+			--red: #a63b32;
+			--red-light: #fbefed;
+			--blue: #315b65;
+			--blue-light: #edf4f5;
+			--font-body: "Open Sans", "Segoe UI", Arial, sans-serif;
+		}
+
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--font-body); font-size: 1rem; line-height: 1.6; font-weight: 400; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+		a { color: var(--green); }
+		button, input, select, textarea { font: inherit; }
+		button, a { -webkit-tap-highlight-color: transparent; }
+		.site-header { position: relative; z-index: 1; background: var(--white); box-shadow: 0 3px 6px rgba(31, 45, 38, .12); }
+		.header-inner { width: min(100% - 2rem, 1200px); min-height: 97px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+		.site-brand { display: inline-flex; align-items: center; gap: .75rem; color: var(--green); text-decoration: none; }
+		.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--gold); font-size: 1.2rem; font-weight: 800; }
+		.brand-copy { font-weight: 750; line-height: 1.2; }
+		.brand-copy small { display: block; margin-top: .2rem; color: var(--muted); font-size: .68rem; font-weight: 500; }
+		.header-actions { display: flex; align-items: center; gap: 1rem; }
+		.role-chip { padding: .4rem .7rem; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: .78rem; font-weight: 700; }
+		.signout-link { color: var(--muted); font-size: .88rem; font-weight: 650; text-decoration: none; }
+		.signout-link:hover, .nav-link:hover { color: var(--green-mid); text-decoration: underline; text-underline-offset: 4px; }
+		.site-navigation { background: var(--green); }
+		.nav-inner { width: min(100% - 2rem, 1200px); margin: 0 auto; display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
+		.nav-link { flex: 0 0 auto; padding: .85rem .9rem; color: #d8e4df; font-size: .88rem; font-weight: 650; text-decoration: none; }
+		.nav-link:hover, .nav-link[aria-current="page"] { color: var(--green); background: var(--gold); text-decoration: none; }
+		.site-navigation--user, .site-navigation--committee { background: #035e82; }
+		.site-navigation--user .nav-link, .site-navigation--committee .nav-link { color: #eaf6f9; }
+		.site-navigation--user .nav-link:hover, .site-navigation--user .nav-link[aria-current="page"],
+		.site-navigation--committee .nav-link:hover, .site-navigation--committee .nav-link[aria-current="page"] { background: #008bb2; color: #fff; text-decoration: none; }
+		.page-shell { width: min(100% - 2rem, 1200px); min-height: calc(100vh - 170px); margin: 0 auto; padding: 2.25rem 0 3.5rem; }
+		.page-heading { margin-bottom: 1.7rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1.25rem; }
+		.eyebrow { margin: 0 0 .45rem; color: #52756c; font-size: .74rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+		h1, h2, h3, p { margin-top: 0; }
+		h1 { margin-bottom: .35rem; color: var(--green); font-size: clamp(1.9rem, 4vw, 2.7rem); letter-spacing: -.045em; line-height: 1.12; }
+		.page-heading p:last-child { margin-bottom: 0; color: var(--muted); }
+		h2 { margin-bottom: .9rem; color: var(--green); font-size: 1.15rem; letter-spacing: -.02em; }
+		h3 { margin-bottom: .35rem; color: var(--green); font-size: 1rem; }
+		.panel { min-width: 0; padding: 1.35rem; border: 1px solid var(--line); border-radius: 15px; background: var(--white); box-shadow: 0 8px 24px rgba(18, 59, 53, .045); }
+		.panel-heading { margin-bottom: 1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
+		.panel-heading h2 { margin: 0; }
+		.panel-heading p { margin: .3rem 0 0; color: var(--muted); font-size: .88rem; }
+		.stats-grid { margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+		.stat-card { min-height: 132px; padding: 1.15rem; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+		.stat-label { margin-bottom: .65rem; display: block; color: var(--muted); font-size: .83rem; font-weight: 600; }
+		.stat-value { display: block; color: var(--green); font-size: 2rem; font-weight: 780; letter-spacing: -.04em; line-height: 1; }
+		.stat-note { display: block; margin-top: .6rem; color: var(--muted); font-size: .76rem; }
+		.content-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(250px, .85fr); gap: 1.15rem; align-items: start; }
+		.stack { display: grid; gap: 1.15rem; }
+		.card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+		.resource-card { min-height: 205px; padding: 1.2rem; border: 1px solid var(--line); border-radius: 13px; background: var(--white); }
+		.resource-icon { width: 40px; height: 40px; margin-bottom: .9rem; display: grid; place-items: center; border-radius: 11px; background: var(--green-light); font-size: 1.15rem; }
+		.resource-card p { margin: .45rem 0 .8rem; color: var(--muted); font-size: .86rem; }
+		.resource-meta { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .78rem; }
+		.badge { display: inline-flex; align-items: center; padding: .25rem .55rem; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: .75rem; font-weight: 700; white-space: nowrap; }
+		.badge--warning { background: #fbf2df; color: #78550d; }
+		.badge--danger { background: var(--red-light); color: var(--red); }
+		.badge--blue { background: var(--blue-light); color: var(--blue); }
+		.action-list { margin: 0; padding: 0; display: grid; gap: .6rem; list-style: none; }
+		.action-link { min-height: 48px; padding: .7rem .85rem; display: flex; align-items: center; justify-content: space-between; gap: .8rem; border: 1px solid var(--line); border-radius: 9px; color: var(--green); font-size: .88rem; font-weight: 650; text-decoration: none; }
+		.action-link:hover { border-color: #b8cec3; background: var(--green-light); }
+		.button { min-height: 44px; padding: .65rem 1rem; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; border: 1px solid var(--green); border-radius: 8px; background: var(--green); color: #fff; font-weight: 700; text-decoration: none; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+		.button:hover { background: #20554b; transform: translateY(-1px); }
+		.button-secondary { background: var(--white); color: var(--green); }
+		.button-secondary:hover { color: #fff; }
+		.button-small { min-height: 34px; padding: .4rem .65rem; font-size: .8rem; }
+		.toolbar { margin-bottom: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+		.search-input { min-width: min(100%, 260px); min-height: 42px; flex: 1; padding: .55rem .8rem; border: 1px solid #d5dfd9; border-radius: 8px; background: var(--white); }
+		.search-input:focus, input:focus, select:focus, textarea:focus { outline: 3px solid rgba(82, 124, 112, .18); border-color: #527c70; }
+		.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+		.form-field { min-width: 0; margin-bottom: 1rem; }
+		.form-field--wide { grid-column: 1 / -1; }
+		.form-field label { margin-bottom: .4rem; display: block; color: var(--ink); font-size: .88rem; font-weight: 650; }
+		.form-field input, .form-field select, .form-field textarea { width: 100%; min-height: 44px; padding: .6rem .75rem; border: 1px solid #d5dfd9; border-radius: 8px; background: #fff; color: var(--ink); }
+		.form-field textarea { min-height: 100px; resize: vertical; }
+		.form-field small { margin-top: .35rem; display: block; color: var(--muted); font-size: .78rem; }
+		.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+		.notice { margin-bottom: 1rem; padding: .8rem 1rem; border-left: 4px solid var(--gold); border-radius: 7px; background: #fbf6e9; color: #5c4b28; font-size: .88rem; }
+		.notice--success { border-color: var(--green-mid); background: var(--green-light); color: var(--green); }
+		.notice--error { border-color: var(--red); background: var(--red-light); color: var(--red); }
+		.table-wrap { overflow-x: auto; }
+		table { width: 100%; border-collapse: collapse; text-align: left; }
+		th, td { padding: .8rem .7rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+		th { color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+		td { font-size: .88rem; }
+		tbody tr:last-child td { border-bottom: 0; }
+		.empty-state { padding: 1.5rem; color: var(--muted); text-align: center; }
+		.site-footer { padding: 1.3rem 1rem; color: #d8e4df; background: var(--green); text-align: center; font-size: .82rem; }
+		.site-footer p { margin: 0; }
+		@media (max-width: 850px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .content-grid { grid-template-columns: 1fr; } .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+		@media (max-width: 560px) { .header-inner { min-height: 66px; } .brand-copy small { display: none; } .role-chip { display: none; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+	</style>
+	{% block head %}{% endblock %}
+</head>
+<body>
+	<header class="site-header">
+		<div class="header-inner">
+			<a class="site-brand" href="user-dashboard.html" aria-label="LTSM Portal dashboard">
+				<span class="brand-mark" aria-hidden="true">L</span>
+				<span class="brand-copy">LTSM Portal<small>Learning and Teaching Support Materials</small></span>
+			</a>
+			<div class="header-actions">
+				<span class="role-chip">{% block role %}Portal workspace{% endblock %}</span>
+				<a class="signout-link" href="login.html">Sign out</a>
+			</div>
+		</div>
+	</header>
+	{% if active_page not in ['dashboard', 'committee'] %}
+		<nav class="site-navigation {% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
+			<div class="nav-inner">
+				{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}
+					<a class="nav-link" href="ltsm-dashboard.html">Dashboard</a>
+					<a class="nav-link" href="manage-inventory.html" {% if active_page == 'inventory' %}aria-current="page"{% endif %}>Inventory</a>
+					<a class="nav-link" href="my-requests.html">Requests</a>
+					<a class="nav-link" href="book-equipment.html" {% if active_page == 'bookings' %}aria-current="page"{% endif %}>Equipment bookings</a>
+					<a class="nav-link" href="issue-return.html" {% if active_page == 'issue-return' %}aria-current="page"{% endif %}>Issue / return</a>
+					<a class="nav-link" href="maintenance.html" {% if active_page == 'maintenance' %}aria-current="page"{% endif %}>Maintenance</a>
+					<a class="nav-link" href="reports.html" {% if active_page == 'reports' %}aria-current="page"{% endif %}>Reports</a>
+				{% else %}
+					<a class="nav-link" href="user-dashboard.html">Dashboard</a>
+					<a class="nav-link" href="view-resources.html" {% if active_page == 'resources' %}aria-current="page"{% endif %}>Browse resources</a>
+					<a class="nav-link" href="request-resources.html" {% if active_page == 'request' %}aria-current="page"{% endif %}>Request resources</a>
+					<a class="nav-link" href="my-requests.html" {% if active_page == 'my-requests' %}aria-current="page"{% endif %}>My requests</a>
+					<a class="nav-link" href="book-equipment.html" {% if active_page == 'bookings' %}aria-current="page"{% endif %}>Equipment bookings</a>
+				{% endif %}
+			</div>
+		</nav>
+	{% endif %}
+	<main id="main-content" class="page-shell">
+		{% block content %}{% endblock %}
+	</main>
+	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials · Sample-data preview</p></footer>
+	{% block scripts %}{% endblock %}
+</body>
+</html>

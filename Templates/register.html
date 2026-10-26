@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#123b35">
+	<title>Create an Account | LTSM Portal</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--green: #123b35;
+			--green-light: #eaf2ef;
+			--gold: #e8b95b;
+			--ink: #172b28;
+			--muted: #62716d;
+			--paper: #fbfaf6;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			padding: 2rem;
+			display: grid;
+			place-items: center;
+			color: var(--ink);
+			background: radial-gradient(ellipse at top left, #e8eee7 0, transparent 48%), var(--paper);
+			font-family: Inter, "Segoe UI", Arial, sans-serif;
+			line-height: 1.55;
+		}
+
+		.register-layout {
+			width: min(100%, 1040px);
+			min-height: 650px;
+			display: grid;
+			grid-template-columns: .82fr 1.18fr;
+			overflow: hidden;
+			border: 1px solid rgba(18, 59, 53, .09);
+			border-radius: 24px;
+			background: #fff;
+			box-shadow: 0 28px 80px rgba(18, 59, 53, .15);
+		}
+
+		.welcome-panel {
+			position: relative;
+			padding: 2.5rem;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			overflow: hidden;
+			color: #fff;
+			background: var(--green);
+		}
+
+		.welcome-panel::after {
+			position: absolute;
+			right: -110px;
+			bottom: -135px;
+			width: 310px;
+			height: 310px;
+			border: 34px solid rgba(232, 185, 91, .28);
+			border-radius: 50%;
+			content: "";
+		}
+
+		.brand { position: relative; z-index: 1; display: flex; align-items: center; gap: .8rem; font-weight: 750; }
+		.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: var(--green); background: var(--gold); font-size: 1.25rem; font-weight: 800; }
+		.brand-name { line-height: 1.2; }
+		.brand-name small { display: block; margin-top: .25rem; color: #d8e4df; font-size: .72rem; font-weight: 500; }
+		.welcome-copy { position: relative; z-index: 1; margin: auto 0; padding: 3rem 0; }
+		.eyebrow { margin: 0 0 .8rem; color: var(--gold); font-size: .76rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+		.welcome-copy h1 { max-width: 340px; margin: 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.045em; line-height: 1.1; }
+		.welcome-copy p { max-width: 330px; margin: 1rem 0 0; color: #d8e4df; }
+		.home-link { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .5rem; color: #fff; font-weight: 650; text-decoration: none; }
+		.home-link:hover { color: var(--gold); }
+
+		.register-card { padding: clamp(2rem, 5vw, 3.5rem); display: flex; flex-direction: column; justify-content: center; }
+		.form-heading { margin-bottom: 1.5rem; }
+		.form-heading h2 { margin: 0; color: var(--green); font-size: 1.85rem; letter-spacing: -.035em; }
+		.form-heading p { margin: .4rem 0 0; color: var(--muted); }
+		.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+		.field { min-width: 0; margin-bottom: 1rem; }
+		label { display: block; margin-bottom: .4rem; color: var(--ink); font-size: .9rem; font-weight: 650; }
+		input, select { width: 100%; min-height: 46px; padding: .65rem .8rem; border: 1px solid #d5dfd9; border-radius: 9px; background: #fff; color: var(--ink); font: inherit; transition: border-color .15s ease, box-shadow .15s ease; }
+		input:focus, select:focus { outline: none; border-color: #527c70; box-shadow: 0 0 0 4px rgba(82, 124, 112, .15); }
+		input[aria-invalid="true"] { border-color: #b91c1c; }
+		.hint { margin: .4rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+		.field-error { margin: .4rem 0 0; color: #b91c1c; font-size: .82rem; }
+		button { width: 100%; min-height: 50px; margin-top: .25rem; border: 0; border-radius: 9px; background: var(--green); color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+		button:hover { background: #20554b; transform: translateY(-1px); }
+		.signin { margin: 1.2rem 0 0; color: var(--muted); text-align: center; font-size: .9rem; }
+		.signin a { color: var(--green); font-weight: 700; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+		.preview-note { margin: 1.1rem 0 0; padding: .7rem .8rem; border-radius: 8px; background: var(--green-light); color: #45645b; font-size: .76rem; text-align: center; }
+
+		@media (max-width: 760px) {
+			body { padding: 1rem; }
+			.register-layout { max-width: 540px; min-height: 0; grid-template-columns: 1fr; border-radius: 18px; }
+			.welcome-panel { min-height: 225px; padding: 1.5rem; }
+			.welcome-copy { margin: 1.5rem 0 0; padding: 0; }
+			.welcome-copy h1 { font-size: 2rem; }
+			.welcome-copy p { margin-top: .5rem; }
+			.home-link { margin-top: 1.5rem; }
+			.register-card { padding: 2rem 1.5rem; }
+		}
+
+		@media (max-width: 480px) {
+			.field-grid { grid-template-columns: 1fr; gap: 0; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+		}
+	</style>
+</head>
+<body>
+	<main class="register-layout">
+		<section class="welcome-panel" aria-label="LTSM Portal">
+			<div class="brand">
+				<div class="brand-mark" aria-hidden="true">L</div>
+				<div class="brand-name">LTSM Portal<small>Learning and Teaching Support Materials</small></div>
+			</div>
+			<div class="welcome-copy">
+				<p class="eyebrow">Join your school community</p>
+				<h1>Get the resources you need to thrive.</h1>
+				<p>Create a learner or staff profile to get started with the portal.</p>
+			</div>
+			<a class="home-link" href="index.html"><span aria-hidden="true">&larr;</span> Back to Home</a>
+		</section>
+
+		<section class="register-card" aria-labelledby="register-title">
+			<header class="form-heading">
+				<h2 id="register-title">Create your account</h2>
+				<p>Complete your details to continue.</p>
+			</header>
+
+			<form id="register-form">
+				<div class="field-grid">
+					<div class="field">
+						<label for="full-name">Full name</label>
+						<input id="full-name" name="full_name" type="text" autocomplete="name" required>
+					</div>
+
+					<div class="field">
+						<label for="account-type">Account type</label>
+						<select id="account-type" name="account_type" required>
+							<option value="" selected disabled>Select account type</option>
+							<option value="learner">Learner</option>
+							<option value="teacher">Teacher / Staff</option>
+						</select>
+						<p class="hint">Committee access requires approval.</p>
+					</div>
+
+					<div class="field">
+						<label for="school-id">Student / staff number</label>
+						<input id="school-id" name="school_id" type="text" autocomplete="username" required>
+					</div>
+
+					<div class="field">
+						<label for="email">Email address</label>
+						<input id="email" name="email" type="email" autocomplete="email" required>
+					</div>
+
+					<div class="field">
+						<label for="password">Password</label>
+						<input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+						<p class="hint">Use at least 8 characters.</p>
+					</div>
+
+					<div class="field">
+						<label for="confirm-password">Confirm password</label>
+						<input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" aria-describedby="password-error" required>
+						<p id="password-error" class="field-error" role="alert" hidden>Passwords do not match.</p>
+					</div>
+				</div>
+
+				<button type="submit">Create Account</button>
+			</form>
+
+			<p class="signin">Already have an account? <a href="login.html">Sign in</a></p>
+			<p class="preview-note">This is a preview form. Accounts are not saved; submitting valid details returns you to sign in.</p>
+		</section>
+	</main>
+	<script>
+		const registerForm = document.getElementById("register-form");
+		const passwordInput = document.getElementById("password");
+		const confirmPasswordInput = document.getElementById("confirm-password");
+		const passwordError = document.getElementById("password-error");
+
+		function validatePasswordMatch() {
+			const passwordsMatch = passwordInput.value === confirmPasswordInput.value;
+			confirmPasswordInput.setCustomValidity(passwordsMatch ? "" : "Passwords do not match.");
+			confirmPasswordInput.setAttribute("aria-invalid", String(!passwordsMatch));
+			passwordError.hidden = passwordsMatch;
+			return passwordsMatch;
+		}
+
+		passwordInput.addEventListener("input", validatePasswordMatch);
+		confirmPasswordInput.addEventListener("input", validatePasswordMatch);
+		registerForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (validatePasswordMatch()) {
+				window.location.assign("login.html");
+			} else {
+				confirmPasswordInput.reportValidity();
+			}
+		});
+	</script>
+</body>
+</html>

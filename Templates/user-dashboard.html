@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+{% block title %}My Dashboard | LTSM Portal{% endblock %}
+{% block role %}Teacher / Learner{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: var(--font-body); }
+		.dashboard-heading {
+			position: relative;
+			min-height: 210px;
+			margin-bottom: 1.4rem;
+			padding: clamp(1.5rem, 4vw, 2.5rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 20px;
+			color: #fff;
+			background: linear-gradient(115deg, #123b35 0%, #1d5147 68%, #315b50 100%);
+			box-shadow: 0 18px 42px rgba(18, 59, 53, .18);
+		}
+		.dashboard-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 330px;
+			height: 330px;
+			border: 32px solid rgba(232, 185, 91, .2);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.dashboard-heading > div, .dashboard-heading > .button { position: relative; z-index: 1; }
+		.dashboard-heading, .dashboard-stat, .dashboard-panel, .dashboard-resource { font-family: inherit; }
+		.dashboard-heading h1 { max-width: 660px; margin-bottom: .65rem; color: #fff; font-size: clamp(2rem, 4vw, 2.8rem); }
+		.dashboard-heading .eyebrow { color: var(--gold); }
+		.dashboard-heading .dashboard-intro { max-width: 620px; margin-bottom: 0; color: #e2ece7; }
+		.dashboard-nav { margin: 0 0 1.6rem; border-radius: 12px; background: var(--green); box-shadow: 0 5px 14px rgba(18, 59, 53, .12); }
+		.dashboard-nav__inner { display: flex; align-items: stretch; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
+		.dashboard-nav__link { min-height: 48px; padding: .75rem 1rem; display: inline-flex; flex: 0 0 auto; align-items: center; color: #e2ece7; font-size: .86rem; font-weight: 650; text-decoration: none; transition: background .15s ease, color .15s ease; }
+		.dashboard-nav__link:hover, .dashboard-nav__link[aria-current="page"] { border-radius: 9px; background: var(--gold); color: var(--green); }
+		.dashboard-nav__link:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+		.dashboard-heading .button {
+			min-height: 50px;
+			padding: .8rem 1.2rem;
+			flex: 0 0 auto;
+			border: 1px solid rgba(255, 255, 255, .38);
+			border-radius: 14px;
+			background: linear-gradient(135deg, #f3d58e, #e8b95b);
+			color: var(--green);
+			box-shadow: 0 10px 22px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .45);
+			font-weight: 750;
+			transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+		}
+		.dashboard-heading .button span {
+			width: 25px;
+			height: 25px;
+			display: inline-grid;
+			place-items: center;
+			border-radius: 50%;
+			background: rgba(18, 59, 53, .1);
+			font-size: 1.1rem;
+			line-height: 1;
+		}
+		.dashboard-heading .button:hover {
+			transform: translateY(-2px);
+			border-color: rgba(255, 255, 255, .55);
+			background: linear-gradient(135deg, #f7dfa5, #f0ca78);
+			box-shadow: 0 14px 26px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .55);
+		}
+		.dashboard-heading .button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+		.dashboard-intro { max-width: 620px; }
+		.dashboard-overview { margin: 0 0 .85rem; }
+		.dashboard-overview__heading { margin: 0 0 .25rem; color: var(--green); font-size: 1.3rem; letter-spacing: -.025em; }
+		.dashboard-overview__copy { margin: 0; color: var(--muted); font-size: .88rem; }
+		.dashboard-stats-viewport { max-width: 100%; margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: .35rem; }
+		#dashboard-activity-tiles.dashboard-stats {
+			display: grid !important;
+			width: max-content !important;
+			grid-template-columns: repeat(3, minmax(180px, 205px)) !important;
+			grid-auto-flow: row !important;
+			justify-content: start;
+			gap: .9rem;
+			margin-bottom: 0;
+		}
+		.dashboard-stat {
+			position: relative;
+			min-height: 146px;
+			padding: 1.15rem 1.2rem;
+			overflow: hidden;
+			border-color: transparent;
+			box-shadow: 0 10px 24px rgba(18, 59, 53, .09);
+			transition: transform .16s ease, box-shadow .16s ease;
+		}
+		.dashboard-stat:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(18, 59, 53, .14); }
+		.dashboard-stat::after {
+			position: absolute;
+			right: -26px;
+			bottom: -46px;
+			width: 130px;
+			height: 130px;
+			border: 20px solid rgba(18, 59, 53, .08);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.dashboard-stat__top { margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+		.dashboard-stat__icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .18); color: inherit; font-size: 1.1rem; }
+		.dashboard-stat--green { color: #fff; background: linear-gradient(145deg, #123b35, #286052); }
+		.dashboard-stat--green .stat-label, .dashboard-stat--green .stat-note { color: #d9e7e0; }
+		.dashboard-stat--gold { color: #3c3425; background: linear-gradient(145deg, #f3d58e, #e8b95b); }
+		.dashboard-stat--gold .stat-label, .dashboard-stat--gold .stat-note { color: #5e4c2a; }
+		.dashboard-stat--gold .dashboard-stat__icon { background: rgba(255, 255, 255, .42); color: #59451d; }
+		.dashboard-stat--blue { color: var(--green); background: linear-gradient(145deg, #e2efeb, #c9ded6); }
+		.dashboard-stat--blue .dashboard-stat__icon { background: rgba(255, 255, 255, .65); }
+		.dashboard-stat--red { color: #24433c; background: linear-gradient(145deg, #edf2e9, #d8e5d6); }
+		.dashboard-stat--red .dashboard-stat__icon { background: rgba(255, 255, 255, .72); }
+		.dashboard-stat .stat-label { margin: 0; color: inherit; font-size: .8rem; }
+		.dashboard-stat__reading { position: relative; z-index: 1; display: grid; justify-items: start; gap: .45rem; }
+		.dashboard-stat .stat-value { display: block; margin: 0; color: inherit; font-size: 2.2rem; font-weight: 780; letter-spacing: -.04em; line-height: 1.1; }
+		.dashboard-stat .stat-note { display: block; margin: 0; color: inherit; font-size: .76rem; line-height: 1.4; opacity: .86; }
+		.dashboard-launchpad {
+			margin: 1.65rem 0 1.8rem;
+			padding: 1.4rem;
+			border: 1px solid #e1e9e4;
+			border-radius: 18px;
+			background: linear-gradient(145deg, #fff, #f5f8f4);
+			box-shadow: 0 12px 30px rgba(18, 59, 53, .06);
+		}
+		.dashboard-launchpad-heading { margin-bottom: 1.15rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+		.dashboard-launchpad-heading__eyebrow { margin: 0 0 .25rem; color: #52756c; font-size: .7rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+		.dashboard-launchpad-heading h2 { margin-bottom: .25rem; font-size: 1.4rem; letter-spacing: -.03em; }
+		.dashboard-launchpad-heading p { margin: 0; color: var(--muted); font-size: .9rem; }
+		.dashboard-launchpad-heading__icon { width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid rgba(120, 85, 13, .1); border-radius: 14px; background: #fbf2df; color: #78550d; font-size: 1.25rem; }
+		.dashboard-columns { gap: 1rem; }
+		.dashboard-main-column, .dashboard-side-column { gap: 1rem; }
+		.dashboard-panel { padding: 1.35rem; box-shadow: 0 10px 26px rgba(18, 59, 53, .06); }
+		.dashboard-panel .panel-heading { margin-bottom: 1.1rem; padding-bottom: .9rem; border-bottom: 1px solid #edf1ee; }
+		.dashboard-panel .panel-heading > a { flex: 0 0 auto; font-size: .86rem; font-weight: 700; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+		.dashboard-resource-grid {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 205px));
+			grid-auto-flow: row;
+			justify-content: start;
+			gap: 1rem;
+		}
+		.dashboard-resource {
+			min-height: 190px;
+			padding: 1.15rem;
+			display: flex;
+			flex-direction: column;
+			border: 1px solid rgba(18, 59, 53, .08);
+			border-radius: 16px;
+			border-color: transparent;
+			text-decoration: none;
+			box-shadow: 0 7px 18px rgba(18, 59, 53, .08);
+			transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+		}
+		.dashboard-resource:hover { transform: translateY(-4px); border-color: rgba(18, 59, 53, .16); box-shadow: 0 14px 26px rgba(18, 59, 53, .13); }
+		.dashboard-resource:focus-visible { outline: 3px solid rgba(82, 124, 112, .35); outline-offset: 3px; }
+		.dashboard-resource .resource-icon { width: 48px; height: 48px; margin-bottom: 1.1rem; border-radius: 14px; background: rgba(255, 255, 255, .72); font-size: 1.35rem; }
+		.dashboard-resource h3 { margin-bottom: .35rem; font-size: 1.02rem; }
+		.dashboard-resource p { flex: 1; margin-bottom: .8rem; color: #52645e; font-size: .83rem; line-height: 1.45; }
+		.dashboard-resource--green { background: linear-gradient(145deg, #eaf2ef, #d8e8e0); }
+		.dashboard-resource--gold { background: linear-gradient(145deg, #fbf4e5, #f5e4bb); }
+		.dashboard-resource--blue { background: linear-gradient(145deg, #edf4f5, #dbe9e9); }
+		.resource-card__footer { margin-top: auto; padding-top: .7rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-top: 1px solid rgba(18, 59, 53, .1); color: #4c625a; font-size: .77rem; }
+		.dashboard-panel table th { padding-top: .65rem; }
+		.dashboard-panel table td { padding-top: .9rem; padding-bottom: .9rem; }
+		.issued-items-panel { overflow: hidden; }
+		.issued-items-panel .panel-heading { align-items: center; }
+		.issued-items-panel .panel-heading h2 { margin: 0; font-size: 1.25rem; }
+		.issued-items-panel .panel-heading p { margin-top: .3rem; }
+		.issued-items-table { border-collapse: separate; border-spacing: 0; }
+		.issued-items-table thead { background: #f1f6f2; }
+		.issued-items-table th { padding: .85rem 1rem; border-bottom: 1px solid #dfe9e2; color: #52645e; font-size: .72rem; letter-spacing: .08em; }
+		.issued-items-table th:first-child { border-radius: 9px 0 0; }
+		.issued-items-table th:last-child { border-radius: 0 9px 0 0; }
+		.issued-items-table td { padding: 1rem; border-bottom: 1px solid #edf1ee; color: #44564f; font-size: .88rem; }
+		.issued-items-table tbody tr { transition: background .15s ease; }
+		.issued-items-table tbody tr:hover { background: #f8faf8; }
+		.issued-items-table tbody tr:last-child td { border-bottom: 0; }
+		.issued-item-name { color: var(--green); font-weight: 700; }
+		.issued-items-table td:nth-child(2), .issued-items-table td:nth-child(3) { white-space: nowrap; }
+		.issued-status { display: inline-flex; align-items: center; gap: .4rem; }
+		.issued-status::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+		.issued-status--active { background: #eaf2ef; color: #315b50; }
+		.issued-status--due { background: #fbf2df; color: #78550d; }
+		.dashboard-side-column .action-link { background: #fff; transition: background .15s ease, border-color .15s ease; }
+		.dashboard-side-column .action-link:hover { background: var(--green-light); }
+		.booking-card { padding: 1rem; border: 1px solid #dce9e2; border-radius: 12px; background: linear-gradient(135deg, #f4f8f4, #eaf2ef); }
+		.booking-card__top { margin-bottom: .8rem; display: flex; align-items: flex-start; justify-content: space-between; gap: .7rem; }
+		.booking-card h3 { margin: 0; }
+		.booking-date { margin: .65rem 0; display: flex; align-items: center; gap: .6rem; color: var(--green); font-size: .88rem; font-weight: 700; }
+		.booking-detail { margin: 0; color: var(--muted); font-size: .82rem; }
+		@media (max-width: 560px) {
+			.dashboard-heading { min-height: 0; align-items: flex-start; flex-direction: column; border-radius: 15px; }
+			.dashboard-heading::after { top: -115px; right: -155px; }
+			.dashboard-heading .button { width: 100%; }
+			.dashboard-panel { padding: 1rem; }
+			.dashboard-launchpad { padding: 1rem; border-radius: 14px; }
+			.dashboard-resource-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+			.dashboard-resource { min-height: 180px; }
+			.dashboard-panel .panel-heading { flex-wrap: wrap; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.dashboard-stat, .dashboard-resource, .dashboard-side-column .action-link, .dashboard-heading .button { transition: none; }
+			.dashboard-stat:hover, .dashboard-resource:hover { transform: none; }
+		}
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.dashboard-nav) { background: #f4f5f8; }
+		.dashboard-nav { background: #035e82; border-radius: .35rem; box-shadow: 0 3px 10px rgba(3, 94, 130, .16); }
+		.dashboard-nav__link { color: #eaf6f9; }
+		.dashboard-nav__link:hover, .dashboard-nav__link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.dashboard-nav__link:focus-visible { outline-color: #fff; }
+		.dashboard-heading {
+			border-radius: .5rem;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.dashboard-heading::after { border-color: rgba(255, 255, 255, .14); }
+		.dashboard-heading .eyebrow { color: #a9e9db; }
+		.dashboard-heading h1 { letter-spacing: -.025em; }
+		.dashboard-overview__heading, .dashboard-launchpad-heading h2,
+		.dashboard-panel .panel-heading h2 { color: #035e82; letter-spacing: -.015em; }
+		.dashboard-stat { border-radius: .5rem; box-shadow: 0 6px 16px rgba(40, 55, 70, .1); }
+		.dashboard-stat:hover { box-shadow: 0 10px 22px rgba(40, 55, 70, .15); }
+		.dashboard-stat--green { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.dashboard-stat--gold { background: linear-gradient(145deg, #0daa88, #0b9678); color: #fff; }
+		.dashboard-stat--gold .stat-label, .dashboard-stat--gold .stat-note { color: #e5fff8; }
+		.dashboard-stat--gold .dashboard-stat__icon { background: rgba(255, 255, 255, .2); color: #fff; }
+		.dashboard-stat--blue { background: linear-gradient(145deg, #2f519e, #29478b); color: #fff; }
+		.dashboard-stat--blue .dashboard-stat__icon { background: rgba(255, 255, 255, .18); }
+		.dashboard-stat--red { background: linear-gradient(145deg, #008bb2, #035e82); color: #fff; }
+		.dashboard-stat--red .dashboard-stat__icon { background: rgba(255, 255, 255, .18); }
+		.dashboard-launchpad { border-color: #e0e3e9; border-radius: .5rem; background: #fff; }
+		.dashboard-launchpad-heading__eyebrow { color: #007a9d; }
+		.dashboard-launchpad-heading__icon { border-color: #d5e9ed; border-radius: .4rem; background: #e8f4f6; color: #035e82; }
+		.dashboard-resource { border-radius: .5rem; box-shadow: 0 5px 14px rgba(40, 55, 70, .1); }
+		.dashboard-resource--green { background: linear-gradient(145deg, #e3f2f4, #cce7ec); }
+		.dashboard-resource--gold { background: linear-gradient(145deg, #e0f5ef, #c4ebe0); }
+		.dashboard-resource--blue { background: linear-gradient(145deg, #e8edf8, #d5def1); }
+		.dashboard-resource .resource-icon { border-radius: .4rem; background: rgba(255, 255, 255, .72); color: #035e82; }
+		.dashboard-resource--gold .resource-icon { color: #0b9678; }
+		.dashboard-resource--blue .resource-icon { color: #2f519e; }
+		.dashboard-resource:hover { box-shadow: 0 9px 20px rgba(40, 55, 70, .15); }
+		.dashboard-panel { border-color: #e0e3e9; border-radius: .5rem; box-shadow: 0 5px 16px rgba(40, 55, 70, .07); }
+		.issued-items-table thead { background: #eaf2f5; }
+		.issued-items-table th { color: #035e82; }
+		.booking-card { border-color: #d5e9ed; border-radius: .4rem; background: linear-gradient(135deg, #eaf6f7, #e4f3ed); }
+		.booking-date { color: #035e82; }
+	</style>
+{% endblock %}
+{% block content %}
+	<nav class="dashboard-nav" aria-label="Dashboard navigation">
+		<div class="dashboard-nav__inner">
+			<a class="dashboard-nav__link" href="user-dashboard.html" aria-current="page">Dashboard</a>
+			<a class="dashboard-nav__link" href="view-resources.html">Browse resources</a>
+			<a class="dashboard-nav__link" href="request-resources.html">Request resources</a>
+			<a class="dashboard-nav__link" href="my-requests.html">My requests</a>
+			<a class="dashboard-nav__link" href="book-equipment.html">Equipment bookings</a>
+		</div>
+	</nav>
+	<header class="page-heading dashboard-heading">
+		<div>
+			<p class="eyebrow">Your school workspace</p>
+			<h1>Welcome to your dashboard</h1>
+			<p class="dashboard-intro">Everything you need to find learning materials, follow requests and manage equipment bookings.</p>
+		</div>
+	</header>
+
+	<section class="dashboard-overview" aria-labelledby="activity-heading">
+		<h2 class="dashboard-overview__heading" id="activity-heading">Your activity at a glance</h2>
+		<p class="dashboard-overview__copy">A quick summary of your resources, requests, bookings and issued items.</p>
+	</section>
+	<div class="dashboard-stats-viewport">
+		<section id="dashboard-activity-tiles" class="stats-grid dashboard-stats" aria-label="Your activity summary">
+			<article class="stat-card dashboard-stat dashboard-stat--green">
+				<div class="dashboard-stat__top"><span class="stat-label">Available resources</span><span class="dashboard-stat__icon" aria-hidden="true">▤</span></div>
+				<div class="dashboard-stat__reading"><p class="stat-value">248</p><p class="stat-note">Across 6 categories</p></div>
+			</article>
+			<article class="stat-card dashboard-stat dashboard-stat--gold">
+				<div class="dashboard-stat__top"><span class="stat-label">Open requests</span><span class="dashboard-stat__icon" aria-hidden="true">↗</span></div>
+				<div class="dashboard-stat__reading"><p class="stat-value">2</p><p class="stat-note">1 awaiting review</p></div>
+			</article>
+			<article class="stat-card dashboard-stat dashboard-stat--blue">
+				<div class="dashboard-stat__top"><span class="stat-label">Equipment bookings</span><span class="dashboard-stat__icon" aria-hidden="true">⌁</span></div>
+				<div class="dashboard-stat__reading"><p class="stat-value">1</p><p class="stat-note">Next: 28 October</p></div>
+			</article>
+			<article class="stat-card dashboard-stat dashboard-stat--red">
+				<div class="dashboard-stat__top"><span class="stat-label">Items issued to you</span><span class="dashboard-stat__icon" aria-hidden="true">✓</span></div>
+				<div class="dashboard-stat__reading"><p class="stat-value">4</p><p class="stat-note">1 return due soon</p></div>
+			</article>
+		</section>
+	</div>
+
+	<section class="dashboard-launchpad" aria-labelledby="resources-heading">
+		<header class="dashboard-launchpad-heading">
+			<div>
+				<p class="dashboard-launchpad-heading__eyebrow">Resource catalogue</p>
+				<h2 id="resources-heading">Explore resources</h2>
+				<p>Choose a category to browse materials for your school community.</p>
+			</div>
+			<span class="dashboard-launchpad-heading__icon" aria-hidden="true">▤</span>
+		</header>
+		<div class="card-grid dashboard-resource-grid">
+			<a class="resource-card dashboard-resource dashboard-resource--green" href="view-resources.html"><span class="resource-icon" aria-hidden="true">▤</span><h3>Textbooks</h3><p>Prescribed books and classroom learning materials.</p><span class="resource-card__footer"><span>126 items</span><span class="badge">In stock</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--gold" href="view-resources.html"><span class="resource-icon" aria-hidden="true">✎</span><h3>Stationery</h3><p>Everyday supplies for lessons and schoolwork.</p><span class="resource-card__footer"><span>84 items</span><span class="badge badge--warning">Limited stock</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--blue" href="view-resources.html"><span class="resource-icon" aria-hidden="true">⌁</span><h3>Equipment</h3><p>Shared devices and teaching equipment to book.</p><span class="resource-card__footer"><span>38 items</span><span class="badge badge--blue">Bookable</span></span></a>
+		</div>
+	</section>
+
+	<section class="panel dashboard-panel issued-items-panel" aria-labelledby="issued-heading">
+		<div class="panel-heading"><div><h2 id="issued-heading">Items issued to you</h2><p>Keep track of borrowed school materials.</p></div><span class="badge">3 active items</span></div>
+		<div class="table-wrap">
+			<table class="issued-items-table">
+				<thead><tr><th scope="col">Item</th><th scope="col">Issued</th><th scope="col">Due date</th><th scope="col">Status</th></tr></thead>
+				<tbody>
+					<tr><td class="issued-item-name">Natural Sciences Grade 8</td><td>14 Oct 2026</td><td>30 Oct 2026</td><td><span class="badge issued-status issued-status--active">On loan</span></td></tr>
+					<tr><td class="issued-item-name">Classroom projector</td><td>20 Oct 2026</td><td>28 Oct 2026</td><td><span class="badge issued-status issued-status--due">Due soon</span></td></tr>
+					<tr><td class="issued-item-name">Geometry set</td><td>02 Oct 2026</td><td>06 Nov 2026</td><td><span class="badge issued-status issued-status--active">On loan</span></td></tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<div class="content-grid dashboard-columns">
+		<aside class="stack dashboard-side-column" aria-label="Your bookings">
+			<section class="panel dashboard-panel">
+				<div class="panel-heading"><div><h2>Upcoming booking</h2><p>Your next equipment reservation.</p></div></div>
+				<div class="booking-card">
+					<div class="booking-card__top"><h3>Classroom projector</h3><span class="badge">Confirmed</span></div>
+					<p class="booking-date"><span aria-hidden="true">◷</span> 28 October · 10:00–12:00</p>
+					<p class="booking-detail">Room 12 · Bring the remote back after use.</p>
+				</div>
+			</section>
+		</aside>
+	</div>
+{% endblock %}

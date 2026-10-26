@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sign In | School Resource Portal</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+	<style>
+		:root {
+			color-scheme: light;
+			--green: #123b35;
+			--green-light: #eaf2ef;
+			--gold: #e8b95b;
+			--ink: #172b28;
+			--muted: #62716d;
+			--paper: #fbfaf6;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			padding: 2rem;
+			display: grid;
+			place-items: center;
+			color: var(--ink);
+			background: radial-gradient(ellipse at top left, #e8eee7 0, transparent 48%), var(--paper);
+			font-family: Inter, "Segoe UI", Arial, sans-serif;
+			line-height: 1.55;
+		}
+
+		.login-layout {
+			width: min(100%, 960px);
+			min-height: 590px;
+			display: grid;
+			grid-template-columns: .9fr 1.1fr;
+			overflow: hidden;
+			border: 1px solid rgba(18, 59, 53, .09);
+			border-radius: 24px;
+			background: #fff;
+			box-shadow: 0 28px 80px rgba(18, 59, 53, .15);
+		}
+
+		.welcome-panel {
+			position: relative;
+			padding: 2.5rem;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			overflow: hidden;
+			color: #fff;
+			background: var(--green);
+		}
+
+		.welcome-panel::after {
+			position: absolute;
+			right: -100px;
+			bottom: -140px;
+			width: 310px;
+			height: 310px;
+			border: 34px solid rgba(232, 185, 91, .28);
+			border-radius: 50%;
+			content: "";
+		}
+
+		.brand { position: relative; z-index: 1; display: flex; align-items: center; gap: .8rem; font-weight: 750; }
+		.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: var(--green); background: var(--gold); font-size: 1.25rem; font-weight: 800; }
+		.brand-name { line-height: 1.2; }
+		.brand-name small { display: block; margin-top: .25rem; color: #d8e4df; font-size: .72rem; font-weight: 500; }
+		.welcome-copy { position: relative; z-index: 1; margin: auto 0; padding: 3rem 0; }
+		.eyebrow { margin: 0 0 .8rem; color: var(--gold); font-size: .76rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+		.welcome-copy h1 { max-width: 340px; margin: 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.045em; line-height: 1.1; }
+		.welcome-copy p { max-width: 330px; margin: 1rem 0 0; color: #d8e4df; }
+		.home-link { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .5rem; color: #fff; font-weight: 650; text-decoration: none; }
+		.home-link:hover { color: var(--gold); }
+
+		.login-card { padding: clamp(2rem, 6vw, 4.5rem); display: flex; flex-direction: column; justify-content: center; }
+		.form-heading { margin-bottom: 1.8rem; }
+		.form-heading h2 { margin: 0; color: var(--green); font-size: 1.85rem; letter-spacing: -.035em; }
+		.form-heading p { margin: .4rem 0 0; color: var(--muted); }
+		.field { margin-bottom: 1.2rem; }
+		label { display: block; margin-bottom: .45rem; color: var(--ink); font-size: .92rem; font-weight: 650; }
+		input, select { width: 100%; min-height: 48px; padding: .7rem .85rem; border: 1px solid #d5dfd9; border-radius: 9px; background: #fff; color: var(--ink); font: inherit; transition: border-color .15s ease, box-shadow .15s ease; }
+		input:focus, select:focus { outline: none; border-color: #527c70; box-shadow: 0 0 0 4px rgba(82, 124, 112, .15); }
+		input[aria-invalid="true"] { border-color: #b91c1c; }
+		button { width: 100%; min-height: 50px; margin-top: .2rem; border: 0; border-radius: 9px; background: var(--green); color: #fff; font: inherit; font-weight: 700; cursor: pointer; transition: background .15s ease, transform .15s ease; }
+		button:hover { background: #20554b; transform: translateY(-1px); }
+		.field-error { margin: .4rem 0 0; color: #b91c1c; font-size: .88rem; }
+		.links { margin-top: 1.4rem; color: var(--muted); text-align: center; font-size: .92rem; }
+		.links a { color: var(--green); font-weight: 700; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+
+		@media (max-width: 680px) {
+			body { padding: 1rem; }
+			.login-layout { max-width: 480px; min-height: 0; grid-template-columns: 1fr; border-radius: 18px; }
+			.welcome-panel { min-height: 230px; padding: 1.5rem; }
+			.welcome-copy { margin: 1.5rem 0 0; padding: 0; }
+			.welcome-copy h1 { font-size: 2rem; }
+			.welcome-copy p { margin-top: .5rem; }
+			.home-link { margin-top: 1.5rem; }
+			.login-card { padding: 2rem 1.5rem; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+		}
+	</style>
+</head>
+<body>
+	<main class="login-layout">
+		<section class="welcome-panel" aria-label="School Resource Portal">
+			<div class="brand">
+				<div class="brand-mark" aria-hidden="true">S</div>
+				<div class="brand-name">School Resource Portal<small>Learning and Teaching Support Materials</small></div>
+			</div>
+			<div class="welcome-copy">
+				<p class="eyebrow">Welcome back</p>
+				<h1>Your learning resources, all in one place.</h1>
+				<p>Sign in to continue to the LTSM Portal.</p>
+			</div>
+			<a class="home-link" href="index.html"><span aria-hidden="true">&larr;</span> Back to Home</a>
+		</section>
+
+		<section class="login-card" aria-labelledby="login-title">
+			<header class="form-heading">
+				<h2 id="login-title">Sign in</h2>
+				<p>Enter your details to access your account.</p>
+			</header>
+
+			<form id="login-form" action="{{ url_for('login') }}" method="post">
+				<div class="field">
+					<label for="role">Role</label>
+					<select id="role" name="role" required>
+						<option value="" disabled selected>Select your role</option>
+						<option value="teacher">Teacher</option>
+						<option value="learner">Learner</option>
+						<option value="ltsm">LTSM Committee Member</option>
+					</select>
+				</div>
+
+				<div class="field">
+					<label for="username">Username or email</label>
+					<input id="username" name="username" type="text" autocomplete="username" aria-describedby="email-error" required>
+					<p id="email-error" class="field-error" role="alert" hidden>Enter a valid email address.</p>
+				</div>
+
+				<div class="field">
+					<label for="password">Password</label>
+					<input id="password" name="password" type="password" autocomplete="current-password" required>
+				</div>
+
+				<button type="submit">Sign In</button>
+			</form>
+
+			<nav class="links" aria-label="Login links">
+				Don't have an account? <a href="{{ url_for('register') }}">Create one</a>
+			</nav>
+		</section>
+	</main>
+	<script>
+		const loginForm = document.getElementById("login-form");
+		const usernameInput = document.getElementById("username");
+		const emailError = document.getElementById("email-error");
+		const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+		function validateEmail() {
+			const value = usernameInput.value.trim();
+			const invalidEmail = value.includes("@") && !emailPattern.test(value);
+
+			usernameInput.setCustomValidity(invalidEmail ? "Enter a valid email address." : "");
+			usernameInput.setAttribute("aria-invalid", String(invalidEmail));
+			emailError.hidden = !invalidEmail;
+			return !invalidEmail;
+		}
+
+		usernameInput.addEventListener("input", validateEmail);
+		loginForm.addEventListener("submit", (event) => {
+			if (!validateEmail()) {
+				event.preventDefault();
+				usernameInput.reportValidity();
+			}
+		});
+	</script>
+</body>
+</html>

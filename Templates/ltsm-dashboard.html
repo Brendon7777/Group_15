@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% set active_page = "committee" %}
+{% block title %}Committee Dashboard | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.committee-dashboard) { background: #f4f5f8; }
+		body:has(.committee-dashboard) .site-navigation { background: #035e82; }
+		body:has(.committee-dashboard) .nav-link { color: #eaf6f9; }
+		body:has(.committee-dashboard) .nav-link:hover,
+		body:has(.committee-dashboard) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.committee-nav {
+			margin-bottom: .25rem;
+			overflow: hidden;
+			border-radius: 10px;
+			background: #035e82;
+			box-shadow: 0 5px 14px rgba(3, 94, 130, .16);
+		}
+		.committee-nav__inner {
+			display: flex;
+			align-items: stretch;
+			gap: .25rem;
+			overflow-x: auto;
+			scrollbar-width: thin;
+		}
+		.committee-nav__link {
+			min-height: 48px;
+			padding: .75rem 1rem;
+			display: inline-flex;
+			flex: 0 0 auto;
+			align-items: center;
+			color: #eaf6f9;
+			font-size: .86rem;
+			font-weight: 650;
+			text-decoration: none;
+			transition: background .15s ease, color .15s ease;
+		}
+		.committee-nav__link:hover, .committee-nav__link[aria-current="page"] {
+			border-radius: 7px;
+			background: #008bb2;
+			color: #fff;
+		}
+		.committee-nav__link:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+		.committee-dashboard .page-heading {
+			position: relative;
+			min-height: 190px;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.committee-dashboard .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.committee-dashboard .page-heading > div,
+		.committee-dashboard .page-heading > .button { position: relative; z-index: 1; }
+		.committee-dashboard .page-heading .eyebrow { color: #a9e9db; }
+		.committee-dashboard .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.committee-dashboard .page-heading p:last-child { color: #e5f2f5; }
+		.committee-dashboard .page-heading .button {
+			border-color: rgba(255, 255, 255, .35);
+			border-radius: 8px;
+			background: #0daa88;
+			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		}
+		.committee-dashboard .page-heading .button:hover { background: #0b9678; }
+		.committee-dashboard .stat-card {
+			overflow: hidden;
+			border: 0;
+			border-radius: 10px;
+			color: #fff;
+			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
+		}
+		.committee-dashboard .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.committee-dashboard .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.committee-dashboard .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
+		.committee-dashboard .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
+		.committee-dashboard .stat-label, .committee-dashboard .stat-note { color: #e5f2f5; }
+		.committee-dashboard .stat-value { color: #fff; }
+		.committee-dashboard .panel {
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.committee-dashboard .panel-heading { padding-bottom: .85rem; border-bottom: 1px solid #edf0f3; }
+		.committee-dashboard .panel-heading h2 { color: #035e82; }
+		.committee-dashboard .panel-heading > a { color: #007a9d; font-weight: 700; text-underline-offset: 3px; }
+		.committee-dashboard table thead { background: #eaf2f5; }
+		.committee-dashboard table th { color: #035e82; }
+		.committee-dashboard table td { color: #46545d; }
+		.committee-dashboard .action-link { border-color: #e0e3e9; border-radius: 7px; }
+		.committee-dashboard .action-link:hover { border-color: #b7d8e0; background: #eaf6f7; }
+		.committee-dashboard {
+			display: grid;
+			gap: 1.35rem;
+		}
+		.committee-dashboard .page-heading { min-height: 200px; margin-bottom: 0; }
+		.committee-dashboard .stats-grid {
+			margin: 0;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 1rem;
+		}
+		.committee-dashboard .stat-card {
+			min-height: 148px;
+			padding: 1.25rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: .75rem;
+		}
+		.committee-dashboard .stat-label { margin: 0; font-size: .84rem; font-weight: 650; }
+		.committee-dashboard .stat-value { font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
+		.committee-dashboard .stat-note { margin: 0; font-size: .8rem; line-height: 1.4; }
+		.committee-dashboard .content-grid {
+			grid-template-columns: minmax(0, 1.65fr) minmax(270px, .85fr);
+			gap: 1.25rem;
+			align-items: start;
+		}
+		.committee-dashboard .stack { gap: 1.25rem; }
+		.committee-dashboard .panel { min-width: 0; padding: 1.4rem; }
+		.committee-dashboard .panel-heading { margin-bottom: 1.2rem; gap: 1rem; }
+		.committee-dashboard .panel-heading p { line-height: 1.5; }
+		.committee-dashboard .panel-heading > a { flex: 0 0 auto; }
+		.committee-dashboard table { min-width: 560px; }
+		.committee-dashboard table th { padding: .85rem .75rem; }
+		.committee-dashboard table td { padding: .95rem .75rem; line-height: 1.45; }
+		.committee-dashboard tbody tr { transition: background .15s ease; }
+		.committee-dashboard tbody tr:hover { background: #f7fafb; }
+		.committee-dashboard .action-list { gap: .7rem; }
+		.committee-dashboard .action-link { min-height: 52px; padding: .8rem .9rem; }
+		@media (max-width: 850px) {
+			.committee-dashboard .content-grid { grid-template-columns: 1fr; }
+			.committee-dashboard .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		}
+		@media (max-width: 560px) {
+			.committee-dashboard .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.committee-dashboard .page-heading .button { width: 100%; }
+			.committee-dashboard .page-heading::after { right: -150px; }
+			.committee-dashboard { gap: 1rem; }
+			.committee-dashboard .panel { padding: 1rem; }
+			.committee-dashboard .panel-heading { flex-wrap: wrap; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="committee-dashboard">
+	<nav class="committee-nav" aria-label="LTSM committee navigation">
+		<div class="committee-nav__inner">
+			<a class="committee-nav__link" href="ltsm-dashboard.html" aria-current="page">Dashboard</a>
+			<a class="committee-nav__link" href="manage-inventory.html">Inventory</a>
+			<a class="committee-nav__link" href="my-requests.html">Requests</a>
+			<a class="committee-nav__link" href="book-equipment.html">Equipment bookings</a>
+			<a class="committee-nav__link" href="issue-return.html">Issue / return</a>
+			<a class="committee-nav__link" href="maintenance.html">Maintenance</a>
+			<a class="committee-nav__link" href="reports.html">Reports</a>
+		</div>
+	</nav>
+	<header class="page-heading">
+		<div>
+			<p class="eyebrow">Committee workspace</p>
+			<h1>Resource management</h1>
+			<p>Monitor inventory, respond to requests and keep school equipment in service.</p>
+		</div>
+		<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
+	</header>
+
+	<section class="stats-grid" aria-label="Committee summary">
+		<article class="stat-card"><span class="stat-label">Items in inventory</span><strong class="stat-value">1,248</strong><span class="stat-note">Across 8 categories</span></article>
+		<article class="stat-card"><span class="stat-label">Pending requests</span><strong class="stat-value">12</strong><span class="stat-note">4 submitted today</span></article>
+		<article class="stat-card"><span class="stat-label">Low-stock items</span><strong class="stat-value">5</strong><span class="stat-note">Review replenishment</span></article>
+		<article class="stat-card"><span class="stat-label">Equipment bookings</span><strong class="stat-value">8</strong><span class="stat-note">3 due this week</span></article>
+	</section>
+
+	<div class="content-grid">
+		<div class="stack">
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Review requests and record the next action.</p></div><a href="my-requests.html">All requests</a></div>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>Request</th><th>Requested by</th><th>Date</th><th>Priority</th><th>Action</th></tr></thead>
+						<tbody>
+							<tr><td>Grade 8 science workbooks</td><td>A. Mokoena</td><td>26 Oct</td><td><span class="badge badge--warning">Medium</span></td><td><a href="my-requests.html">Review</a></td></tr>
+							<tr><td>Whiteboard markers (class pack)</td><td>S. Naidoo</td><td>25 Oct</td><td><span class="badge">Normal</span></td><td><a href="my-requests.html">Review</a></td></tr>
+							<tr><td>Calculator set</td><td>T. Dlamini</td><td>24 Oct</td><td><span class="badge badge--danger">High</span></td><td><a href="my-requests.html">Review</a></td></tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Equipment bookings</h2><p>Upcoming reservations that need attention.</p></div><a href="book-equipment.html">Manage bookings</a></div>
+				<div class="table-wrap">
+					<table>
+						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th></tr></thead>
+						<tbody>
+							<tr><td>Projector · Room 12</td><td>J. Smith</td><td>28 Oct, 10:00</td><td><span class="badge">Confirmed</span></td></tr>
+							<tr><td>Tablet set · Library</td><td>P. Khumalo</td><td>29 Oct, 09:00</td><td><span class="badge badge--warning">Awaiting approval</span></td></tr>
+							<tr><td>Portable speaker</td><td>L. Molefe</td><td>30 Oct, 12:00</td><td><span class="badge">Confirmed</span></td></tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+		</div>
+		<aside class="stack">
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Low-stock alerts</h2><p>Items at or below their reorder point.</p></div></div>
+				<ul class="action-list">
+					<li><a class="action-link" href="manage-inventory.html"><span>A4 exercise books</span><span class="badge badge--danger">8 left</span></a></li>
+					<li><a class="action-link" href="manage-inventory.html"><span>Whiteboard markers</span><span class="badge badge--warning">12 left</span></a></li>
+					<li><a class="action-link" href="manage-inventory.html"><span>Grade 7 mathematics</span><span class="badge badge--danger">4 left</span></a></li>
+				</ul>
+			</section>
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
+				<ul class="action-list">
+					<li><a class="action-link" href="manage-inventory.html">Manage inventory <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="issue-return.html">Issue or return items <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="maintenance.html">Log maintenance <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="reports.html">View reports <span aria-hidden="true">→</span></a></li>
+				</ul>
+			</section>
+		</aside>
+	</div>
+	</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% set active_page = "reports" %}
+{% block title %}Reports | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.reports-page) { background: #f4f5f8; }
+		body:has(.reports-page) .site-navigation { background: #035e82; }
+		body:has(.reports-page) .nav-link { color: #eaf6f9; }
+		body:has(.reports-page) .nav-link:hover,
+		body:has(.reports-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.reports-page { display: grid; gap: 1.35rem; }
+		.reports-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.reports-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.reports-page .page-heading > div,
+		.reports-page .page-heading > .button { position: relative; z-index: 1; }
+		.reports-page .page-heading .eyebrow { color: #a9e9db; }
+		.reports-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.reports-page .page-heading p:last-child { color: #e5f2f5; }
+		.reports-page .page-heading .button {
+			border-color: rgba(255, 255, 255, .35);
+			border-radius: 8px;
+			background: #0daa88;
+			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		}
+		.reports-page .page-heading .button:hover { background: #0b9678; }
+		.reports-page > .notice { margin: 0; border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.reports-page .stats-grid { margin: 0; gap: 1rem; }
+		.reports-page .stat-card {
+			min-height: 148px;
+			padding: 1.2rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: .75rem;
+			border: 0;
+			border-radius: 10px;
+			color: #fff;
+			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
+		}
+		.reports-page .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.reports-page .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.reports-page .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
+		.reports-page .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
+		.reports-page .stat-label, .reports-page .stat-note { margin: 0; color: #e5f2f5; }
+		.reports-page .stat-label { font-size: .84rem; font-weight: 650; }
+		.reports-page .stat-value { color: #fff; font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
+		.reports-page .stat-note { font-size: .8rem; line-height: 1.4; }
+		.reports-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr); gap: 1.25rem; align-items: start; }
+		.reports-page .stack { gap: 1.25rem; }
+		.reports-page .panel {
+			min-width: 0;
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.reports-page .panel-heading { margin-bottom: 1.2rem; }
+		.reports-page .panel-heading h2 { color: #035e82; font-size: 1.25rem; }
+		.reports-page .panel-heading p { line-height: 1.5; }
+		.reports-page .table-wrap { border: 1px solid #e5e9ed; border-radius: 8px; }
+		.reports-page table { min-width: 540px; }
+		.reports-page table thead { background: #eaf2f5; }
+		.reports-page table th { padding: .85rem .75rem; color: #035e82; }
+		.reports-page table td { padding: .95rem .75rem; color: #46545d; }
+		.reports-page tbody tr { transition: background .15s ease; }
+		.reports-page tbody tr:hover { background: #f7fafb; }
+		.reports-page .action-list { gap: .7rem; }
+		.reports-page .action-link { min-height: 52px; padding: .8rem .9rem; border-color: #e0e3e9; border-radius: 7px; }
+		.reports-page .action-link:hover { border-color: #b7d8e0; background: #eaf6f7; }
+		@media (max-width: 850px) {
+			.reports-page .content-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 560px) {
+			.reports-page { gap: 1rem; }
+			.reports-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.reports-page .page-heading::after { right: -150px; }
+			.reports-page .page-heading .button { width: 100%; justify-content: center; }
+			.reports-page .stats-grid { grid-template-columns: 1fr; }
+			.reports-page .panel { padding: 1rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.reports-page tbody tr { transition: none; }
+		}
+		@media print {
+			body:has(.reports-page) { background: #fff; }
+			body:has(.reports-page) .site-header,
+			body:has(.reports-page) .site-navigation,
+			body:has(.reports-page) .site-footer,
+			.reports-page .page-heading .button { display: none; }
+			.reports-page { gap: 1rem; }
+			.reports-page .page-heading { min-height: 0; padding: 0; color: #000; background: #fff; box-shadow: none; }
+			.reports-page .page-heading::after { display: none; }
+			.reports-page .page-heading h1, .reports-page .page-heading .eyebrow,
+			.reports-page .page-heading p:last-child { color: #000; }
+			.reports-page .panel { break-inside: avoid; box-shadow: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="reports-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Review sample stock, request and equipment activity summaries.</p></div>
+		<button class="button" id="print-report" type="button">Print report</button>
+	</header>
+	<div class="notice">All figures on this page are illustrative sample data, not live school records.</div>
+	<section class="stats-grid" aria-label="Report highlights">
+		<article class="stat-card"><span class="stat-label">Resources in catalogue</span><strong class="stat-value">1,248</strong><span class="stat-note">Current sample inventory</span></article>
+		<article class="stat-card"><span class="stat-label">Requests this month</span><strong class="stat-value">46</strong><span class="stat-note">31 approved · 12 pending</span></article>
+		<article class="stat-card"><span class="stat-label">Equipment utilisation</span><strong class="stat-value">72%</strong><span class="stat-note">Bookings over the past month</span></article>
+		<article class="stat-card"><span class="stat-label">Maintenance issues</span><strong class="stat-value">5</strong><span class="stat-note">3 open · 2 in repair</span></article>
+	</section>
+	<div class="content-grid">
+		<section class="panel">
+			<div class="panel-heading"><div><h2>Category stock summary</h2><p>Sample distribution by resource category.</p></div></div>
+			<div class="table-wrap">
+				<table><thead><tr><th>Category</th><th>Catalogue items</th><th>Available</th><th>Low stock</th><th>Condition</th></tr></thead>
+					<tbody>
+						<tr><td>Textbooks</td><td>582</td><td>516</td><td>2</td><td><span class="badge">Healthy</span></td></tr>
+						<tr><td>Stationery</td><td>428</td><td>376</td><td>3</td><td><span class="badge badge--warning">Review stock</span></td></tr>
+						<tr><td>Equipment</td><td>148</td><td>129</td><td>0</td><td><span class="badge">Healthy</span></td></tr>
+						<tr><td>Other resources</td><td>90</td><td>85</td><td>0</td><td><span class="badge">Healthy</span></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+		<aside class="stack">
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Requests by status</h2><p>Current sample request queue.</p></div></div>
+				<ul class="action-list">
+					<li class="action-link"><span>Approved</span><span class="badge">31</span></li>
+					<li class="action-link"><span>In review</span><span class="badge badge--warning">12</span></li>
+					<li class="action-link"><span>Declined</span><span class="badge badge--danger">3</span></li>
+				</ul>
+			</section>
+			<section class="panel">
+				<div class="panel-heading"><div><h2>Related tools</h2><p>Open records behind this summary.</p></div></div>
+				<ul class="action-list">
+					<li><a class="action-link" href="manage-inventory.html">Inventory <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="my-requests.html">Requests <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="maintenance.html">Maintenance <span aria-hidden="true">→</span></a></li>
+				</ul>
+			</section>
+		</aside>
+	</div>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		document.getElementById("print-report").addEventListener("click", () => window.print());
+	</script>
+{% endblock %}

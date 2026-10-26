@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% set active_page = "request" %}
+{% block title %}Request Resources | LTSM Portal{% endblock %}
+{% block role %}Teacher / Learner{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.request-resource-page) { background: #f4f5f8; }
+		body:has(.request-resource-page) .site-navigation { background: #035e82; }
+		body:has(.request-resource-page) .nav-link { color: #eaf6f9; }
+		body:has(.request-resource-page) .nav-link:hover,
+		body:has(.request-resource-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.request-resource-page { display: grid; gap: 1.35rem; }
+		.request-resource-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.request-resource-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.request-resource-page .page-heading > div,
+		.request-resource-page .page-heading > .button { position: relative; z-index: 1; }
+		.request-resource-page .page-heading .eyebrow { color: #a9e9db; }
+		.request-resource-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.request-resource-page .page-heading p:last-child { color: #e5f2f5; }
+		.request-resource-page .page-heading .button {
+			border: 1px solid rgba(255, 255, 255, .45);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, .12);
+			color: #fff;
+		}
+		.request-resource-page .page-heading .button:hover { background: rgba(255, 255, 255, .22); }
+		.request-resource-page .content-grid { grid-template-columns: minmax(0, 1.35fr) minmax(270px, .8fr); gap: 1.25rem; align-items: start; }
+		.request-resource-page .panel {
+			min-width: 0;
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.request-resource-page .panel > h2 { margin-bottom: 1rem; color: #035e82; font-size: 1.25rem; }
+		.request-resource-page .panel ul { margin: 0; padding-left: 1.2rem; color: #46545d; }
+		.request-resource-page .panel li + li { margin-top: .7rem; }
+		.request-resource-page .panel > p { color: #62727a; line-height: 1.55; }
+		.request-resource-page .notice { border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.request-resource-page .form-grid { column-gap: 1rem; }
+		.request-resource-page .form-field { margin-bottom: 1.1rem; }
+		.request-resource-page .form-field label { color: #344b55; font-weight: 650; }
+		.request-resource-page .form-field input,
+		.request-resource-page .form-field select,
+		.request-resource-page .form-field textarea {
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.request-resource-page .form-field input:focus,
+		.request-resource-page .form-field select:focus,
+		.request-resource-page .form-field textarea:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.request-resource-page form > .form-actions { margin-top: .35rem; }
+		.request-resource-page .form-actions .button { min-height: 46px; border-radius: 7px; }
+		.request-resource-page .form-actions .button:first-child { border-color: #035e82; background: #035e82; }
+		.request-resource-page .form-actions .button:first-child:hover { background: #007a9d; }
+		.request-resource-page .form-actions .button-secondary { border-color: #b7d8e0; background: #fff; color: #035e82; }
+		.request-resource-page .form-actions .button-secondary:hover { background: #eaf6f7; color: #035e82; }
+		@media (max-width: 850px) {
+			.request-resource-page .content-grid { grid-template-columns: 1fr; }
+			.request-resource-page .stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		}
+		@media (max-width: 560px) {
+			.request-resource-page { gap: 1rem; }
+			.request-resource-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.request-resource-page .page-heading::after { right: -150px; }
+			.request-resource-page .page-heading .button { width: 100%; justify-content: center; }
+			.request-resource-page .panel { padding: 1rem; }
+			.request-resource-page .form-grid, .request-resource-page .stack { grid-template-columns: 1fr; }
+			.request-resource-page .form-actions { align-items: stretch; flex-direction: column; }
+			.request-resource-page .form-actions .button { width: 100%; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="request-resource-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Resource support</p><h1>Request a resource</h1><p>Tell the LTSM committee what you need and how it will be used.</p></div>
+		<a class="button button-secondary" href="my-requests.html">Track my requests</a>
+	</header>
+
+	<div class="content-grid">
+		<section class="panel">
+			<h2>Request details</h2>
+			<div class="notice">This frontend preview validates your request but does not save it. Connect this form to the application backend to submit real requests.</div>
+			<form id="request-form">
+				<div class="form-grid">
+					<div class="form-field">
+						<label for="resource-name">Resource name</label>
+						<input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required>
+						<datalist id="catalogue-items"><option value="Natural Sciences Grade 8 textbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist>
+					</div>
+					<div class="form-field">
+						<label for="category">Category</label>
+						<select id="category" name="category" required><option value="" disabled selected>Select a category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select>
+					</div>
+					<div class="form-field">
+						<label for="quantity">Quantity</label>
+						<input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required>
+						<small>Enter a quantity between 1 and 100.</small>
+					</div>
+					<div class="form-field">
+						<label for="needed-by">Needed by</label>
+						<input id="needed-by" name="needed_by" type="date" required>
+					</div>
+					<div class="form-field form-field--wide">
+						<label for="purpose">Reason for request</label>
+						<textarea id="purpose" name="purpose" minlength="10" maxlength="500" placeholder="Describe how this resource will support learning or teaching." required></textarea>
+						<small>Include enough detail for the committee to review your request (10–500 characters).</small>
+					</div>
+				</div>
+				<div id="request-feedback" class="notice notice--success" role="status" hidden>Request validated. This preview does not save or send requests yet.</div>
+				<div class="form-actions"><button class="button" type="submit">Review request</button><a class="button button-secondary" href="view-resources.html">Browse resources</a></div>
+			</form>
+		</section>
+		<aside class="stack">
+			<section class="panel"><h2>What happens next?</h2><ul><li>The committee reviews your request.</li><li>You can check its progress on My Requests.</li><li>Approved resources will be arranged for collection.</li></ul></section>
+			<section class="panel"><h2>Need something already listed?</h2><p style="color:var(--muted)">Check availability in the catalogue before making a request.</p><a class="button button-secondary button-small" href="view-resources.html">Browse catalogue</a></section>
+		</aside>
+	</div>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const requestForm = document.getElementById("request-form");
+		const neededByInput = document.getElementById("needed-by");
+		const feedback = document.getElementById("request-feedback");
+		const today = new Date();
+		const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+		neededByInput.min = localToday;
+
+		requestForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (!requestForm.reportValidity()) return;
+			feedback.hidden = false;
+			feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		});
+	</script>
+{% endblock %}

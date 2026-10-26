@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% set active_page = "my-requests" %}
+{% block title %}My Requests | LTSM Portal{% endblock %}
+{% block role %}Teacher / Learner{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.requests-page) { background: #f4f5f8; }
+		body:has(.requests-page) .site-navigation { background: #035e82; }
+		body:has(.requests-page) .nav-link { color: #eaf6f9; }
+		body:has(.requests-page) .nav-link:hover,
+		body:has(.requests-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.requests-page { display: grid; gap: 1.35rem; }
+		.requests-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.requests-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.requests-page .page-heading > div,
+		.requests-page .page-heading > .button { position: relative; z-index: 1; }
+		.requests-page .page-heading .eyebrow { color: #a9e9db; }
+		.requests-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.requests-page .page-heading p:last-child { color: #e5f2f5; }
+		.requests-page .page-heading .button {
+			border-color: rgba(255, 255, 255, .35);
+			border-radius: 8px;
+			background: #0daa88;
+			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		}
+		.requests-page .page-heading .button:hover { background: #0b9678; }
+		.requests-page > .notice { margin: 0; border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.requests-page .panel {
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.requests-page .toolbar { gap: .75rem; }
+		.requests-page .search-input {
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.requests-page .search-input:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.requests-page .toolbar > a { color: #007a9d; font-size: .88rem; font-weight: 700; text-underline-offset: 3px; }
+		.requests-page .table-wrap { border: 1px solid #e5e9ed; border-radius: 8px; }
+		.requests-page table { min-width: 760px; }
+		.requests-page table thead { background: #eaf2f5; }
+		.requests-page table th { padding: .85rem .75rem; color: #035e82; }
+		.requests-page table td { padding: .95rem .75rem; color: #46545d; line-height: 1.45; }
+		.requests-page tbody tr { transition: background .15s ease; }
+		.requests-page tbody tr:hover { background: #f7fafb; }
+		.requests-page .empty-state { margin: 0; }
+		@media (max-width: 560px) {
+			.requests-page { gap: 1rem; }
+			.requests-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.requests-page .page-heading::after { right: -150px; }
+			.requests-page .page-heading .button { width: 100%; justify-content: center; }
+			.requests-page .panel { padding: 1rem; }
+			.requests-page .toolbar { align-items: stretch; }
+			.requests-page .toolbar > a { padding: .5rem 0; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.requests-page tbody tr { transition: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="requests-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Request tracking</p><h1>My requests</h1><p>Review the status and latest update for each submitted request.</p></div>
+		<a class="button" href="request-resources.html">＋ New request</a>
+	</header>
+
+	<div class="notice">The requests shown here are sample records for the frontend preview.</div>
+	<section class="panel">
+		<div class="toolbar">
+			<label for="request-status" style="position:absolute;left:-10000px">Filter requests by status</label>
+			<select id="request-status" class="search-input" data-status-filter="requests-table">
+				<option value="">All statuses</option><option value="In review">In review</option><option value="Approved">Approved</option><option value="Ready for collection">Ready for collection</option><option value="Declined">Declined</option>
+			</select>
+			<a href="view-resources.html">Browse catalogue</a>
+		</div>
+		<div class="table-wrap">
+			<table id="requests-table">
+				<thead><tr><th>Request</th><th>Category</th><th>Submitted</th><th>Quantity</th><th>Status</th><th>Latest update</th></tr></thead>
+				<tbody>
+					<tr data-status="In review"><td>Grade 8 science workbook</td><td>Textbooks</td><td>24 Oct 2026</td><td>30</td><td><span class="badge badge--warning">In review</span></td><td>Committee review in progress</td></tr>
+					<tr data-status="Approved"><td>Whiteboard markers</td><td>Stationery</td><td>20 Oct 2026</td><td>2 packs</td><td><span class="badge">Approved</span></td><td>Approved · collection details to follow</td></tr>
+					<tr data-status="Ready for collection"><td>Geometry sets</td><td>Stationery</td><td>15 Oct 2026</td><td>5</td><td><span class="badge badge--blue">Ready for collection</span></td><td>Collect from the resource office</td></tr>
+					<tr data-status="Declined"><td>Personal laptop</td><td>Equipment</td><td>10 Oct 2026</td><td>1</td><td><span class="badge badge--danger">Declined</span></td><td>Outside the school equipment catalogue</td></tr>
+				</tbody>
+			</table>
+			<p class="empty-state" id="no-requests" hidden>No requests have this status.</p>
+		</div>
+	</section>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const statusFilter = document.querySelector("[data-status-filter]");
+		const requestRows = document.querySelectorAll("#requests-table tbody tr");
+		const emptyMessage = document.getElementById("no-requests");
+
+		statusFilter.addEventListener("change", () => {
+			let visibleCount = 0;
+			for (const row of requestRows) {
+				const visible = !statusFilter.value || row.dataset.status === statusFilter.value;
+				row.hidden = !visible;
+				if (visible) visibleCount++;
+			}
+			emptyMessage.hidden = visibleCount > 0;
+		});
+	</script>
+{% endblock %}

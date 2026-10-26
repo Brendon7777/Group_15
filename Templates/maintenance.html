@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% set active_page = "maintenance" %}
+{% block title %}Maintenance | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.maintenance-page) { background: #f4f5f8; }
+		body:has(.maintenance-page) .site-navigation { background: #035e82; }
+		body:has(.maintenance-page) .nav-link { color: #eaf6f9; }
+		body:has(.maintenance-page) .nav-link:hover,
+		body:has(.maintenance-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.maintenance-page { display: grid; gap: 1.35rem; }
+		.maintenance-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.maintenance-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.maintenance-page .page-heading > div,
+		.maintenance-page .page-heading > .button { position: relative; z-index: 1; }
+		.maintenance-page .page-heading .eyebrow { color: #a9e9db; }
+		.maintenance-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.maintenance-page .page-heading p:last-child { color: #e5f2f5; }
+		.maintenance-page .page-heading .button {
+			border: 1px solid rgba(255, 255, 255, .45);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, .12);
+			color: #fff;
+		}
+		.maintenance-page .page-heading .button:hover { background: rgba(255, 255, 255, .22); }
+		.maintenance-page .stats-grid { margin: 0; gap: 1rem; }
+		.maintenance-page .stat-card {
+			min-height: 148px;
+			padding: 1.2rem;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: .75rem;
+			border: 0;
+			border-radius: 10px;
+			color: #fff;
+			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
+		}
+		.maintenance-page .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.maintenance-page .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.maintenance-page .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
+		.maintenance-page .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
+		.maintenance-page .stat-label, .maintenance-page .stat-note { margin: 0; color: #e5f2f5; }
+		.maintenance-page .stat-label { font-size: .84rem; font-weight: 650; }
+		.maintenance-page .stat-value { color: #fff; font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
+		.maintenance-page .stat-note { font-size: .8rem; line-height: 1.4; }
+		.maintenance-page .content-grid { grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 1.25rem; align-items: start; }
+		.maintenance-page .panel {
+			min-width: 0;
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.maintenance-page .panel > h2, .maintenance-page .panel-heading h2 { margin-bottom: .3rem; color: #035e82; font-size: 1.25rem; }
+		.maintenance-page .panel > h2 { margin-bottom: 1rem; }
+		.maintenance-page .notice { border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.maintenance-page .form-grid { column-gap: 1rem; }
+		.maintenance-page .form-field { margin-bottom: 1.1rem; }
+		.maintenance-page .form-field label { color: #344b55; font-weight: 650; }
+		.maintenance-page .form-field input,
+		.maintenance-page .form-field select,
+		.maintenance-page .form-field textarea {
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.maintenance-page .form-field input:focus,
+		.maintenance-page .form-field select:focus,
+		.maintenance-page .form-field textarea:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.maintenance-page form > .button {
+			min-height: 46px;
+			border-color: #035e82;
+			border-radius: 7px;
+			background: #035e82;
+		}
+		.maintenance-page form > .button:hover { background: #007a9d; }
+		.maintenance-page .table-wrap { border: 1px solid #e5e9ed; border-radius: 8px; }
+		.maintenance-page table { min-width: 500px; }
+		.maintenance-page table thead { background: #eaf2f5; }
+		.maintenance-page table th { padding: .85rem .75rem; color: #035e82; }
+		.maintenance-page table td { padding: .95rem .75rem; color: #46545d; }
+		.maintenance-page tbody tr { transition: background .15s ease; }
+		.maintenance-page tbody tr:hover { background: #f7fafb; }
+		@media (max-width: 850px) {
+			.maintenance-page .content-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 560px) {
+			.maintenance-page { gap: 1rem; }
+			.maintenance-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.maintenance-page .page-heading::after { right: -150px; }
+			.maintenance-page .page-heading .button { width: 100%; justify-content: center; }
+			.maintenance-page .stats-grid, .maintenance-page .form-grid { grid-template-columns: 1fr; }
+			.maintenance-page .panel { padding: 1rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.maintenance-page tbody tr { transition: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="maintenance-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Equipment care</p><h1>Maintenance log</h1><p>Report faults and follow equipment through repair and return to service.</p></div>
+		<a class="button button-secondary" href="manage-inventory.html">View inventory</a>
+	</header>
+	<section class="stats-grid" aria-label="Maintenance summary">
+		<article class="stat-card"><span class="stat-label">Open issues</span><strong class="stat-value">3</strong><span class="stat-note">Awaiting attention</span></article>
+		<article class="stat-card"><span class="stat-label">In repair</span><strong class="stat-value">2</strong><span class="stat-note">With service provider</span></article>
+		<article class="stat-card"><span class="stat-label">Resolved this month</span><strong class="stat-value">7</strong><span class="stat-note">Returned to service</span></article>
+		<article class="stat-card"><span class="stat-label">Out of service</span><strong class="stat-value">2</strong><span class="stat-note">Unavailable for booking</span></article>
+	</section>
+	<div class="content-grid">
+		<section class="panel">
+			<h2>Log a maintenance issue</h2>
+			<div class="notice">Sample frontend only. This form does not notify a technician or change equipment availability.</div>
+			<form id="maintenance-form">
+				<div class="form-grid">
+					<div class="form-field"><label for="equipment-name">Equipment / item</label><input id="equipment-name" name="equipment" list="equipment-options" maxlength="100" required><datalist id="equipment-options"><option value="Classroom projector"><option value="Tablet set"><option value="Portable speaker"><option value="Document camera"></datalist></div>
+					<div class="form-field"><label for="reported-by">Reported by</label><input id="reported-by" name="reported_by" maxlength="80" required></div>
+					<div class="form-field"><label for="issue-priority">Priority</label><select id="issue-priority" name="priority" required><option value="" selected disabled>Select priority</option><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+					<div class="form-field"><label for="issue-date">Date reported</label><input id="issue-date" name="date" type="date" required></div>
+					<div class="form-field form-field--wide"><label for="issue-description">Describe the issue</label><textarea id="issue-description" name="description" minlength="10" maxlength="500" placeholder="Describe the fault, damage or service required." required></textarea><small>Provide at least 10 characters to describe the problem.</small></div>
+				</div>
+				<div id="maintenance-feedback" class="notice notice--success" role="status" hidden>Issue details validated. No maintenance ticket was created.</div>
+				<button class="button" type="submit">Validate maintenance report</button>
+			</form>
+		</section>
+		<section class="panel">
+			<div class="panel-heading"><div><h2>Recent maintenance</h2><p>Sample service records.</p></div></div>
+			<div class="table-wrap">
+				<table><thead><tr><th>Item</th><th>Issue</th><th>Reported</th><th>Status</th></tr></thead>
+					<tbody>
+						<tr><td>Projector · PRJ-014</td><td>HDMI connection intermittent</td><td>25 Oct</td><td><span class="badge badge--warning">In repair</span></td></tr>
+						<tr><td>Tablet · TAB-022</td><td>Screen does not respond</td><td>23 Oct</td><td><span class="badge badge--danger">Out of service</span></td></tr>
+						<tr><td>Speaker · SPK-005</td><td>Battery replacement</td><td>20 Oct</td><td><span class="badge">Resolved</span></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	</div>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const maintenanceForm = document.getElementById("maintenance-form");
+		const reportDate = document.getElementById("issue-date");
+		const today = new Date();
+		reportDate.max = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+		maintenanceForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (maintenanceForm.reportValidity()) document.getElementById("maintenance-feedback").hidden = false;
+		});
+	</script>
+{% endblock %}

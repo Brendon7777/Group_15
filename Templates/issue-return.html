@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% set active_page = "issue-return" %}
+{% block title %}Issue and Return Items | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
+		body:has(.issue-return-page) { background: #f4f5f8; }
+		body:has(.issue-return-page) .site-navigation { background: #035e82; }
+		body:has(.issue-return-page) .nav-link { color: #eaf6f9; }
+		body:has(.issue-return-page) .nav-link:hover,
+		body:has(.issue-return-page) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
+		.issue-return-page { display: grid; gap: 1.35rem; }
+		.issue-return-page .page-heading {
+			position: relative;
+			min-height: 190px;
+			margin-bottom: 0;
+			padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center;
+			overflow: hidden;
+			border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.issue-return-page .page-heading::after {
+			position: absolute;
+			top: -120px;
+			right: 14%;
+			width: 300px;
+			height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.issue-return-page .page-heading > div,
+		.issue-return-page .page-heading > .button { position: relative; z-index: 1; }
+		.issue-return-page .page-heading .eyebrow { color: #a9e9db; }
+		.issue-return-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
+		.issue-return-page .page-heading p:last-child { color: #e5f2f5; }
+		.issue-return-page .page-heading .button {
+			border: 1px solid rgba(255, 255, 255, .45);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, .12);
+			color: #fff;
+		}
+		.issue-return-page .page-heading .button:hover { background: rgba(255, 255, 255, .22); }
+		.issue-return-page .content-grid { grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 1.25rem; align-items: start; }
+		.issue-return-page .panel {
+			min-width: 0;
+			padding: 1.4rem;
+			border-color: #e0e3e9;
+			border-radius: 10px;
+			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
+		}
+		.issue-return-page .panel > h2, .issue-return-page .panel-heading h2 { margin-bottom: .3rem; color: #035e82; font-size: 1.25rem; }
+		.issue-return-page .panel > h2 { margin-bottom: 1rem; }
+		.issue-return-page .notice { border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
+		.issue-return-page .form-grid { column-gap: 1rem; }
+		.issue-return-page .form-field { margin-bottom: 1.1rem; }
+		.issue-return-page .form-field label { color: #344b55; font-weight: 650; }
+		.issue-return-page .form-field input,
+		.issue-return-page .form-field select {
+			min-height: 46px;
+			border-color: #d5dfe4;
+			border-radius: 7px;
+			background: #fff;
+		}
+		.issue-return-page .form-field input:focus,
+		.issue-return-page .form-field select:focus {
+			outline: 3px solid rgba(0, 139, 178, .16);
+			border-color: #008bb2;
+		}
+		.issue-return-page form > .button {
+			min-height: 46px;
+			border-color: #035e82;
+			border-radius: 7px;
+			background: #035e82;
+		}
+		.issue-return-page form > .button:hover { background: #007a9d; }
+		.issue-return-page .table-wrap { border: 1px solid #e5e9ed; border-radius: 8px; }
+		.issue-return-page table { min-width: 440px; }
+		.issue-return-page table thead { background: #eaf2f5; }
+		.issue-return-page table th { padding: .85rem .75rem; color: #035e82; }
+		.issue-return-page table td { padding: .95rem .75rem; color: #46545d; }
+		.issue-return-page tbody tr { transition: background .15s ease; }
+		.issue-return-page tbody tr:hover { background: #f7fafb; }
+		@media (max-width: 850px) {
+			.issue-return-page .content-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 560px) {
+			.issue-return-page { gap: 1rem; }
+			.issue-return-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
+			.issue-return-page .page-heading::after { right: -150px; }
+			.issue-return-page .page-heading .button { width: 100%; justify-content: center; }
+			.issue-return-page .panel { padding: 1rem; }
+			.issue-return-page .form-grid { grid-template-columns: 1fr; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.issue-return-page tbody tr { transition: none; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="issue-return-page">
+	<header class="page-heading">
+		<div><p class="eyebrow">Circulation desk</p><h1>Issue and return items</h1><p>Record loans, returns and due dates for school resources.</p></div>
+		<a class="button button-secondary" href="manage-inventory.html">View inventory</a>
+	</header>
+	<div class="content-grid">
+		<section class="panel">
+			<h2>Record an item movement</h2>
+			<div class="notice">This sample form checks required fields and does not update inventory or borrower records.</div>
+			<form id="movement-form">
+				<div class="form-grid">
+					<div class="form-field"><label for="movement-type">Action</label><select id="movement-type" name="movement_type" required><option value="" selected disabled>Select an action</option><option value="issue">Issue item</option><option value="return">Record return</option></select></div>
+					<div class="form-field"><label for="inventory-item">Item</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option><option>Natural Sciences Grade 8</option><option>Classroom projector</option><option>Geometry set</option><option>Tablet set · 10 devices</option></select></div>
+					<div class="form-field"><label for="borrower-id">Student / staff number</label><input id="borrower-id" name="borrower_id" autocomplete="off" maxlength="40" required></div>
+					<div class="form-field"><label for="movement-quantity">Quantity</label><input id="movement-quantity" name="quantity" type="number" min="1" max="100" value="1" required></div>
+					<div class="form-field"><label for="movement-date">Date</label><input id="movement-date" name="movement_date" type="date" required></div>
+					<div class="form-field" id="due-date-field"><label for="due-date">Due date</label><input id="due-date" name="due_date" type="date" required></div>
+				</div>
+				<div id="movement-feedback" class="notice notice--success" role="status" hidden>Movement details validated. No inventory or account data was changed.</div>
+				<button class="button" type="submit">Validate record</button>
+			</form>
+		</section>
+		<section class="panel">
+			<div class="panel-heading"><div><h2>Current loans</h2><p>Sample active issue records.</p></div></div>
+			<div class="table-wrap">
+				<table><thead><tr><th>Borrower</th><th>Item</th><th>Due</th><th>Status</th></tr></thead>
+					<tbody>
+						<tr><td>A. Mokoena</td><td>Science textbook</td><td>30 Oct</td><td><span class="badge">On loan</span></td></tr>
+						<tr><td>J. Smith</td><td>Classroom projector</td><td>28 Oct</td><td><span class="badge badge--warning">Due soon</span></td></tr>
+						<tr><td>T. Dlamini</td><td>Geometry set</td><td>23 Oct</td><td><span class="badge badge--danger">Overdue</span></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	</div>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		const movementForm = document.getElementById("movement-form");
+		const movementType = document.getElementById("movement-type");
+		const dueDateField = document.getElementById("due-date-field");
+		const dueDateInput = document.getElementById("due-date");
+		const movementDate = document.getElementById("movement-date");
+		const movementFeedback = document.getElementById("movement-feedback");
+		const today = new Date();
+		const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+		movementDate.value = localToday;
+		movementDate.max = localToday;
+		dueDateInput.min = localToday;
+
+		movementType.addEventListener("change", () => {
+			const isIssue = movementType.value === "issue";
+			dueDateField.hidden = !isIssue;
+			dueDateInput.required = isIssue;
+		});
+		dueDateInput.addEventListener("input", () => dueDateInput.setCustomValidity(""));
+		movementDate.addEventListener("input", () => dueDateInput.setCustomValidity(""));
+		movementForm.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (movementType.value === "issue" && dueDateInput.value < movementDate.value) {
+				dueDateInput.setCustomValidity("Due date cannot be before the issue date.");
+				dueDateInput.reportValidity();
+				return;
+			}
+			dueDateInput.setCustomValidity("");
+			if (!movementForm.reportValidity()) return;
+			movementFeedback.hidden = false;
+		});
+	</script>
+{% endblock %}
