@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "committee" %}
+<!-- Committee dashboard summarizing requests, equipment bookings, stock alerts, and management tasks. -->
 {% block title %}Committee Dashboard | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -85,8 +86,16 @@
 		}
 		.committee-dashboard .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
 		.committee-dashboard .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
-		.committee-dashboard .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
-		.committee-dashboard .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
+		.committee-dashboard .stat-card:nth-child(3) {
+			background: linear-gradient(145deg, #f2cf68, #e8b83f);
+			color: #3c3425;
+			box-shadow: 0 6px 16px rgba(160, 121, 28, .18);
+		}
+		.committee-dashboard .stat-card:nth-child(3) .stat-label,
+		.committee-dashboard .stat-card:nth-child(3) .stat-value,
+		.committee-dashboard .stat-card:nth-child(3) .stat-note { color: #3c3425; }
+		.committee-dashboard .stat-card:nth-child(3) .stat-card__icon { background: rgba(255, 255, 255, .4); }
+		.committee-dashboard .stat-card:nth-child(4) { background: linear-gradient(145deg, #7554a6, #593b88); }
 		.committee-dashboard .stat-label, .committee-dashboard .stat-note { color: #e5f2f5; }
 		.committee-dashboard .stat-value { color: #fff; }
 		.committee-dashboard .panel {
@@ -107,22 +116,45 @@
 			gap: 1.35rem;
 		}
 		.committee-dashboard .page-heading { min-height: 200px; margin-bottom: 0; }
+		.committee-dashboard .dashboard-overview { margin: 0 0 .85rem; }
+		.committee-dashboard .dashboard-overview__heading { margin: 0 0 .25rem; color: #035e82; font-size: 1.3rem; letter-spacing: -.025em; }
+		.committee-dashboard .dashboard-overview__copy { margin: 0; color: #687780; font-size: .88rem; }
 		.committee-dashboard .stats-grid {
 			margin: 0;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-			gap: 1rem;
+			display: grid !important;
+			width: max-content !important;
+			grid-template-columns: repeat(3, minmax(180px, 205px)) !important;
+			grid-auto-flow: row !important;
+			justify-content: start;
+			gap: .9rem;
 		}
+		.committee-dashboard .dashboard-stats-viewport { max-width: 100%; margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: .35rem; }
 		.committee-dashboard .stat-card {
-			min-height: 148px;
-			padding: 1.25rem;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-			gap: .75rem;
+			position: relative;
+			min-height: 146px;
+			padding: 1.15rem 1.2rem;
+			overflow: hidden;
+			border-color: transparent;
+			transition: transform .16s ease, box-shadow .16s ease;
 		}
-		.committee-dashboard .stat-label { margin: 0; font-size: .84rem; font-weight: 650; }
-		.committee-dashboard .stat-value { font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
-		.committee-dashboard .stat-note { margin: 0; font-size: .8rem; line-height: 1.4; }
+		.committee-dashboard .stat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(40, 55, 70, .16); }
+		.committee-dashboard .stat-card::after {
+			position: absolute;
+			right: -26px;
+			bottom: -46px;
+			width: 130px;
+			height: 130px;
+			border: 20px solid rgba(255, 255, 255, .12);
+			border-radius: 50%;
+			content: "";
+			pointer-events: none;
+		}
+		.committee-dashboard .stat-card__top { margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+		.committee-dashboard .stat-card__icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .18); color: inherit; font-size: 1.1rem; }
+		.committee-dashboard .stat-label { margin: 0; color: inherit; font-size: .8rem; font-weight: 650; }
+		.committee-dashboard .stat-reading { position: relative; z-index: 1; display: grid; justify-items: start; gap: .45rem; }
+		.committee-dashboard .stat-value { display: block; margin: 0; color: inherit; font-size: 2.2rem; font-weight: 780; letter-spacing: -.04em; line-height: 1.1; }
+		.committee-dashboard .stat-note { display: block; margin: 0; color: inherit; font-size: .76rem; line-height: 1.4; opacity: .86; }
 		.committee-dashboard .content-grid {
 			grid-template-columns: minmax(0, 1.65fr) minmax(270px, .85fr);
 			gap: 1.25rem;
@@ -140,9 +172,49 @@
 		.committee-dashboard tbody tr:hover { background: #f7fafb; }
 		.committee-dashboard .action-list { gap: .7rem; }
 		.committee-dashboard .action-link { min-height: 52px; padding: .8rem .9rem; }
+		.committee-dashboard .colored-action-list {
+			display: flex;
+			flex-direction: column;
+			gap: 0;
+		}
+		.committee-dashboard .colored-action-list > li + li { margin-top: 1rem; }
+		.committee-dashboard .colored-action-list .action-link {
+			min-height: 52px;
+			border-color: transparent;
+			color: #fff;
+			font-weight: 700;
+			box-shadow: 0 4px 10px rgba(40, 55, 70, .12);
+			transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+		}
+		.committee-dashboard .colored-action-list .action-link:hover {
+			transform: translateY(-1px);
+			color: #fff;
+			box-shadow: 0 7px 15px rgba(40, 55, 70, .18);
+		}
+		.committee-dashboard .low-stock-list li:nth-child(1) .action-link,
+		.committee-dashboard .management-action-list li:nth-child(1) .action-link {
+			background: linear-gradient(135deg, #f2cf68, #e8b83f);
+			color: #3c3425;
+		}
+		.committee-dashboard .low-stock-list li:nth-child(1) .action-link:hover,
+		.committee-dashboard .management-action-list li:nth-child(1) .action-link:hover { background: linear-gradient(135deg, #e8b83f, #d5a62e); color: #3c3425; }
+		.committee-dashboard .low-stock-list li:nth-child(2) .action-link,
+		.committee-dashboard .management-action-list li:nth-child(2) .action-link { background: linear-gradient(135deg, #0daa88, #0b9678); }
+		.committee-dashboard .low-stock-list li:nth-child(2) .action-link:hover,
+		.committee-dashboard .management-action-list li:nth-child(2) .action-link:hover { background: linear-gradient(135deg, #0b9678, #087b67); }
+		.committee-dashboard .low-stock-list li:nth-child(3) .action-link,
+		.committee-dashboard .management-action-list li:nth-child(3) .action-link { background: linear-gradient(135deg, #3157a4, #29478b); }
+		.committee-dashboard .low-stock-list li:nth-child(3) .action-link:hover,
+		.committee-dashboard .management-action-list li:nth-child(3) .action-link:hover { background: linear-gradient(135deg, #29478b, #203a73); }
+		.committee-dashboard .management-action-list li:nth-child(4) .action-link { background: linear-gradient(135deg, #e98236, #cc6124); }
+		.committee-dashboard .management-action-list li:nth-child(4) .action-link:hover { background: linear-gradient(135deg, #cc6124, #ad4d1c); }
+		.committee-dashboard .colored-action-list .badge { background: rgba(255, 255, 255, .88); color: #33414a; }
+		@media (prefers-reduced-motion: reduce) {
+			.committee-dashboard .colored-action-list .action-link { transition: none; }
+			.committee-dashboard .colored-action-list .action-link:hover { transform: none; }
+		}
 		@media (max-width: 850px) {
 			.committee-dashboard .content-grid { grid-template-columns: 1fr; }
-			.committee-dashboard .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 		}
 		@media (max-width: 560px) {
 			.committee-dashboard .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
@@ -176,12 +248,30 @@
 		<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
 	</header>
 
-	<section class="stats-grid" aria-label="Committee summary">
-		<article class="stat-card"><span class="stat-label">Items in inventory</span><strong class="stat-value">1,248</strong><span class="stat-note">Across 8 categories</span></article>
-		<article class="stat-card"><span class="stat-label">Pending requests</span><strong class="stat-value">12</strong><span class="stat-note">4 submitted today</span></article>
-		<article class="stat-card"><span class="stat-label">Low-stock items</span><strong class="stat-value">5</strong><span class="stat-note">Review replenishment</span></article>
-		<article class="stat-card"><span class="stat-label">Equipment bookings</span><strong class="stat-value">8</strong><span class="stat-note">3 due this week</span></article>
+	<section class="dashboard-overview" aria-labelledby="committee-activity-heading">
+		<h2 class="dashboard-overview__heading" id="committee-activity-heading">Committee activity at a glance</h2>
+		<p class="dashboard-overview__copy">A quick summary of inventory, requests, stock alerts and bookings.</p>
 	</section>
+	<div class="dashboard-stats-viewport">
+		<section class="stats-grid" aria-label="Committee summary">
+			<article class="stat-card">
+				<div class="stat-card__top"><span class="stat-label">Items in inventory</span><span class="stat-card__icon" aria-hidden="true">▤</span></div>
+				<div class="stat-reading"><p class="stat-value">1,248</p><p class="stat-note">Across 8 categories</p></div>
+			</article>
+			<article class="stat-card">
+				<div class="stat-card__top"><span class="stat-label">Pending requests</span><span class="stat-card__icon" aria-hidden="true">↗</span></div>
+				<div class="stat-reading"><p class="stat-value">12</p><p class="stat-note">4 submitted today</p></div>
+			</article>
+			<article class="stat-card">
+				<div class="stat-card__top"><span class="stat-label">Low-stock items</span><span class="stat-card__icon" aria-hidden="true">!</span></div>
+				<div class="stat-reading"><p class="stat-value">5</p><p class="stat-note">Review replenishment</p></div>
+			</article>
+			<article class="stat-card">
+				<div class="stat-card__top"><span class="stat-label">Equipment bookings</span><span class="stat-card__icon" aria-hidden="true">⌁</span></div>
+				<div class="stat-reading"><p class="stat-value">8</p><p class="stat-note">3 due this week</p></div>
+			</article>
+		</section>
+	</div>
 
 	<div class="content-grid">
 		<div class="stack">
@@ -215,7 +305,7 @@
 		<aside class="stack">
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Low-stock alerts</h2><p>Items at or below their reorder point.</p></div></div>
-				<ul class="action-list">
+				<ul class="action-list colored-action-list low-stock-list">
 					<li><a class="action-link" href="manage-inventory.html"><span>A4 exercise books</span><span class="badge badge--danger">8 left</span></a></li>
 					<li><a class="action-link" href="manage-inventory.html"><span>Whiteboard markers</span><span class="badge badge--warning">12 left</span></a></li>
 					<li><a class="action-link" href="manage-inventory.html"><span>Grade 7 mathematics</span><span class="badge badge--danger">4 left</span></a></li>
@@ -223,7 +313,7 @@
 			</section>
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
-				<ul class="action-list">
+				<ul class="action-list colored-action-list management-action-list">
 					<li><a class="action-link" href="manage-inventory.html">Manage inventory <span aria-hidden="true">→</span></a></li>
 					<li><a class="action-link" href="issue-return.html">Issue or return items <span aria-hidden="true">→</span></a></li>
 					<li><a class="action-link" href="maintenance.html">Log maintenance <span aria-hidden="true">→</span></a></li>

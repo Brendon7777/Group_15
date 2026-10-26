@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "resources" %}
+<!-- Resource catalogue for browsing sample textbooks, stationery, and equipment with search and category filters. -->
 {% block title %}Browse Resources | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
@@ -33,18 +34,39 @@
 			content: "";
 			pointer-events: none;
 		}
-		.resource-catalogue-page .page-heading > div,
-		.resource-catalogue-page .page-heading > .button { position: relative; z-index: 1; }
+		.resource-catalogue-page .page-heading > div { position: relative; z-index: 1; }
 		.resource-catalogue-page .page-heading .eyebrow { color: #a9e9db; }
 		.resource-catalogue-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
 		.resource-catalogue-page .page-heading p:last-child { color: #e5f2f5; }
-		.resource-catalogue-page .page-heading .button {
-			border-color: rgba(255, 255, 255, .35);
-			border-radius: 8px;
-			background: #0daa88;
-			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
+		.resource-catalogue-page .toolbar .button {
+			box-sizing: border-box;
+			width: 190px;
+			height: 46px;
+			min-width: 0;
+			min-height: 0;
+			padding: .7rem 1rem;
+			display: inline-flex;
+			justify-self: end;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid #035e82;
+			border-radius: 7px;
+			background: linear-gradient(135deg, #035e82, #007a9d);
+			color: #fff;
+			font-weight: 700;
+			line-height: 1.3;
+			text-align: center;
+			text-decoration: none;
+			box-shadow: 0 4px 10px rgba(3, 94, 130, .18);
+			transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
 		}
-		.resource-catalogue-page .page-heading .button:hover { background: #0b9678; }
+		.resource-catalogue-page .toolbar .button:hover {
+			transform: translateY(-1px);
+			background: linear-gradient(135deg, #007a9d, #008bb2);
+			color: #fff;
+			box-shadow: 0 6px 14px rgba(3, 94, 130, .24);
+		}
+		.resource-catalogue-page .toolbar .button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
 		.resource-catalogue-page > .notice { margin: 0; border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
 		.resource-catalogue-page .panel {
 			padding: 1.4rem;
@@ -52,8 +74,16 @@
 			border-radius: 10px;
 			box-shadow: 0 5px 16px rgba(40, 55, 70, .07);
 		}
-		.resource-catalogue-page .toolbar { gap: .75rem; }
+		.resource-catalogue-page .toolbar {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 190px;
+			gap: .75rem;
+			align-items: center;
+		}
 		.resource-catalogue-page .search-input {
+			box-sizing: border-box;
+			width: 100%;
+			min-width: 0;
 			min-height: 46px;
 			border-color: #d5dfe4;
 			border-radius: 7px;
@@ -63,52 +93,42 @@
 			outline: 3px solid rgba(0, 139, 178, .16);
 			border-color: #008bb2;
 		}
-		.resource-catalogue-page .card-grid {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-			gap: 1rem;
-		}
-		.resource-catalogue-page .resource-card {
-			min-height: 230px;
-			padding: 1.25rem;
-			border: 1px solid #e0e3e9;
-			border-top: 3px solid #035e82;
-			border-radius: 10px;
-			background: #fff;
-			box-shadow: 0 5px 14px rgba(40, 55, 70, .08);
-			transition: transform .16s ease, box-shadow .16s ease;
-		}
-		.resource-catalogue-page .resource-card:nth-child(3n + 2) { border-top-color: #0daa88; }
-		.resource-catalogue-page .resource-card:nth-child(3n) { border-top-color: #2f519e; }
-		.resource-catalogue-page .resource-icon {
-			width: 46px;
-			height: 46px;
-			margin-bottom: 1rem;
-			border-radius: 10px;
-			background: #eaf2f5;
-			color: #035e82;
-		}
-		.resource-catalogue-page .resource-card:nth-child(3n + 2) .resource-icon { background: #e2f4ee; color: #0b9678; }
-		.resource-catalogue-page .resource-card:nth-child(3n) .resource-icon { background: #e8edf8; color: #2f519e; }
-		.resource-catalogue-page .resource-card h3 { margin: 1rem 0 .4rem; color: #035e82; font-size: 1.02rem; }
-		.resource-catalogue-page .resource-card p { min-height: 2.6em; color: #62727a; line-height: 1.5; }
-		.resource-catalogue-page .resource-meta { margin-top: auto; color: #52636b; }
-		.resource-catalogue-page .resource-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(40, 55, 70, .12); }
+		.resource-catalogue-page .catalogue-table-wrap { border: 1px solid #e1e7eb; border-radius: 10px; background: #fff; }
+		.resource-catalogue-page .catalogue-table { min-width: 700px; border-collapse: separate; border-spacing: 0; }
+		.resource-catalogue-page .catalogue-table thead { background: #eaf2f5; }
+		.resource-catalogue-page .catalogue-table th { padding: 1rem; color: #035e82; font-size: .75rem; letter-spacing: .07em; }
+		.resource-catalogue-page .catalogue-table td { padding: 1rem; border-bottom: 1px solid #e9eef1; color: #46545d; }
+		.resource-catalogue-page .catalogue-table tbody tr { transition: background .15s ease; }
+		.resource-catalogue-page .catalogue-table tbody tr:nth-child(even) { background: #fbfcfd; }
+		.resource-catalogue-page .catalogue-table tbody tr:hover { background: #fff8e7; }
+		.resource-catalogue-page .catalogue-table tbody tr:last-child td { border-bottom: 0; }
+		.resource-catalogue-page .catalogue-table th:first-child { border-radius: 9px 0 0; }
+		.resource-catalogue-page .catalogue-table th:last-child { border-radius: 0 9px 0 0; }
+		.catalogue-item { min-width: 260px; display: flex; align-items: center; gap: .85rem; }
+		.catalogue-item__icon { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid #ead59a; border-radius: 10px; background: #fff6dc; color: #8a6415; font-size: 1.15rem; }
+		.catalogue-item__name { display: block; margin-bottom: .2rem; color: #173e50; font-weight: 700; }
+		.catalogue-item__description { display: block; color: #6b7980; font-size: .82rem; line-height: 1.45; }
+		.catalogue-count { display: inline-flex; min-width: 38px; min-height: 32px; padding: .3rem .6rem; align-items: center; justify-content: center; border-radius: 7px; background: #fff3d1; color: #765310; font-weight: 750; }
+		.catalogue-category { background: #eaf2f5; color: #035e82; }
+		.resource-catalogue-page .empty-state { margin: 0; }
 		.resource-catalogue-page .empty-state { margin: 0; }
 		@media (max-width: 850px) {
-			.resource-catalogue-page .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.resource-catalogue-page .toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+			.resource-catalogue-page .toolbar .button { grid-column: 2; }
+			.resource-catalogue-page .catalogue-table { min-width: 700px; }
 		}
 		@media (max-width: 560px) {
 			.resource-catalogue-page { gap: 1rem; }
 			.resource-catalogue-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
 			.resource-catalogue-page .page-heading::after { right: -150px; }
-			.resource-catalogue-page .page-heading .button { width: 100%; justify-content: center; }
+			.resource-catalogue-page .toolbar { grid-template-columns: minmax(0, 1fr); }
+			.resource-catalogue-page .toolbar .button { grid-column: 1; }
 			.resource-catalogue-page .panel { padding: 1rem; }
-			.resource-catalogue-page .toolbar { align-items: stretch; }
-			.resource-catalogue-page .card-grid { grid-template-columns: 1fr; }
+			.resource-catalogue-page .catalogue-table th,
+			.resource-catalogue-page .catalogue-table td { padding: .8rem .65rem; }
 		}
 		@media (prefers-reduced-motion: reduce) {
-			.resource-catalogue-page .resource-card { transition: none; }
-			.resource-catalogue-page .resource-card:hover { transform: none; }
+			.resource-catalogue-page .catalogue-table tbody tr { transition: none; }
 		}
 	</style>
 {% endblock %}
@@ -116,7 +136,6 @@
 	<div class="resource-catalogue-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">School catalogue</p><h1>Browse resources</h1><p>Search textbooks, stationery and shared school equipment.</p></div>
-		<a class="button" href="request-resources.html">＋ Request an item</a>
 	</header>
 
 	<div class="notice">Availability below is sample data for the frontend preview. Confirm stock with the LTSM committee before collecting an item.</div>
@@ -127,14 +146,20 @@
 			<select class="search-input" id="category-filter" aria-label="Filter by category" data-category-filter="resource-list">
 				<option value="">All categories</option><option value="Textbooks">Textbooks</option><option value="Stationery">Stationery</option><option value="Equipment">Equipment</option>
 			</select>
+			<a class="button" href="request-resources.html">＋ Request an item</a>
 		</div>
-		<div id="resource-list" class="card-grid">
-			<article class="resource-card" data-search="natural sciences grade 8 textbook learning materials" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><div class="resource-meta"><span class="badge badge--blue">Textbooks</span><span class="badge">Available</span></div><h3>Natural Sciences · Grade 8</h3><p>Student textbook · 3rd edition</p><div class="resource-meta"><span>Available copies</span><strong>18</strong></div></article>
-			<article class="resource-card" data-search="mathematics grade 7 textbook learning materials" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><div class="resource-meta"><span class="badge badge--blue">Textbooks</span><span class="badge badge--warning">Limited</span></div><h3>Mathematics · Grade 7</h3><p>Core learning textbook · 2nd edition</p><div class="resource-meta"><span>Available copies</span><strong>4</strong></div></article>
-			<article class="resource-card" data-search="a4 exercise books stationery supplies" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><div class="resource-meta"><span class="badge badge--blue">Stationery</span><span class="badge badge--warning">Limited</span></div><h3>A4 Exercise Books</h3><p>72-page ruled books · packs of 10</p><div class="resource-meta"><span>Available packs</span><strong>8</strong></div></article>
-			<article class="resource-card" data-search="whiteboard markers stationery supplies" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><div class="resource-meta"><span class="badge badge--blue">Stationery</span><span class="badge">Available</span></div><h3>Whiteboard Markers</h3><p>Assorted colours · classroom pack</p><div class="resource-meta"><span>Available packs</span><strong>12</strong></div></article>
-			<article class="resource-card" data-search="classroom projector equipment av booking" data-category="Equipment"><span class="resource-icon" aria-hidden="true">⌁</span><div class="resource-meta"><span class="badge badge--blue">Equipment</span><span class="badge badge--warning">Bookable</span></div><h3>Classroom Projector</h3><p>HD projector with HDMI connection</p><div class="resource-meta"><span>Units available</span><strong>2</strong></div></article>
-			<article class="resource-card" data-search="tablet set equipment devices booking" data-category="Equipment"><span class="resource-icon" aria-hidden="true">▣</span><div class="resource-meta"><span class="badge badge--blue">Equipment</span><span class="badge badge--warning">Bookable</span></div><h3>Tablet Set · 10 devices</h3><p>Shared tablet set for classroom activities</p><div class="resource-meta"><span>Sets available</span><strong>1</strong></div></article>
+		<div class="catalogue-table-wrap table-wrap">
+			<table id="resource-list" class="catalogue-table">
+				<thead><tr><th scope="col">Resource</th><th scope="col">Category</th><th scope="col">Availability</th><th scope="col">In stock</th></tr></thead>
+				<tbody>
+					<tr data-search="natural sciences grade 8 textbook learning materials" data-category="Textbooks"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▤</span><span><span class="catalogue-item__name">Natural Sciences · Grade 8</span><span class="catalogue-item__description">Student textbook · 3rd edition</span></span></div></td><td><span class="badge catalogue-category">Textbooks</span></td><td><span class="badge">Available</span></td><td><span class="catalogue-count">18</span><span class="sr-only"> copies available</span></td></tr>
+					<tr data-search="mathematics grade 7 textbook learning materials" data-category="Textbooks"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▤</span><span><span class="catalogue-item__name">Mathematics · Grade 7</span><span class="catalogue-item__description">Core learning textbook · 2nd edition</span></span></div></td><td><span class="badge catalogue-category">Textbooks</span></td><td><span class="badge badge--warning">Limited</span></td><td><span class="catalogue-count">4</span><span class="sr-only"> copies available</span></td></tr>
+					<tr data-search="a4 exercise books stationery supplies" data-category="Stationery"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">✎</span><span><span class="catalogue-item__name">A4 Exercise Books</span><span class="catalogue-item__description">72-page ruled books · packs of 10</span></span></div></td><td><span class="badge catalogue-category">Stationery</span></td><td><span class="badge badge--warning">Limited</span></td><td><span class="catalogue-count">8</span><span class="sr-only"> packs available</span></td></tr>
+					<tr data-search="whiteboard markers stationery supplies" data-category="Stationery"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">✎</span><span><span class="catalogue-item__name">Whiteboard Markers</span><span class="catalogue-item__description">Assorted colours · classroom pack</span></span></div></td><td><span class="badge catalogue-category">Stationery</span></td><td><span class="badge">Available</span></td><td><span class="catalogue-count">12</span><span class="sr-only"> packs available</span></td></tr>
+					<tr data-search="classroom projector equipment av booking" data-category="Equipment"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">⌁</span><span><span class="catalogue-item__name">Classroom Projector</span><span class="catalogue-item__description">HD projector with HDMI connection</span></span></div></td><td><span class="badge catalogue-category">Equipment</span></td><td><span class="badge badge--warning">Bookable</span></td><td><span class="catalogue-count">2</span><span class="sr-only"> units available</span></td></tr>
+					<tr data-search="tablet set equipment devices booking" data-category="Equipment"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▣</span><span><span class="catalogue-item__name">Tablet Set · 10 devices</span><span class="catalogue-item__description">Shared tablet set for classroom activities</span></span></div></td><td><span class="badge catalogue-category">Equipment</span></td><td><span class="badge badge--warning">Bookable</span></td><td><span class="catalogue-count">1</span><span class="sr-only"> set available</span></td></tr>
+				</tbody>
+			</table>
 		</div>
 		<p class="empty-state" id="no-results" hidden>No resources match your search. Try another keyword or category.</p>
 	</section>
@@ -144,16 +169,16 @@
 	<script>
 		const searchInput = document.querySelector("[data-filter-input]");
 		const categoryFilter = document.querySelector("[data-category-filter]");
-		const resourceList = document.getElementById("resource-list");
+		const resourceRows = document.querySelectorAll("#resource-list tbody tr");
 		const emptyMessage = document.getElementById("no-results");
 
 		function filterResources() {
 			const term = searchInput.value.trim().toLowerCase();
 			const category = categoryFilter.value;
 			let visibleCount = 0;
-			for (const card of resourceList.children) {
-				const matches = card.dataset.search.includes(term) && (!category || card.dataset.category === category);
-				card.hidden = !matches;
+			for (const row of resourceRows) {
+				const matches = row.dataset.search.includes(term) && (!category || row.dataset.category === category);
+				row.hidden = !matches;
 				if (matches) visibleCount++;
 			}
 			emptyMessage.hidden = visibleCount > 0;

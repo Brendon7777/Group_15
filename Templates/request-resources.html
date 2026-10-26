@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "request" %}
+<!-- Lets teachers and learners enter and validate a resource request for committee review. -->
 {% block title %}Request Resources | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
@@ -38,13 +39,6 @@
 		.request-resource-page .page-heading .eyebrow { color: #a9e9db; }
 		.request-resource-page .page-heading h1 { color: #fff; letter-spacing: -.025em; }
 		.request-resource-page .page-heading p:last-child { color: #e5f2f5; }
-		.request-resource-page .page-heading .button {
-			border: 1px solid rgba(255, 255, 255, .45);
-			border-radius: 8px;
-			background: rgba(255, 255, 255, .12);
-			color: #fff;
-		}
-		.request-resource-page .page-heading .button:hover { background: rgba(255, 255, 255, .22); }
 		.request-resource-page .content-grid { grid-template-columns: minmax(0, 1.35fr) minmax(270px, .8fr); gap: 1.25rem; align-items: start; }
 		.request-resource-page .panel {
 			min-width: 0;
@@ -74,12 +68,69 @@
 			outline: 3px solid rgba(0, 139, 178, .16);
 			border-color: #008bb2;
 		}
+		.request-details-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+		.request-details-table { table-layout: fixed; }
+		.request-details-table th,
+		.request-details-table td { padding: .9rem 1rem; border-bottom: 1px solid #e5e9ed; vertical-align: top; }
+		.request-details-table tr:nth-child(odd) { background: #f7fafb; }
+		.request-details-table th { width: 31%; color: #344b55; font-size: .87rem; font-weight: 650; text-align: left; text-transform: none; letter-spacing: 0; white-space: normal; }
+		.request-details-table td { font-size: 1rem; }
+		.request-details-table tr:first-child th { border-radius: 7px 0 0; }
+		.request-details-table tr:first-child td { border-radius: 0 7px 0 0; }
+		.request-details-table tr:last-child th { border-bottom: 0; border-radius: 0 0 0 7px; }
+		.request-details-table tr:last-child td { border-bottom: 0; border-radius: 0 0 7px; }
+		.request-details-table .form-field { margin: 0; }
+		.request-details-table .form-field input,
+		.request-details-table .form-field select {
+			box-sizing: border-box;
+			display: block;
+			width: 100%;
+			height: 46px;
+			min-height: 46px;
+		}
+		.request-details-table .form-field textarea {
+			box-sizing: border-box;
+			display: block;
+			width: 100%;
+			height: 110px;
+			min-height: 110px;
+		}
+		.request-details-table .form-field small { line-height: 1.45; }
 		.request-resource-page form > .form-actions { margin-top: .35rem; }
-		.request-resource-page .form-actions .button { min-height: 46px; border-radius: 7px; }
-		.request-resource-page .form-actions .button:first-child { border-color: #035e82; background: #035e82; }
-		.request-resource-page .form-actions .button:first-child:hover { background: #007a9d; }
-		.request-resource-page .form-actions .button-secondary { border-color: #b7d8e0; background: #fff; color: #035e82; }
-		.request-resource-page .form-actions .button-secondary:hover { background: #eaf6f7; color: #035e82; }
+		.request-resource-page .form-actions { justify-content: flex-start; flex-direction: row; gap: 0; }
+		.request-resource-page #request-form .form-actions > .request-primary-button + .request-primary-button { margin-left: 16px; }
+		.request-resource-page .request-primary-button {
+			box-sizing: border-box;
+			width: 190px;
+			height: 46px;
+			min-width: 0;
+			min-height: 0;
+			padding: .7rem 1rem;
+			display: inline-flex;
+			flex: 0 0 190px;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid #035e82;
+			border-radius: 7px;
+			background: linear-gradient(135deg, #035e82, #007a9d);
+			color: #fff;
+			font-weight: 700;
+			line-height: 1.3;
+			text-align: center;
+			text-decoration: none;
+			box-shadow: 0 4px 10px rgba(3, 94, 130, .18);
+			transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+		}
+		.request-resource-page .request-primary-button:hover {
+			transform: translateY(-1px);
+			background: linear-gradient(135deg, #007a9d, #008bb2);
+			color: #fff;
+			box-shadow: 0 6px 14px rgba(3, 94, 130, .24);
+		}
+		.request-resource-page .request-primary-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
+		.request-resource-page .request-catalogue-button {
+			white-space: nowrap;
+		}
 		@media (max-width: 850px) {
 			.request-resource-page .content-grid { grid-template-columns: 1fr; }
 			.request-resource-page .stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -88,11 +139,13 @@
 			.request-resource-page { gap: 1rem; }
 			.request-resource-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
 			.request-resource-page .page-heading::after { right: -150px; }
-			.request-resource-page .page-heading .button { width: 100%; justify-content: center; }
+			.request-resource-page .page-heading .request-primary-button { width: 190px; flex-basis: 190px; }
 			.request-resource-page .panel { padding: 1rem; }
-			.request-resource-page .form-grid, .request-resource-page .stack { grid-template-columns: 1fr; }
-			.request-resource-page .form-actions { align-items: stretch; flex-direction: column; }
-			.request-resource-page .form-actions .button { width: 100%; }
+			.request-resource-page .stack { grid-template-columns: 1fr; }
+			.request-details-table th, .request-details-table td { padding: .75rem .55rem; }
+			.request-details-table th { width: 34%; }
+			.request-resource-page .form-actions { flex-wrap: nowrap; }
+			.request-resource-page .form-actions .button { padding-right: .55rem; padding-left: .55rem; }
 		}
 	</style>
 {% endblock %}
@@ -100,46 +153,30 @@
 	<div class="request-resource-page">
 	<header class="page-heading">
 		<div><p class="eyebrow">Resource support</p><h1>Request a resource</h1><p>Tell the LTSM committee what you need and how it will be used.</p></div>
-		<a class="button button-secondary" href="my-requests.html">Track my requests</a>
 	</header>
 
 	<div class="content-grid">
 		<section class="panel">
 			<h2>Request details</h2>
-			<div class="notice">This frontend preview validates your request but does not save it. Connect this form to the application backend to submit real requests.</div>
 			<form id="request-form">
-				<div class="form-grid">
-					<div class="form-field">
-						<label for="resource-name">Resource name</label>
-						<input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required>
-						<datalist id="catalogue-items"><option value="Natural Sciences Grade 8 textbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist>
-					</div>
-					<div class="form-field">
-						<label for="category">Category</label>
-						<select id="category" name="category" required><option value="" disabled selected>Select a category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select>
-					</div>
-					<div class="form-field">
-						<label for="quantity">Quantity</label>
-						<input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required>
-						<small>Enter a quantity between 1 and 100.</small>
-					</div>
-					<div class="form-field">
-						<label for="needed-by">Needed by</label>
-						<input id="needed-by" name="needed_by" type="date" required>
-					</div>
-					<div class="form-field form-field--wide">
-						<label for="purpose">Reason for request</label>
-						<textarea id="purpose" name="purpose" minlength="10" maxlength="500" placeholder="Describe how this resource will support learning or teaching." required></textarea>
-						<small>Include enough detail for the committee to review your request (10–500 characters).</small>
-					</div>
+				<div class="table-wrap">
+					<table class="request-details-table">
+						<tbody>
+							<tr><th scope="row"><label for="resource-name">Resource name</label></th><td><div class="form-field"><input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required><datalist id="catalogue-items"><option value="Natural Sciences Grade 8 textbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist></div></td></tr>
+							<tr><th scope="row"><label for="category">Category</label></th><td><div class="form-field"><select id="category" name="category" required><option value="" disabled selected>Select a category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select></div></td></tr>
+							<tr><th scope="row"><label for="quantity">Quantity</label></th><td><div class="form-field"><input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required><small>Enter a quantity between 1 and 100.</small></div></td></tr>
+							<tr><th scope="row"><label for="needed-by">Needed by</label></th><td><div class="form-field"><input id="needed-by" name="needed_by" type="date" required></div></td></tr>
+							<tr><th scope="row"><label for="purpose">Reason for request</label></th><td><div class="form-field"><textarea id="purpose" name="purpose" minlength="10" maxlength="500" placeholder="Describe how this resource will support learning or teaching." required></textarea><small>Include enough detail for the committee to review your request (10–500 characters).</small></div></td></tr>
+						</tbody>
+					</table>
 				</div>
-				<div id="request-feedback" class="notice notice--success" role="status" hidden>Request validated. This preview does not save or send requests yet.</div>
-				<div class="form-actions"><button class="button" type="submit">Review request</button><a class="button button-secondary" href="view-resources.html">Browse resources</a></div>
+				<div id="request-feedback" class="notice notice--success" role="status" hidden>Request details validated.</div>
+				<div class="form-actions"><button class="button request-primary-button" type="submit">Review request</button><a class="button request-primary-button" href="my-requests.html">Track my requests</a></div>
 			</form>
 		</section>
 		<aside class="stack">
 			<section class="panel"><h2>What happens next?</h2><ul><li>The committee reviews your request.</li><li>You can check its progress on My Requests.</li><li>Approved resources will be arranged for collection.</li></ul></section>
-			<section class="panel"><h2>Need something already listed?</h2><p style="color:var(--muted)">Check availability in the catalogue before making a request.</p><a class="button button-secondary button-small" href="view-resources.html">Browse catalogue</a></section>
+			<section class="panel"><h2>Need something already listed?</h2><p style="color:var(--muted)">Check availability in the catalogue before making a request.</p><a class="button request-primary-button request-catalogue-button" href="view-resources.html">Browse catalogue</a></section>
 		</aside>
 	</div>
 	</div>

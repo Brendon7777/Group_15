@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "reports" %}
+<!-- Presents sample inventory, request, equipment, and maintenance summaries for the LTSM committee. -->
 {% block title %}Reports | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -46,28 +47,6 @@
 			box-shadow: 0 5px 14px rgba(0, 0, 0, .16);
 		}
 		.reports-page .page-heading .button:hover { background: #0b9678; }
-		.reports-page > .notice { margin: 0; border-left-color: #008bb2; border-radius: 7px; background: #eaf2f5; color: #31515c; }
-		.reports-page .stats-grid { margin: 0; gap: 1rem; }
-		.reports-page .stat-card {
-			min-height: 148px;
-			padding: 1.2rem;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-			gap: .75rem;
-			border: 0;
-			border-radius: 10px;
-			color: #fff;
-			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
-		}
-		.reports-page .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
-		.reports-page .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
-		.reports-page .stat-card:nth-child(3) { background: linear-gradient(145deg, #2f519e, #29478b); }
-		.reports-page .stat-card:nth-child(4) { background: linear-gradient(145deg, #008bb2, #035e82); }
-		.reports-page .stat-label, .reports-page .stat-note { margin: 0; color: #e5f2f5; }
-		.reports-page .stat-label { font-size: .84rem; font-weight: 650; }
-		.reports-page .stat-value { color: #fff; font-size: 2.15rem; font-weight: 750; line-height: 1.1; }
-		.reports-page .stat-note { font-size: .8rem; line-height: 1.4; }
 		.reports-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr); gap: 1.25rem; align-items: start; }
 		.reports-page .stack { gap: 1.25rem; }
 		.reports-page .panel {
@@ -85,11 +64,71 @@
 		.reports-page table thead { background: #eaf2f5; }
 		.reports-page table th { padding: .85rem .75rem; color: #035e82; }
 		.reports-page table td { padding: .95rem .75rem; color: #46545d; }
+		.reports-page .insights-panel { margin: 0; }
+		.reports-page .insights-table { width: 100%; min-width: 700px; table-layout: fixed; }
+		.reports-page .insights-table th:nth-child(1) { width: 22%; }
+		.reports-page .insights-table th:nth-child(2) { width: 38%; }
+		.reports-page .insights-table th:nth-child(3) { width: 40%; }
+		.reports-page .insights-table td { vertical-align: top; line-height: 1.5; }
+		.reports-page .status-table { width: 100%; min-width: 0; table-layout: fixed; }
+		.reports-page .status-table th:first-child { width: 68%; }
+		.reports-page .status-table th:last-child,
+		.reports-page .status-table td:last-child { text-align: right; }
+		.reports-page .status-table td { vertical-align: middle; }
 		.reports-page tbody tr { transition: background .15s ease; }
 		.reports-page tbody tr:hover { background: #f7fafb; }
 		.reports-page .action-list { gap: .7rem; }
 		.reports-page .action-link { min-height: 52px; padding: .8rem .9rem; border-color: #e0e3e9; border-radius: 7px; }
 		.reports-page .action-link:hover { border-color: #b7d8e0; background: #eaf6f7; }
+		.reports-page .report-tool-list { justify-items: start; }
+		.reports-page .report-tool-button {
+			box-sizing: border-box;
+			width: 190px;
+			height: 46px;
+			min-width: 0;
+			min-height: 0;
+			padding: .7rem 1rem;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border: 1px solid #035e82;
+			border-radius: 7px;
+			background: linear-gradient(135deg, #035e82, #007a9d);
+			color: #fff;
+			font-weight: 700;
+			line-height: 1.3;
+			text-align: center;
+			text-decoration: none;
+			box-shadow: 0 4px 10px rgba(3, 94, 130, .18);
+			transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+		}
+		.reports-page .report-tool-button:hover {
+			transform: translateY(-1px);
+			background: linear-gradient(135deg, #007a9d, #008bb2);
+			color: #fff;
+			box-shadow: 0 6px 14px rgba(3, 94, 130, .24);
+		}
+		.reports-page .report-tool-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
+		.reports-page .report-tool-list li:nth-child(1) .report-tool-button {
+			border-color: #0b9678;
+			background: linear-gradient(135deg, #0daa88, #0b9678);
+			box-shadow: 0 4px 10px rgba(11, 150, 120, .2);
+		}
+		.reports-page .report-tool-list li:nth-child(1) .report-tool-button:hover {
+			background: linear-gradient(135deg, #0b9678, #087b67);
+			box-shadow: 0 6px 14px rgba(11, 150, 120, .26);
+		}
+		.reports-page .report-tool-list li:nth-child(2) .report-tool-button {
+			border-color: #d7a827;
+			background: linear-gradient(135deg, #f0c44e, #dfae2f);
+			color: #263746;
+			box-shadow: 0 4px 10px rgba(180, 137, 28, .2);
+		}
+		.reports-page .report-tool-list li:nth-child(2) .report-tool-button:hover {
+			background: linear-gradient(135deg, #dfae2f, #c9941e);
+			color: #263746;
+			box-shadow: 0 6px 14px rgba(180, 137, 28, .26);
+		}
 		@media (max-width: 850px) {
 			.reports-page .content-grid { grid-template-columns: 1fr; }
 		}
@@ -98,11 +137,11 @@
 			.reports-page .page-heading { min-height: 0; align-items: flex-start; flex-direction: column; }
 			.reports-page .page-heading::after { right: -150px; }
 			.reports-page .page-heading .button { width: 100%; justify-content: center; }
-			.reports-page .stats-grid { grid-template-columns: 1fr; }
 			.reports-page .panel { padding: 1rem; }
 		}
 		@media (prefers-reduced-motion: reduce) {
-			.reports-page tbody tr { transition: none; }
+			.reports-page tbody tr,
+			.reports-page .report-tool-button { transition: none; }
 		}
 		@media print {
 			body:has(.reports-page) { background: #fff; }
@@ -122,15 +161,21 @@
 {% block content %}
 	<div class="reports-page">
 	<header class="page-heading">
-		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Review sample stock, request and equipment activity summaries.</p></div>
+		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Analyze stock coverage, low-stock categories and the current request queue.</p></div>
 		<button class="button" id="print-report" type="button">Print report</button>
 	</header>
-	<div class="notice">All figures on this page are illustrative sample data, not live school records.</div>
-	<section class="stats-grid" aria-label="Report highlights">
-		<article class="stat-card"><span class="stat-label">Resources in catalogue</span><strong class="stat-value">1,248</strong><span class="stat-note">Current sample inventory</span></article>
-		<article class="stat-card"><span class="stat-label">Requests this month</span><strong class="stat-value">46</strong><span class="stat-note">31 approved · 12 pending</span></article>
-		<article class="stat-card"><span class="stat-label">Equipment utilisation</span><strong class="stat-value">72%</strong><span class="stat-note">Bookings over the past month</span></article>
-		<article class="stat-card"><span class="stat-label">Maintenance issues</span><strong class="stat-value">5</strong><span class="stat-note">3 open · 2 in repair</span></article>
+	<section class="panel insights-panel" aria-labelledby="committee-summary-heading">
+		<div class="panel-heading"><div><h2 id="committee-summary-heading">Committee action summary</h2><p>Key findings from stock availability and the request queue.</p></div></div>
+		<div class="table-wrap">
+			<table class="insights-table">
+				<thead><tr><th scope="col">Report area</th><th scope="col">Finding</th><th scope="col">Suggested action</th></tr></thead>
+				<tbody>
+					<tr><td>Stock availability</td><td>1,106 of 1,248 items are available (88.6%); 142 are currently unavailable.</td><td>Monitor unavailable stock and prioritize replenishment where demand is highest.</td></tr>
+					<tr><td>Low-stock categories</td><td>5 items are low: 3 stationery items and 2 textbooks.</td><td>Review stationery and textbook reorder levels before the next distribution period.</td></tr>
+					<tr><td>Requests awaiting review</td><td>12 requests are in review; 31 are approved and 3 declined.</td><td>Review the pending queue and update request statuses.</td></tr>
+				</tbody>
+			</table>
+		</div>
 	</section>
 	<div class="content-grid">
 		<section class="panel">
@@ -149,18 +194,23 @@
 		<aside class="stack">
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Requests by status</h2><p>Current sample request queue.</p></div></div>
-				<ul class="action-list">
-					<li class="action-link"><span>Approved</span><span class="badge">31</span></li>
-					<li class="action-link"><span>In review</span><span class="badge badge--warning">12</span></li>
-					<li class="action-link"><span>Declined</span><span class="badge badge--danger">3</span></li>
-				</ul>
+				<div class="table-wrap">
+					<table class="status-table">
+						<thead><tr><th scope="col">Request status</th><th scope="col">Requests</th></tr></thead>
+						<tbody>
+							<tr><td><span class="badge">Approved</span></td><td>31</td></tr>
+							<tr><td><span class="badge badge--warning">In review</span></td><td>12</td></tr>
+							<tr><td><span class="badge badge--danger">Declined</span></td><td>3</td></tr>
+						</tbody>
+					</table>
+				</div>
 			</section>
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Related tools</h2><p>Open records behind this summary.</p></div></div>
-				<ul class="action-list">
-					<li><a class="action-link" href="manage-inventory.html">Inventory <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="my-requests.html">Requests <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="maintenance.html">Maintenance <span aria-hidden="true">→</span></a></li>
+				<ul class="action-list report-tool-list">
+					<li><a class="button report-tool-button" href="manage-inventory.html">Inventory</a></li>
+					<li><a class="button report-tool-button" href="my-requests.html">Requests</a></li>
+					<li><a class="button report-tool-button" href="maintenance.html">Maintenance</a></li>
 				</ul>
 			</section>
 		</aside>
