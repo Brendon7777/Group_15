@@ -112,6 +112,7 @@
 		@media (max-width: 560px) { .header-inner { min-height: 66px; } .brand-copy small { display: none; } .role-chip { display: none; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
 		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 	</style>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	{% block head %}{% endblock %}
 </head>
 <body>
@@ -124,7 +125,7 @@
 			</a>
 			<div class="header-actions">
 				<span class="role-chip">{% block role %}Portal workspace{% endblock %}</span>
-				<a class="signout-link" href="login.html">Sign out</a>
+				<a class="signout-link" href="login.html" data-signout>Sign out</a>
 			</div>
 		</div>
 	</header>
@@ -154,6 +155,7 @@
 	</main>
 	<!-- SECTION 5: Shared footer and page-specific scripts. -->
 	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials · Sample-data preview</p></footer>
+	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </body>
 </html>
