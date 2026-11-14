@@ -172,40 +172,27 @@
 		<div class="table-wrap">
 			<table class="insights-table">
 				<thead><tr><th scope="col">Report area</th><th scope="col">Finding</th><th scope="col">Suggested action</th></tr></thead>
-				<tbody>
-					<tr><td>Stock availability</td><td>1,106 of 1,248 items are available (88.6%); 142 are currently unavailable.</td><td>Monitor unavailable stock and prioritize replenishment where demand is highest.</td></tr>
-					<tr><td>Low-stock categories</td><td>5 items are low: 3 stationery items and 2 textbooks.</td><td>Review stationery and textbook reorder levels before the next distribution period.</td></tr>
-					<tr><td>Requests awaiting review</td><td>12 requests are in review; 31 are approved and 3 declined.</td><td>Review the pending queue and update request statuses.</td></tr>
-				</tbody>
+				<tbody></tbody>
 			</table>
 		</div>
 	</section>
 	<div class="content-grid">
 		<!-- SECTION 4: Request statuses and shortcuts to committee tools. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Category stock summary</h2><p>Sample distribution by resource category.</p></div></div>
+			<div class="panel-heading"><div><h2>Category stock summary</h2><p>Distribution by resource category.</p></div></div>
 			<div class="table-wrap">
-				<table><thead><tr><th>Category</th><th>Catalogue items</th><th>Available</th><th>Low stock</th><th>Condition</th></tr></thead>
-					<tbody>
-						<tr><td>Textbooks</td><td>582</td><td>516</td><td>2</td><td><span class="badge">Healthy</span></td></tr>
-						<tr><td>Stationery</td><td>428</td><td>376</td><td>3</td><td><span class="badge badge--warning">Review stock</span></td></tr>
-						<tr><td>Equipment</td><td>148</td><td>129</td><td>0</td><td><span class="badge">Healthy</span></td></tr>
-						<tr><td>Other resources</td><td>90</td><td>85</td><td>0</td><td><span class="badge">Healthy</span></td></tr>
-					</tbody>
+				<table id="category-summary-table"><thead><tr><th>Category</th><th>Catalogue items</th><th>Available</th><th>Low stock</th><th>Condition</th></tr></thead>
+					<tbody></tbody>
 				</table>
 			</div>
 		</section>
 		<aside class="stack">
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Requests by status</h2><p>Current sample request queue.</p></div></div>
+				<div class="panel-heading"><div><h2>Requests by status</h2><p>Current request queue.</p></div></div>
 				<div class="table-wrap">
 					<table class="status-table">
 						<thead><tr><th scope="col">Request status</th><th scope="col">Requests</th></tr></thead>
-						<tbody>
-							<tr><td><span class="badge">Approved</span></td><td>31</td></tr>
-							<tr><td><span class="badge badge--warning">In review</span></td><td>12</td></tr>
-							<tr><td><span class="badge badge--danger">Declined</span></td><td>3</td></tr>
-						</tbody>
+						<tbody></tbody>
 					</table>
 				</div>
 			</section>
@@ -222,8 +209,9 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Open the browser print dialog for the report. -->
+	<!-- SECTION 5: Open the browser print dialog; report tables are loaded from GET /api/reports. -->
 	<script>
 		document.getElementById("print-report").addEventListener("click", () => window.print());
 	</script>
+	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

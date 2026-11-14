@@ -260,24 +260,26 @@
 		<h2 class="dashboard-overview__heading" id="committee-activity-heading">Committee activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of inventory, requests, stock alerts and bookings.</p>
 	</section>
+	<div id="dashboard-feedback" class="form-feedback" role="alert" hidden></div>
+	<div id="action-feedback" class="form-feedback" role="status" hidden></div>
 	<!-- SECTION 3: Inventory, request, low-stock and booking summary cards. -->
 	<div class="dashboard-stats-viewport">
 		<section class="stats-grid" aria-label="Committee summary">
 			<article class="stat-card">
 				<div class="stat-card__top"><span class="stat-label">Items in inventory</span><span class="stat-card__icon" aria-hidden="true">▤</span></div>
-				<div class="stat-reading"><p class="stat-value">1,248</p><p class="stat-note">Across 8 categories</p></div>
+				<div class="stat-reading"><p class="stat-value" data-kpi="inventory">…</p><p class="stat-note" data-kpi-note="inventory">Loading…</p></div>
 			</article>
 			<article class="stat-card">
 				<div class="stat-card__top"><span class="stat-label">Pending requests</span><span class="stat-card__icon" aria-hidden="true">↗</span></div>
-				<div class="stat-reading"><p class="stat-value">12</p><p class="stat-note">4 submitted today</p></div>
+				<div class="stat-reading"><p class="stat-value" data-kpi="pending_requests">…</p><p class="stat-note" data-kpi-note="pending_requests">Loading…</p></div>
 			</article>
 			<article class="stat-card">
 				<div class="stat-card__top"><span class="stat-label">Low-stock items</span><span class="stat-card__icon" aria-hidden="true">!</span></div>
-				<div class="stat-reading"><p class="stat-value">5</p><p class="stat-note">Review replenishment</p></div>
+				<div class="stat-reading"><p class="stat-value" data-kpi="low_stock">…</p><p class="stat-note" data-kpi-note="low_stock">Loading…</p></div>
 			</article>
 			<article class="stat-card">
 				<div class="stat-card__top"><span class="stat-label">Equipment bookings</span><span class="stat-card__icon" aria-hidden="true">⌁</span></div>
-				<div class="stat-reading"><p class="stat-value">8</p><p class="stat-note">3 due this week</p></div>
+				<div class="stat-reading"><p class="stat-value" data-kpi="bookings">…</p><p class="stat-note" data-kpi-note="bookings">Loading…</p></div>
 			</article>
 		</section>
 	</div>
@@ -290,11 +292,7 @@
 				<div class="table-wrap">
 					<table id="committee-requests-table">
 						<thead><tr><th>Request</th><th>Requested by</th><th>Date</th><th>Priority</th><th>Action</th></tr></thead>
-						<tbody>
-							<tr><td>Grade 8 science workbooks</td><td>A. Mokoena</td><td>26 Oct</td><td><span class="badge badge--warning">Medium</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Grade 8 science workbooks request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Grade 8 science workbooks request">Decline</button></div></td></tr>
-							<tr><td>Whiteboard markers (class pack)</td><td>S. Naidoo</td><td>25 Oct</td><td><span class="badge">Normal</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Whiteboard markers request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Whiteboard markers request">Decline</button></div></td></tr>
-							<tr><td>Calculator set</td><td>T. Dlamini</td><td>24 Oct</td><td><span class="badge badge--danger">High</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Approved" aria-label="Accept Calculator set request">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Calculator set request">Decline</button></div></td></tr>
-						</tbody>
+						<tbody></tbody>
 					</table>
 				</div>
 			</section>
@@ -303,11 +301,7 @@
 				<div class="table-wrap">
 					<table id="committee-bookings-table">
 						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th><th>Action</th></tr></thead>
-						<tbody>
-							<tr><td>Projector · Room 12</td><td>J. Smith</td><td>28 Oct, 10:00</td><td><span class="badge">Confirmed</span></td><td>—</td></tr>
-							<tr><td>Tablet set · Library</td><td>P. Khumalo</td><td>29 Oct, 09:00</td><td><span class="badge badge--warning">Awaiting approval</span></td><td><div class="request-decision-actions"><button class="request-decision-button" type="button" data-decision="Confirmed" aria-label="Accept Tablet set booking">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-decision="Declined" aria-label="Decline Tablet set booking">Decline</button></div></td></tr>
-							<tr><td>Portable speaker</td><td>L. Molefe</td><td>30 Oct, 12:00</td><td><span class="badge">Confirmed</span></td><td>—</td></tr>
-						</tbody>
+						<tbody></tbody>
 					</table>
 				</div>
 			</section>
@@ -315,11 +309,7 @@
 		<aside class="stack">
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Low-stock alerts</h2><p>Items at or below their reorder point.</p></div></div>
-				<ul class="action-list colored-action-list low-stock-list">
-					<li><a class="action-link" href="manage-inventory.html"><span>A4 exercise books</span><span class="badge badge--danger">8 left</span></a></li>
-					<li><a class="action-link" href="manage-inventory.html"><span>Whiteboard markers</span><span class="badge badge--warning">12 left</span></a></li>
-					<li><a class="action-link" href="manage-inventory.html"><span>Grade 7 mathematics</span><span class="badge badge--danger">4 left</span></a></li>
-				</ul>
+				<ul class="action-list colored-action-list low-stock-list" id="low-stock-list" aria-live="polite"></ul>
 			</section>
 			<section class="panel">
 				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
@@ -335,24 +325,6 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Apply committee decisions to the sample request and booking rows. -->
-	<script>
-		document.querySelector(".committee-dashboard .content-grid").addEventListener("click", (event) => {
-			const button = event.target.closest("button[data-decision]");
-			if (!button) return;
-
-			const actionCell = button.closest("td");
-			const decision = button.dataset.decision;
-			const status = document.createElement("span");
-			status.className = decision === "Declined" ? "badge badge--danger" : "badge";
-			status.setAttribute("role", "status");
-			status.textContent = decision;
-			if (button.closest("#committee-bookings-table")) {
-				button.closest("tr").cells[3].replaceChildren(status);
-				actionCell.textContent = "—";
-			} else {
-				actionCell.replaceChildren(status);
-			}
-		});
-	</script>
+	<!-- SECTION 5: KPIs, low-stock alerts and accept / decline actions use the API (static/js/dashboard-pages.js). -->
+	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

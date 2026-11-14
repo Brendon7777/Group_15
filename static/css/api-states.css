@@ -1,0 +1,9 @@
+/* Feedback messages, table loading/empty/error rows and busy buttons used by static/js/*.js (Task 3A). */
+.form-feedback { margin: 0 0 1rem; padding: .8rem 1rem; border-left: 4px solid; border-radius: 7px; font-size: .88rem; line-height: 1.5; }
+.form-feedback--success { border-color: #315b50; background: #eaf2ef; color: #123b35; }
+.form-feedback--error { border-color: #a63b32; background: #fbefed; color: #a63b32; }
+.state-row td { padding: 1.5rem 1rem; text-align: center; color: #62716d; }
+.state-row--error td { color: #a63b32; }
+.state-retry { margin-left: .5rem; padding: .25rem .7rem; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+button[aria-busy="true"] { opacity: .7; cursor: wait; }
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: #b91c1c; }

@@ -122,26 +122,22 @@
 			<form id="movement-form">
 				<div class="form-grid">
 					<div class="form-field"><label for="movement-type">Action</label><select id="movement-type" name="movement_type" required><option value="" selected disabled>Select an action</option><option value="issue">Issue item</option><option value="return">Record return</option></select></div>
-					<div class="form-field"><label for="inventory-item">Item</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option><option>Natural Sciences Grade 8</option><option>Classroom projector</option><option>Geometry set</option><option>Tablet set · 10 devices</option></select></div>
+					<div class="form-field"><label for="inventory-item">Item</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option></select></div>
 					<div class="form-field"><label for="borrower-id">Student / staff number</label><input id="borrower-id" name="borrower_id" autocomplete="off" maxlength="40" required></div>
 					<div class="form-field"><label for="movement-quantity">Quantity</label><input id="movement-quantity" name="quantity" type="number" min="1" max="100" value="1" required></div>
 					<div class="form-field"><label for="movement-date">Date</label><input id="movement-date" name="movement_date" type="date" required></div>
 					<div class="form-field" id="due-date-field"><label for="due-date">Due date</label><input id="due-date" name="due_date" type="date" required></div>
 				</div>
-				<div id="movement-feedback" class="notice notice--success" role="status" hidden>Movement details validated. No inventory or account data was changed.</div>
-				<button class="button" type="submit">Validate record</button>
+				<div id="movement-feedback" class="form-feedback" role="status" hidden></div>
+				<button class="button" type="submit">Save record</button>
 			</form>
 		</section>
 		<!-- SECTION 4: Sample records of items currently on loan. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Current loans</h2><p>Sample active issue records.</p></div></div>
+			<div class="panel-heading"><div><h2>Current loans</h2><p>Items currently on loan.</p></div></div>
 			<div class="table-wrap">
-				<table><thead><tr><th>Borrower</th><th>Item</th><th>Due</th><th>Status</th></tr></thead>
-					<tbody>
-						<tr><td>A. Mokoena</td><td>Science textbook</td><td>30 Oct</td><td><span class="badge">On loan</span></td></tr>
-						<tr><td>J. Smith</td><td>Classroom projector</td><td>28 Oct</td><td><span class="badge badge--warning">Due soon</span></td></tr>
-						<tr><td>T. Dlamini</td><td>Geometry set</td><td>23 Oct</td><td><span class="badge badge--danger">Overdue</span></td></tr>
-					</tbody>
+				<table id="loans-table"><thead><tr><th>Borrower</th><th>Item</th><th>Due</th><th>Status</th></tr></thead>
+					<tbody></tbody>
 				</table>
 			</div>
 		</section>
@@ -149,16 +145,13 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Set movement dates and validate issue due dates. -->
+	<!-- SECTION 5: Set movement dates and show the due date only for issues; saving is handled by static/js/committee-pages.js. -->
 	<script>
-		const movementForm = document.getElementById("movement-form");
 		const movementType = document.getElementById("movement-type");
 		const dueDateField = document.getElementById("due-date-field");
 		const dueDateInput = document.getElementById("due-date");
 		const movementDate = document.getElementById("movement-date");
-		const movementFeedback = document.getElementById("movement-feedback");
-		const today = new Date();
-		const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+		const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 		movementDate.value = localToday;
 		movementDate.max = localToday;
 		dueDateInput.min = localToday;
@@ -170,16 +163,6 @@
 		});
 		dueDateInput.addEventListener("input", () => dueDateInput.setCustomValidity(""));
 		movementDate.addEventListener("input", () => dueDateInput.setCustomValidity(""));
-		movementForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (movementType.value === "issue" && dueDateInput.value < movementDate.value) {
-				dueDateInput.setCustomValidity("Due date cannot be before the issue date.");
-				dueDateInput.reportValidity();
-				return;
-			}
-			dueDateInput.setCustomValidity("");
-			if (!movementForm.reportValidity()) return;
-			movementFeedback.hidden = false;
-		});
 	</script>
+	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}

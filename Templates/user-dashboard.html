@@ -164,7 +164,7 @@
 		.dashboard-resource--green { background: linear-gradient(145deg, #eaf2ef, #d8e8e0); }
 		.dashboard-resource--gold { background: linear-gradient(145deg, #fbf4e5, #f5e4bb); }
 		.dashboard-resource--blue { background: linear-gradient(145deg, #edf4f5, #dbe9e9); }
-		.resource-card__footer { margin-top: auto; padding-top: .7rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-top: 1px solid rgba(18, 59, 53, .1); color: #4c625a; font-size: .77rem; }
+		.resource-card__footer { margin-top: auto; padding-top: .7rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; border-top: 1px solid rgba(18, 59, 53, .1); color: #4c625a; font-size: .77rem; }
 		.dashboard-panel table th { padding-top: .65rem; }
 		.dashboard-panel table td { padding-top: .9rem; padding-bottom: .9rem; }
 		.issued-items-panel { overflow: hidden; }
@@ -281,23 +281,24 @@
 		<h2 class="dashboard-overview__heading" id="activity-heading">Your activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of your resources, requests, bookings and issued items.</p>
 	</section>
+	<div id="dashboard-feedback" class="form-feedback" role="alert" hidden></div>
 	<div class="dashboard-stats-viewport">
 		<section id="dashboard-activity-tiles" class="stats-grid dashboard-stats" aria-label="Your activity summary">
 			<article class="stat-card dashboard-stat dashboard-stat--green">
 				<div class="dashboard-stat__top"><span class="stat-label">Available resources</span><span class="dashboard-stat__icon" aria-hidden="true">▤</span></div>
-				<div class="dashboard-stat__reading"><p class="stat-value">248</p><p class="stat-note">Across 6 categories</p></div>
+				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="available_resources">…</p><p class="stat-note" data-kpi-note="available_resources">Loading…</p></div>
 			</article>
 			<article class="stat-card dashboard-stat dashboard-stat--gold">
 				<div class="dashboard-stat__top"><span class="stat-label">Open requests</span><span class="dashboard-stat__icon" aria-hidden="true">↗</span></div>
-				<div class="dashboard-stat__reading"><p class="stat-value">2</p><p class="stat-note">1 awaiting review</p></div>
+				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="open_requests">…</p><p class="stat-note" data-kpi-note="open_requests">Loading…</p></div>
 			</article>
 			<article class="stat-card dashboard-stat dashboard-stat--blue">
 				<div class="dashboard-stat__top"><span class="stat-label">Equipment bookings</span><span class="dashboard-stat__icon" aria-hidden="true">⌁</span></div>
-				<div class="dashboard-stat__reading"><p class="stat-value">1</p><p class="stat-note">Next: 28 October</p></div>
+				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="bookings">…</p><p class="stat-note" data-kpi-note="bookings">Loading…</p></div>
 			</article>
 			<article class="stat-card dashboard-stat dashboard-stat--red">
 				<div class="dashboard-stat__top"><span class="stat-label">Items issued to you</span><span class="dashboard-stat__icon" aria-hidden="true">✓</span></div>
-				<div class="dashboard-stat__reading"><p class="stat-value">4</p><p class="stat-note">1 return due soon</p></div>
+				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="issued">…</p><p class="stat-note" data-kpi-note="issued">Loading…</p></div>
 			</article>
 		</section>
 	</div>
@@ -313,23 +314,19 @@
 			<span class="dashboard-launchpad-heading__icon" aria-hidden="true">▤</span>
 		</header>
 		<div class="card-grid dashboard-resource-grid">
-			<a class="resource-card dashboard-resource dashboard-resource--green" href="view-resources.html"><span class="resource-icon" aria-hidden="true">▤</span><h3>Textbooks</h3><p>Prescribed books and classroom learning materials.</p><span class="resource-card__footer"><span>126 items</span><span class="badge">In stock</span></span></a>
-			<a class="resource-card dashboard-resource dashboard-resource--gold" href="view-resources.html"><span class="resource-icon" aria-hidden="true">✎</span><h3>Stationery</h3><p>Everyday supplies for lessons and schoolwork.</p><span class="resource-card__footer"><span>84 items</span><span class="badge badge--warning">Limited stock</span></span></a>
-			<a class="resource-card dashboard-resource dashboard-resource--blue" href="view-resources.html"><span class="resource-icon" aria-hidden="true">⌁</span><h3>Equipment</h3><p>Shared devices and teaching equipment to book.</p><span class="resource-card__footer"><span>38 items</span><span class="badge badge--blue">Bookable</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--green" href="view-resources.html" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><h3>Textbooks</h3><p>Prescribed books and classroom learning materials.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--gold" href="view-resources.html" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><h3>Stationery</h3><p>Everyday supplies for lessons and schoolwork.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--blue" href="view-resources.html" data-category="Equipment"><span class="resource-icon" aria-hidden="true">⌁</span><h3>Equipment</h3><p>Shared devices and teaching equipment to book.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
 		</div>
 	</section>
 
 	<!-- SECTION 5: Items currently issued to the signed-in user. -->
 	<section class="panel dashboard-panel issued-items-panel" aria-labelledby="issued-heading">
-		<div class="panel-heading"><div><h2 id="issued-heading">Items issued to you</h2><p>Keep track of borrowed school materials.</p></div><span class="badge">3 active items</span></div>
+		<div class="panel-heading"><div><h2 id="issued-heading">Items issued to you</h2><p>Keep track of borrowed school materials.</p></div><span class="badge" id="issued-count">…</span></div>
 		<div class="table-wrap">
 			<table class="issued-items-table">
 				<thead><tr><th scope="col">Item</th><th scope="col">Issued</th><th scope="col">Due date</th><th scope="col">Status</th></tr></thead>
-				<tbody>
-					<tr><td class="issued-item-name">Natural Sciences Grade 8</td><td>14 Oct 2026</td><td>30 Oct 2026</td><td><span class="badge issued-status issued-status--active">On loan</span></td></tr>
-					<tr><td class="issued-item-name">Classroom projector</td><td>20 Oct 2026</td><td>28 Oct 2026</td><td><span class="badge issued-status issued-status--due">Due soon</span></td></tr>
-					<tr><td class="issued-item-name">Geometry set</td><td>02 Oct 2026</td><td>06 Nov 2026</td><td><span class="badge issued-status issued-status--active">On loan</span></td></tr>
-				</tbody>
+				<tbody></tbody>
 			</table>
 		</div>
 	</section>
@@ -339,12 +336,12 @@
 		<aside class="stack dashboard-side-column" aria-label="Your bookings">
 			<section class="panel dashboard-panel">
 				<div class="panel-heading"><div><h2>Upcoming booking</h2><p>Your next equipment reservation.</p></div></div>
-				<div class="booking-card">
-					<div class="booking-card__top"><h3>Classroom projector</h3><span class="badge">Confirmed</span></div>
-					<p class="booking-date"><span aria-hidden="true">◷</span> 28 October · 10:00–12:00</p>
-					<p class="booking-detail">Room 12 · Bring the remote back after use.</p>
-				</div>
+				<div class="booking-card" id="next-booking"><p class="booking-detail">Loading…</p></div>
 			</section>
 		</aside>
 	</div>
+{% endblock %}
+{% block scripts %}
+	<!-- SECTION 7: Load the dashboard summary from GET /api/dashboard/user (static/js/dashboard-pages.js). -->
+	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

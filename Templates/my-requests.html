@@ -96,7 +96,6 @@
 		<a class="button" href="request-resources.html">＋ New request</a>
 	</header>
 
-	<div class="notice">The requests shown here are sample records for the frontend preview.</div>
 	<!-- SECTION 3: Filterable table of submitted request statuses and updates. -->
 	<section class="panel">
 		<div class="toolbar">
@@ -109,33 +108,13 @@
 		<div class="table-wrap">
 			<table id="requests-table">
 				<thead><tr><th>Request</th><th>Category</th><th>Submitted</th><th>Quantity</th><th>Status</th><th>Latest update</th></tr></thead>
-				<tbody>
-					<tr data-status="In review"><td>Grade 8 science workbook</td><td>Textbooks</td><td>24 Oct 2026</td><td>30</td><td><span class="badge badge--warning">In review</span></td><td>Committee review in progress</td></tr>
-					<tr data-status="Approved"><td>Whiteboard markers</td><td>Stationery</td><td>20 Oct 2026</td><td>2 packs</td><td><span class="badge">Approved</span></td><td>Approved · collection details to follow</td></tr>
-					<tr data-status="Ready for collection"><td>Geometry sets</td><td>Stationery</td><td>15 Oct 2026</td><td>5</td><td><span class="badge badge--blue">Ready for collection</span></td><td>Collect from the resource office</td></tr>
-					<tr data-status="Declined"><td>Personal laptop</td><td>Equipment</td><td>10 Oct 2026</td><td>1</td><td><span class="badge badge--danger">Declined</span></td><td>Outside the school equipment catalogue</td></tr>
-				</tbody>
+				<tbody></tbody>
 			</table>
-			<p class="empty-state" id="no-requests" hidden>No requests have this status.</p>
 		</div>
 	</section>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 4: Filter visible requests by their current status. -->
-	<script>
-		const statusFilter = document.querySelector("[data-status-filter]");
-		const requestRows = document.querySelectorAll("#requests-table tbody tr");
-		const emptyMessage = document.getElementById("no-requests");
-
-		statusFilter.addEventListener("change", () => {
-			let visibleCount = 0;
-			for (const row of requestRows) {
-				const visible = !statusFilter.value || row.dataset.status === statusFilter.value;
-				row.hidden = !visible;
-				if (visible) visibleCount++;
-			}
-			emptyMessage.hidden = visibleCount > 0;
-		});
-	</script>
+	<!-- SECTION 4: The status filter calls GET /api/requests (static/js/user-pages.js). -->
+	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}
