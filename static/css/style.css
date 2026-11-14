@@ -1,0 +1,3 @@
+/* Shared stylesheet placeholder.
+   login.html links to this file, but every page currently carries its own <style> block, so nothing is needed here yet.
+   Having the file avoids a 404 on every sign-in page load; move common styles here when the group is ready. */

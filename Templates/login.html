@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Sign In | School Resource Portal</title>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	<!-- SECTION 1: Sign-in layout, form fields and responsive styles. -->
 	<style>
 		:root {
@@ -153,6 +154,7 @@
 					<input id="password" name="password" type="password" autocomplete="current-password" required>
 				</div>
 
+				<div id="login-feedback" class="form-feedback" role="alert" hidden></div>
 				<button type="submit">Sign In</button>
 			</form>
 
@@ -186,5 +188,7 @@
 			}
 		});
 	</script>
+	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

@@ -147,16 +147,15 @@
 		<a class="button button-secondary" href="manage-inventory.html">View inventory</a>
 	</header>
 	<section class="stats-grid" aria-label="Maintenance summary">
-		<article class="stat-card"><span class="stat-label">Open issues</span><strong class="stat-value">3</strong><span class="stat-note">Awaiting attention</span></article>
-		<article class="stat-card"><span class="stat-label">In repair</span><strong class="stat-value">2</strong><span class="stat-note">With service provider</span></article>
-		<article class="stat-card"><span class="stat-label">Resolved this month</span><strong class="stat-value">7</strong><span class="stat-note">Returned to service</span></article>
-		<article class="stat-card"><span class="stat-label">Out of service</span><strong class="stat-value">2</strong><span class="stat-note">Unavailable for booking</span></article>
+		<article class="stat-card"><span class="stat-label">Open issues</span><strong class="stat-value" data-stat="open">–</strong><span class="stat-note">Awaiting attention</span></article>
+		<article class="stat-card"><span class="stat-label">In repair</span><strong class="stat-value" data-stat="in_repair">–</strong><span class="stat-note">With service provider</span></article>
+		<article class="stat-card"><span class="stat-label">Resolved this month</span><strong class="stat-value" data-stat="resolved">–</strong><span class="stat-note">Returned to service</span></article>
+		<article class="stat-card"><span class="stat-label">Out of service</span><strong class="stat-value" data-stat="out_of_service">–</strong><span class="stat-note">Unavailable for booking</span></article>
 	</section>
 	<div class="content-grid">
 		<!-- SECTION 3: Maintenance issue report form. -->
 		<section class="panel">
 			<h2>Log a maintenance issue</h2>
-			<div class="notice">Sample frontend only. This form does not notify a technician or change equipment availability.</div>
 			<form id="maintenance-form">
 				<div class="form-grid">
 					<div class="form-field"><label for="equipment-name">Equipment / item</label><input id="equipment-name" name="equipment" list="equipment-options" maxlength="100" required><datalist id="equipment-options"><option value="Classroom projector"><option value="Tablet set"><option value="Portable speaker"><option value="Document camera"></datalist></div>
@@ -165,20 +164,16 @@
 					<div class="form-field"><label for="issue-date">Date reported</label><input id="issue-date" name="date" type="date" required></div>
 					<div class="form-field form-field--wide"><label for="issue-description">Describe the issue</label><textarea id="issue-description" name="description" minlength="10" maxlength="500" placeholder="Describe the fault, damage or service required." required></textarea><small>Provide at least 10 characters to describe the problem.</small></div>
 				</div>
-				<div id="maintenance-feedback" class="notice notice--success" role="status" hidden>Issue details validated. No maintenance ticket was created.</div>
-				<button class="button" type="submit">Validate maintenance report</button>
+				<div id="maintenance-feedback" class="form-feedback" role="status" hidden></div>
+				<button class="button" type="submit">Log issue</button>
 			</form>
 		</section>
 		<!-- SECTION 4: Maintenance logbook of recent service records. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Maintenance logbook</h2><p>Sample service records.</p></div></div>
+			<div class="panel-heading"><div><h2>Maintenance logbook</h2><p>Recent service records.</p></div></div>
 			<div class="table-wrap">
-				<table><thead><tr><th>Item</th><th>Issue</th><th>Reported</th><th>Status</th></tr></thead>
-					<tbody>
-						<tr><td>Projector · PRJ-014</td><td>HDMI connection intermittent</td><td>25 Oct</td><td><span class="badge badge--warning">In repair</span></td></tr>
-						<tr><td>Tablet · TAB-022</td><td>Screen does not respond</td><td>23 Oct</td><td><span class="badge badge--danger">Out of service</span></td></tr>
-						<tr><td>Speaker · SPK-005</td><td>Battery replacement</td><td>20 Oct</td><td><span class="badge">Resolved</span></td></tr>
-					</tbody>
+				<table id="maintenance-table"><thead><tr><th>Item</th><th>Issue</th><th>Reported</th><th>Status</th></tr></thead>
+					<tbody></tbody>
 				</table>
 			</div>
 		</section>
@@ -186,15 +181,9 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Set the report date limit and validate submitted details. -->
+	<!-- SECTION 5: Limit the report date; saving and the logbook use /api/maintenance (static/js/committee-pages.js). -->
 	<script>
-		const maintenanceForm = document.getElementById("maintenance-form");
-		const reportDate = document.getElementById("issue-date");
-		const today = new Date();
-		reportDate.max = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-		maintenanceForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (maintenanceForm.reportValidity()) document.getElementById("maintenance-feedback").hidden = false;
-		});
+		document.getElementById("issue-date").max = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 	</script>
+	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}

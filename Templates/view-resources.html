@@ -140,7 +140,7 @@
 		<div><p class="eyebrow">School catalogue</p><h1>Browse resources</h1><p>Search textbooks, stationery and shared school equipment.</p></div>
 	</header>
 
-	<div class="notice">Availability below is sample data for the frontend preview. Confirm stock with the LTSM committee before collecting an item.</div>
+	<div class="notice">Availability comes from the LTSM inventory. Confirm stock with the LTSM committee before collecting an item.</div>
 	<!-- SECTION 3: Searchable resource catalogue and request shortcut. -->
 	<section class="panel" aria-label="Resource catalogue">
 		<div class="toolbar">
@@ -154,41 +154,13 @@
 		<div class="catalogue-table-wrap table-wrap">
 			<table id="resource-list" class="catalogue-table">
 				<thead><tr><th scope="col">Resource</th><th scope="col">Category</th><th scope="col">Availability</th><th scope="col">In stock</th></tr></thead>
-				<tbody>
-					<tr data-search="natural sciences grade 8 textbook learning materials" data-category="Textbooks"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▤</span><span><span class="catalogue-item__name">Natural Sciences · Grade 8</span><span class="catalogue-item__description">Student textbook · 3rd edition</span></span></div></td><td><span class="badge catalogue-category">Textbooks</span></td><td><span class="badge">Available</span></td><td><span class="catalogue-count">18</span><span class="sr-only"> copies available</span></td></tr>
-					<tr data-search="mathematics grade 7 textbook learning materials" data-category="Textbooks"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▤</span><span><span class="catalogue-item__name">Mathematics · Grade 7</span><span class="catalogue-item__description">Core learning textbook · 2nd edition</span></span></div></td><td><span class="badge catalogue-category">Textbooks</span></td><td><span class="badge badge--warning">Limited</span></td><td><span class="catalogue-count">4</span><span class="sr-only"> copies available</span></td></tr>
-					<tr data-search="a4 exercise books stationery supplies" data-category="Stationery"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">✎</span><span><span class="catalogue-item__name">A4 Exercise Books</span><span class="catalogue-item__description">72-page ruled books · packs of 10</span></span></div></td><td><span class="badge catalogue-category">Stationery</span></td><td><span class="badge badge--warning">Limited</span></td><td><span class="catalogue-count">8</span><span class="sr-only"> packs available</span></td></tr>
-					<tr data-search="whiteboard markers stationery supplies" data-category="Stationery"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">✎</span><span><span class="catalogue-item__name">Whiteboard Markers</span><span class="catalogue-item__description">Assorted colours · classroom pack</span></span></div></td><td><span class="badge catalogue-category">Stationery</span></td><td><span class="badge">Available</span></td><td><span class="catalogue-count">12</span><span class="sr-only"> packs available</span></td></tr>
-					<tr data-search="classroom projector equipment av booking" data-category="Equipment"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">⌁</span><span><span class="catalogue-item__name">Classroom Projector</span><span class="catalogue-item__description">HD projector with HDMI connection</span></span></div></td><td><span class="badge catalogue-category">Equipment</span></td><td><span class="badge badge--warning">Bookable</span></td><td><span class="catalogue-count">2</span><span class="sr-only"> units available</span></td></tr>
-					<tr data-search="tablet set equipment devices booking" data-category="Equipment"><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">▣</span><span><span class="catalogue-item__name">Tablet Set · 10 devices</span><span class="catalogue-item__description">Shared tablet set for classroom activities</span></span></div></td><td><span class="badge catalogue-category">Equipment</span></td><td><span class="badge badge--warning">Bookable</span></td><td><span class="catalogue-count">1</span><span class="sr-only"> set available</span></td></tr>
-				</tbody>
+				<tbody></tbody>
 			</table>
 		</div>
-		<p class="empty-state" id="no-results" hidden>No resources match your search. Try another keyword or category.</p>
 	</section>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 4: Filter catalogue rows by search text and category. -->
-	<script>
-		const searchInput = document.querySelector("[data-filter-input]");
-		const categoryFilter = document.querySelector("[data-category-filter]");
-		const resourceRows = document.querySelectorAll("#resource-list tbody tr");
-		const emptyMessage = document.getElementById("no-results");
-
-		function filterResources() {
-			const term = searchInput.value.trim().toLowerCase();
-			const category = categoryFilter.value;
-			let visibleCount = 0;
-			for (const row of resourceRows) {
-				const matches = row.dataset.search.includes(term) && (!category || row.dataset.category === category);
-				row.hidden = !matches;
-				if (matches) visibleCount++;
-			}
-			emptyMessage.hidden = visibleCount > 0;
-		}
-
-		searchInput.addEventListener("input", filterResources);
-		categoryFilter.addEventListener("change", filterResources);
-	</script>
+	<!-- SECTION 4: Search and category filter call GET /api/resources (static/js/user-pages.js). -->
+	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}

@@ -171,8 +171,8 @@
 						</tbody>
 					</table>
 				</div>
-				<div id="request-feedback" class="notice notice--success" role="status" hidden>Request details validated.</div>
-				<div class="form-actions"><button class="button request-primary-button" type="submit">Review request</button><a class="button request-primary-button" href="my-requests.html">Track my requests</a></div>
+				<div id="request-feedback" class="form-feedback" role="status" hidden></div>
+				<div class="form-actions"><button class="button request-primary-button" type="submit">Submit request</button><a class="button request-primary-button" href="my-requests.html">Track my requests</a></div>
 			</form>
 		</section>
 		<!-- SECTION 4: Explain the review process and link to the catalogue. -->
@@ -184,20 +184,10 @@
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Enforce the requested-by date and show validation feedback. -->
+	<!-- SECTION 5: Limit the needed-by date; submitting is handled by static/js/user-pages.js (POST /api/requests). -->
 	<script>
-		const requestForm = document.getElementById("request-form");
 		const neededByInput = document.getElementById("needed-by");
-		const feedback = document.getElementById("request-feedback");
-		const today = new Date();
-		const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-		neededByInput.min = localToday;
-
-		requestForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (!requestForm.reportValidity()) return;
-			feedback.hidden = false;
-			feedback.scrollIntoView({ behavior: "smooth", block: "nearest" });
-		});
+		neededByInput.min = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 	</script>
+	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}

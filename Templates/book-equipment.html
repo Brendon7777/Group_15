@@ -108,37 +108,41 @@
 		<div><p class="eyebrow">Shared equipment</p><h1>Equipment bookings</h1><p>Check availability and request equipment for a lesson or school activity.</p></div>
 		<a class="button button-secondary" href="view-resources.html">Browse all resources</a>
 	</header>
-	<div class="notice">Booking records and availability are sample data. Submitting the form will validate the details but will not reserve equipment.</div>
+	<div class="notice">Bookings are checked against existing reservations when you submit.</div>
 	<div class="content-grid">
 		<!-- SECTION 3: Equipment booking request form. -->
 		<section class="panel">
 			<h2>Request a booking</h2>
 			<form id="booking-form">
 				<div class="form-grid">
-					<div class="form-field"><label for="equipment">Equipment</label><select id="equipment" name="equipment" required><option value="" selected disabled>Select equipment</option><option>Classroom projector (2 available)</option><option>Tablet set · 10 devices (1 set available)</option><option>Portable speaker (3 available)</option><option>Document camera (1 available)</option></select></div>
+					<div class="form-field"><label for="equipment">Equipment</label><select id="equipment" name="equipment" required><option value="" selected disabled>Select equipment</option></select></div>
 					<div class="form-field"><label for="booking-date">Date</label><input id="booking-date" name="booking_date" type="date" required></div>
 					<div class="form-field"><label for="start-time">Start time</label><input id="start-time" name="start_time" type="time" required></div>
 					<div class="form-field"><label for="end-time">End time</label><input id="end-time" name="end_time" type="time" required></div>
 					<div class="form-field"><label for="room">Room / location</label><input id="room" name="room" maxlength="80" placeholder="e.g. Room 12" required></div>
 					<div class="form-field"><label for="booking-purpose">Purpose</label><input id="booking-purpose" name="purpose" maxlength="160" placeholder="e.g. Grade 8 science lesson" required></div>
 				</div>
-				<div id="booking-feedback" class="notice notice--success" role="status" hidden>Booking details validated. This preview did not create a reservation.</div>
-				<div class="form-actions"><button class="button" type="submit">Check booking details</button></div>
+				<div id="booking-feedback" class="form-feedback" role="status" hidden></div>
+				<div class="form-actions"><button class="button" type="submit">Request booking</button></div>
 			</form>
+		</section>
+		<!-- SECTION 3b: Upcoming bookings loaded from GET /api/bookings. -->
+		<section class="panel">
+			<div class="panel-heading"><div><h2>My bookings</h2><p>Your upcoming equipment reservations.</p></div></div>
+			<div class="table-wrap">
+				<table id="bookings-table"><thead><tr><th scope="col">Equipment</th><th scope="col">When</th><th scope="col">Status</th></tr></thead><tbody></tbody></table>
+			</div>
 		</section>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 4: Validate booking dates and time ranges in the browser. -->
+	<!-- SECTION 4: Validate booking dates and time ranges in the browser; submitting is handled by static/js/user-pages.js. -->
 	<script>
-		const bookingForm = document.getElementById("booking-form");
 		const bookingDate = document.getElementById("booking-date");
 		const startTime = document.getElementById("start-time");
 		const endTime = document.getElementById("end-time");
-		const bookingFeedback = document.getElementById("booking-feedback");
-		const now = new Date();
-		bookingDate.min = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+		bookingDate.min = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
 		function validateTimeRange() {
 			const valid = !startTime.value || !endTime.value || endTime.value > startTime.value;
@@ -147,9 +151,6 @@
 		}
 		startTime.addEventListener("input", validateTimeRange);
 		endTime.addEventListener("input", validateTimeRange);
-		bookingForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (validateTimeRange() && bookingForm.reportValidity()) bookingFeedback.hidden = false;
-		});
 	</script>
+	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}

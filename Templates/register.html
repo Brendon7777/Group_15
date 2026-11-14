@@ -5,6 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="theme-color" content="#123b35">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	<title>Create an Account | LTSM Portal</title>
 	<!-- SECTION 1: Registration layout, fields and responsive styles. -->
 	<style>
@@ -137,7 +138,7 @@
 				<p>Complete your details to continue.</p>
 			</header>
 
-			<form id="register-form">
+			<form id="register-form" method="post" action="/api/register">
 				<div class="field-grid">
 					<div class="field">
 						<label for="full-name">Full name</label>
@@ -177,11 +178,11 @@
 					</div>
 				</div>
 
+				<div id="register-feedback" class="form-feedback" role="alert" hidden></div>
 				<button type="submit">Create Account</button>
 			</form>
 
 			<p class="signin">Already have an account? <a href="login.html">Sign in</a></p>
-			<p class="preview-note">This is a preview form. Accounts are not saved; submitting valid details returns you to sign in.</p>
 		</section>
 	</main>
 	<!-- SECTION 3: Check that the password confirmation matches before continuing. -->
@@ -201,14 +202,9 @@
 
 		passwordInput.addEventListener("input", validatePasswordMatch);
 		confirmPasswordInput.addEventListener("input", validatePasswordMatch);
-		registerForm.addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (validatePasswordMatch()) {
-				window.location.assign("login.html");
-			} else {
-				confirmPasswordInput.reportValidity();
-			}
-		});
+		// Form submission is handled by static/js/auth.js (POST /api/register).
 	</script>
+	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

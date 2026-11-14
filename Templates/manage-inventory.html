@@ -149,7 +149,7 @@
 	<div class="content-grid">
 		<!-- SECTION 3: Searchable and filterable inventory catalogue. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Sample stock records for the frontend preview.</p></div></div>
+			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Current stock levels and reorder points.</p></div></div>
 			<div class="toolbar">
 				<label for="inventory-search" style="position:absolute;left:-10000px">Search inventory</label>
 				<input id="inventory-search" class="search-input" type="search" placeholder="Search inventory" data-filter-input="inventory-table">
@@ -158,15 +158,8 @@
 			<div class="table-wrap">
 				<table id="inventory-table">
 					<thead><tr><th>Item</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Status</th></tr></thead>
-					<tbody>
-						<tr data-category="Textbooks"><td>Natural Sciences Grade 8</td><td>Textbooks</td><td>18</td><td>10</td><td><span class="badge">In stock</span></td></tr>
-						<tr data-category="Textbooks"><td>Mathematics Grade 7</td><td>Textbooks</td><td>4</td><td>8</td><td><span class="badge badge--danger">Low stock</span></td></tr>
-						<tr data-category="Stationery"><td>A4 exercise books</td><td>Stationery</td><td>8</td><td>15</td><td><span class="badge badge--warning">Low stock</span></td></tr>
-						<tr data-category="Stationery"><td>Whiteboard markers</td><td>Stationery</td><td>12</td><td>10</td><td><span class="badge">In stock</span></td></tr>
-						<tr data-category="Equipment"><td>Classroom projector</td><td>Equipment</td><td>2</td><td>1</td><td><span class="badge">In stock</span></td></tr>
-					</tbody>
+					<tbody></tbody>
 				</table>
-				<p class="empty-state" id="no-items" hidden>No inventory items match your filters.</p>
 			</div>
 		</section>
 		<!-- SECTION 4: Validate details for a proposed inventory item. -->
@@ -179,37 +172,14 @@
 					<div class="form-field"><label for="item-quantity">Quantity</label><input id="item-quantity" name="quantity" type="number" min="0" max="10000" required></div>
 					<div class="form-field"><label for="reorder-level">Reorder level</label><input id="reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
 				</div>
-				<div id="inventory-feedback" class="notice notice--success" role="status" hidden>Item details validated. No changes were saved in this preview.</div>
-				<button class="button inventory-action-button" type="submit">Validate item</button>
+				<div id="inventory-feedback" class="form-feedback" role="status" hidden></div>
+				<button class="button inventory-action-button" type="submit">Add item</button>
 			</form>
 		</aside>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Filter catalogue records and validate the item form. -->
-	<script>
-		const inventorySearch = document.querySelector("[data-filter-input]");
-		const categoryFilter = document.querySelector("[data-category-filter]");
-		const inventoryRows = document.querySelectorAll("#inventory-table tbody tr");
-		const noItems = document.getElementById("no-items");
-
-		function filterInventory() {
-			const query = inventorySearch.value.trim().toLowerCase();
-			let count = 0;
-			for (const row of inventoryRows) {
-				const visible = row.textContent.toLowerCase().includes(query) && (!categoryFilter.value || row.dataset.category === categoryFilter.value);
-				row.hidden = !visible;
-				if (visible) count++;
-			}
-			noItems.hidden = count > 0;
-		}
-		inventorySearch.addEventListener("input", filterInventory);
-		categoryFilter.addEventListener("change", filterInventory);
-
-		document.getElementById("inventory-form").addEventListener("submit", (event) => {
-			event.preventDefault();
-			if (event.currentTarget.reportValidity()) document.getElementById("inventory-feedback").hidden = false;
-		});
-	</script>
+	<!-- SECTION 5: Inventory list, filters and the add-item form use /api/inventory (static/js/committee-pages.js). -->
+	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}
