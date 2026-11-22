@@ -67,10 +67,9 @@
 		start();
 	}
 
-	/* ---------- Committee dashboard: KPIs, low stock, and accept / decline actions ---------- */
+	/* ---------- Committee dashboard: KPIs and request / booking actions ---------- */
 	const committeeGrid = $(".committee-dashboard .content-grid");
 	if (committeeGrid) {
-		const lowList = $("#low-stock-list");
 		const actionFeedback = $("#action-feedback");
 		const decisionButtons = (kind, id, name, accept) => `<div class="request-decision-actions"><button class="request-decision-button" type="button" data-kind="${kind}" data-id="${esc(id)}" data-decision="${accept}" aria-label="Accept ${esc(name)} ${kind}">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-kind="${kind}" data-id="${esc(id)}" data-decision="Declined" aria-label="Decline ${esc(name)} ${kind}">Decline</button></div>`;
 
@@ -79,36 +78,39 @@
 			try {
 				const data = await api.get("/api/dashboard/committee");
 				showKpis(data.kpis);
-				lowList.innerHTML = data.low_stock.length
-					? data.low_stock.map((i) => `<li><a class="action-link" href="manage-inventory.html"><span>${esc(i.name)}</span>${ui.badge(i.stock === 0 ? "Out of stock" : `${i.stock} left`, i.tone)}</a></li>`).join("")
-					: `<li class="state-row state-row--empty"><span>Every item is above its reorder level.</span></li>`;
 			} catch (error) {
 				showKpiError();
-				lowList.innerHTML = `<li class="state-row state-row--error"><span>Could not load low-stock alerts.</span></li>`;
 				showLoadError(`Could not load the committee summary. ${error.message}`, loadSummary);
 			}
 		}
-		lowList.innerHTML = `<li class="state-row"><span>Loading…</span></li>`;
 
 		const reloadRequests = ui.createTable({
 			tbody: $("#committee-requests-table tbody"),
 			columns: 5,
 			emptyText: "No requests are waiting for review.",
 			load: async () => (await api.get("/api/committee/requests", { status: "In review" })).items,
-			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.requested_by)}</td><td>${ui.formatDate(r.submitted, false)}</td><td>${ui.badge(r.priority, r.priority_tone)}</td><td>${decisionButtons("request", r.id, r.name, "Approved")}</td></tr>`
+			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.requested_by)}</td><td>${ui.formatDate(r.submitted, false)}</td><td>${ui.badge(r.priority, r.priority_tone)}</td><td><div class="request-decision-actions"><a class="request-decision-button" href="request-management.html?request_id=${encodeURIComponent(r.id)}">Review</a><button class="request-decision-button request-decision-button--decline" type="button" data-kind="request" data-id="${esc(r.id)}" data-decision="Declined" aria-label="Decline ${esc(r.name)} request">Decline</button></div></td></tr>`
 		});
 		const reloadBookings = ui.createTable({
 			tbody: $("#committee-bookings-table tbody"),
 			columns: 5,
 			emptyText: "There are no upcoming equipment bookings.",
 			load: async () => (await api.get("/api/committee/bookings")).items,
-			renderRow: (b) => `<tr><td>${esc(b.equipment)} · ${esc(b.room)}</td><td>${esc(b.booked_by)}</td><td>${ui.formatDate(b.date, false)}, ${esc(b.start)}</td><td>${ui.badge(b.status, b.tone)}</td><td>${b.status === "Awaiting approval" ? decisionButtons("booking", b.id, b.equipment, "Confirmed") : "—"}</td></tr>`
+			renderRow: (b) => {
+				const actions = b.status === "Awaiting approval"
+					? decisionButtons("booking", b.id, b.equipment, "Confirmed")
+					: b.status === "Confirmed" && `${b.date}T${b.start}` > new Date().toISOString().slice(0, 16)
+						? `<button class="request-decision-button request-decision-button--decline" type="button" data-kind="booking" data-id="${esc(b.id)}" data-decision="Declined" data-cancel-confirmed="true" aria-label="Cancel ${esc(b.equipment)} booking">Cancel</button>`
+						: "—";
+				return `<tr><td>${esc(b.equipment)} · ${esc(b.room)}</td><td>${esc(b.booked_by)}</td><td>${ui.formatDate(b.date, false)}, ${esc(b.start)}</td><td>${ui.badge(b.status, b.tone)}</td><td>${actions}</td></tr>`;
+			}
 		});
 		const reloadAll = () => Promise.all([reloadRequests(), reloadBookings(), loadSummary()]);
 
 		committeeGrid.addEventListener("click", async (event) => {
 			const button = event.target.closest("button[data-decision]");
 			if (!button) return;
+			if (button.dataset.cancelConfirmed && !window.confirm("Cancel this confirmed equipment booking?")) return;
 			const rowButtons = button.closest("tr").querySelectorAll("button");
 			rowButtons.forEach((b) => { b.disabled = true; });
 			const url = `/api/${button.dataset.kind === "booking" ? "bookings" : "requests"}/${encodeURIComponent(button.dataset.id)}/decision`;

@@ -53,7 +53,8 @@
 	const api = {
 		ApiError,
 		get: (url, params) => request("GET", withQuery(url, params)),
-		post: (url, body) => request("POST", url, body === undefined ? {} : body)
+		post: (url, body) => request("POST", url, body === undefined ? {} : body),
+		put: (url, body) => request("PUT", url, body === undefined ? {} : body)
 	};
 
 	/* ---------- UI helpers ---------- */
@@ -175,7 +176,12 @@
 			ui.clearInvalid(form);
 			ui.setBusy(button, true, options.busyText);
 			try {
-				const data = await api.post(options.endpoint, options.payload(Object.fromEntries(new FormData(form)), form));
+				const values = Object.fromEntries(new FormData(form));
+				const endpoint = typeof options.endpoint === "function" ? options.endpoint(values, form) : options.endpoint;
+				const payload = options.payload(values, form);
+				const data = options.method === "PUT"
+					? await api.put(endpoint, payload)
+					: await api.post(endpoint, payload);
 				ui.showFeedback(feedback, "success", options.success ? options.success(data) : (data.message || "Saved."));
 				if (options.reset !== false) {
 					form.reset();

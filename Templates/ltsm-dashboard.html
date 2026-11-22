@@ -42,6 +42,7 @@
 			text-decoration: none;
 			transition: background .15s ease, color .15s ease;
 		}
+		.committee-nav__link .notification-badge { align-self: center; }
 		.committee-nav__link:hover, .committee-nav__link[aria-current="page"] {
 			border-radius: 7px;
 			background: #008bb2;
@@ -191,7 +192,7 @@
 		.committee-dashboard .stat-value { display: block; margin: 0; color: inherit; font-size: 2.2rem; font-weight: 780; letter-spacing: -.04em; line-height: 1.1; }
 		.committee-dashboard .stat-note { display: block; margin: 0; color: inherit; font-size: .76rem; line-height: 1.4; opacity: .86; }
 		.committee-dashboard .content-grid {
-			grid-template-columns: minmax(0, 1.65fr) minmax(270px, .85fr);
+			grid-template-columns: minmax(0, 1fr);
 			gap: 1.25rem;
 			align-items: start;
 		}
@@ -214,7 +215,6 @@
 			gap: .3rem 1rem;
 			list-style: none;
 		}
-		.committee-dashboard .management-action-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 		.committee-dashboard .colored-action-list > li { min-width: 0; }
 		.committee-dashboard .colored-action-list .action-link {
 			width: 100%;
@@ -249,7 +249,6 @@
 			.committee-dashboard { gap: 1rem; }
 			.committee-dashboard .panel { padding: 1rem; }
 			.committee-dashboard .panel-heading { flex-wrap: wrap; }
-			.committee-dashboard .management-action-list { grid-template-columns: 1fr; }
 		}
 	</style>
 {% endblock %}
@@ -259,6 +258,8 @@
 	<nav class="committee-nav" aria-label="LTSM committee navigation">
 		<div class="committee-nav__inner">
 			<a class="committee-nav__link" href="ltsm-dashboard.html" aria-current="page">Dashboard</a>
+			<a class="committee-nav__link" href="request-management.html" data-notification-link="request-management">Request management<span class="notification-badge" data-notification-badge="request-management" hidden></span></a>
+			<a class="committee-nav__link" href="manage-bookings.html">Equipment bookings</a>
 			<a class="committee-nav__link" href="manage-inventory.html">Inventory</a>
 			<a class="committee-nav__link" href="inventory-summary.html">Inventory summary</a>
 			<a class="committee-nav__link" href="manage-users.html">User accounts</a>
@@ -272,11 +273,6 @@
 			<p class="eyebrow">Committee workspace</p>
 			<h1>Welcome, {{ user.name }}</h1>
 			<p>Monitor inventory, respond to requests and keep school equipment in service.</p>
-		</div>
-		<div class="page-heading-actions">
-			<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
-			<a class="button button-secondary" href="inventory-summary.html">View inventory summary</a>
-			<a class="button button-secondary" href="manage-users.html">Manage user accounts</a>
 		</div>
 	</header>
 
@@ -308,11 +304,11 @@
 		</section>
 	</div>
 
-	<!-- SECTION 4: Pending request decisions and equipment booking actions. -->
+	<!-- SECTION 4: Pending request reviews and equipment booking actions. -->
 	<div class="content-grid">
 		<div class="stack">
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Accept or decline each request for committee review.</p></div></div>
+				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Review request details, confirm stock and schedule collection.</p></div><a href="request-management.html">View all</a></div>
 				<div class="table-wrap">
 					<table id="committee-requests-table">
 						<thead><tr><th>Request</th><th>Requested by</th><th>Date</th><th>Priority</th><th>Action</th></tr></thead>
@@ -321,7 +317,7 @@
 				</div>
 			</section>
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Equipment bookings</h2><p>Upcoming reservations that need attention.</p></div></div>
+				<div class="panel-heading"><div><h2>Upcoming equipment bookings</h2><p>Upcoming reservations that need attention.</p></div><a href="manage-bookings.html">View all</a></div>
 				<div class="table-wrap">
 					<table id="committee-bookings-table">
 						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th><th>Action</th></tr></thead>
@@ -330,27 +326,10 @@
 				</div>
 			</section>
 		</div>
-		<aside class="stack">
-			<section class="panel">
-				<div class="panel-heading"><div><h2>Low-stock alerts</h2><p>Items at or below their reorder point.</p></div></div>
-				<ul class="action-list colored-action-list low-stock-list" id="low-stock-list" aria-live="polite"></ul>
-			</section>
-			<section class="panel">
-				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
-				<ul class="action-list colored-action-list management-action-list">
-					<li><a class="action-link" href="manage-inventory.html">Manage inventory <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="inventory-summary.html">View inventory summary <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="manage-users.html">Manage user accounts <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="issue-return.html">Issue or return items <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="maintenance.html">Log maintenance <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="reports.html">View reports <span aria-hidden="true">→</span></a></li>
-				</ul>
-			</section>
-		</aside>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: KPIs, low-stock alerts and accept / decline actions use the API (static/js/dashboard-pages.js). -->
+	<!-- SECTION 5: KPIs and request / booking actions use the API (static/js/dashboard-pages.js). -->
 	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% set active_page = "request-management" %}
+{% block title %}Request Management | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body:has(.request-management-page) { background: #f4f5f8; }
+		.request-management-page { display: grid; gap: 1.25rem; }
+		.request-management-page .page-heading {
+			position: relative; min-height: 170px; margin: 0; padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center; overflow: hidden; border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.request-management-page .page-heading::after {
+			position: absolute; top: -120px; right: 14%; width: 300px; height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14); border-radius: 50%; content: ""; pointer-events: none;
+		}
+		.request-management-page .page-heading > div { position: relative; z-index: 1; }
+		.request-management-page .page-heading .eyebrow { color: #a9e9db; }
+		.request-management-page .page-heading h1 { color: #fff; }
+		.request-management-page .page-heading p:last-child { color: #e5f2f5; }
+		.request-management-page .panel { min-width: 0; padding: 1.35rem; border-radius: 10px; }
+		.request-management-page .toolbar { gap: .75rem; }
+		.request-management-page .search-input { min-height: 44px; border-color: #d5dfe4; border-radius: 7px; background: #fff; }
+		.request-management-page .table-wrap { overflow-x: auto; border: 1px solid #e1e7eb; border-radius: 9px; }
+		.request-management-page table { min-width: 920px; }
+		.request-management-page table thead { background: #eaf2f5; }
+		.request-management-page table th { padding: .85rem .75rem; color: #035e82; text-align: left; }
+		.request-management-page table td { padding: .9rem .75rem; color: #46545d; vertical-align: middle; }
+		.request-management-page .request-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+		.request-management-page .panel[hidden] { display: none; }
+		.request-management-page .request-detail-grid { margin: 0 0 1rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+		.request-management-page .request-detail { padding: .8rem; border-radius: 8px; background: #f4f8fa; }
+		.request-management-page .request-detail strong { display: block; color: #035e82; font-size: .78rem; }
+		.request-management-page .request-detail span { display: block; margin-top: .2rem; overflow-wrap: anywhere; }
+		.request-management-page .availability-note { margin: 0 0 1rem; }
+		@media (max-width: 650px) {
+			.request-management-page .page-heading { min-height: 0; align-items: flex-start; }
+			.request-management-page .request-detail-grid { grid-template-columns: 1fr; }
+			.request-management-page .panel { padding: 1rem; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="request-management-page">
+		<header class="page-heading">
+			<div><p class="eyebrow">Committee workspace</p><h1>Request management</h1><p>Review incoming requests, check available stock, schedule collection, and record fulfillment.</p></div>
+		</header>
+		<div id="request-management-feedback" class="form-feedback" role="status" hidden></div>
+		<section class="panel" data-notification-history="request-management">
+			<div class="panel-heading"><div><h2>Request notifications</h2><p>New resource requests sent to the LTSM committee.</p></div></div>
+			<ul class="notification-list" data-notification-items><li>Loading notifications…</li></ul>
+		</section>
+		<section class="panel" aria-label="Incoming resource requests">
+			<div class="panel-heading"><div><h2>Incoming requests</h2><p>Allocated requests reserve stock until they are issued or declined.</p></div></div>
+			<div class="toolbar">
+				<label for="committee-request-status" class="sr-only">Filter requests by status</label>
+				<select id="committee-request-status" class="search-input">
+					<option value="">All statuses</option>
+					<option value="In review">In review</option>
+					<option value="Approved">Approved</option>
+					<option value="Ready for collection">Ready for collection</option>
+					<option value="Fulfilled">Fulfilled</option>
+					<option value="Declined">Declined</option>
+				</select>
+			</div>
+			<div class="table-wrap">
+				<table id="committee-request-management-table">
+					<thead><tr><th>Request</th><th>Requested by</th><th>Needed by</th><th>Quantity</th><th>Available</th><th>Status</th><th>Action</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+		<section class="panel" id="request-review-panel" hidden>
+			<div class="panel-heading"><div><h2>Review request</h2><p>Approve only when the full requested quantity is available. Approval reserves stock until it is issued.</p></div></div>
+			<div class="request-detail-grid">
+				<div class="request-detail"><strong>Item / category</strong><span id="review-request-item"></span></div>
+				<div class="request-detail"><strong>Requested by</strong><span id="review-requester"></span></div>
+				<div class="request-detail"><strong>Reason</strong><span id="review-purpose"></span></div>
+			</div>
+			<div id="request-availability-note" class="notice availability-note"></div>
+			<form id="request-decision-form">
+				<input type="hidden" name="request_id">
+				<div class="form-grid">
+					<div class="form-field">
+						<label for="request-decision">Decision</label>
+						<select id="request-decision" name="decision" required>
+							<option value="Approved">Approve and schedule collection</option>
+							<option value="Declined">Decline request</option>
+						</select>
+					</div>
+					<div class="form-field" id="collection-slot-field">
+						<label for="collection-slot">Collection date and time</label>
+						<input id="collection-slot" name="collection_slot" type="datetime-local" required>
+					</div>
+					<div class="form-field" id="collection-location-field">
+						<label for="collection-location">Collection location</label>
+						<select id="collection-location" name="collection_location_id" required>
+							<option value="" disabled selected>Select a collection location</option>
+						</select>
+					</div>
+				</div>
+				<div id="request-decision-feedback" class="form-feedback" role="status" hidden></div>
+				<div class="form-actions">
+					<button class="button" type="submit">Save decision</button>
+					<button class="button button-secondary" id="cancel-request-review" type="button">Cancel</button>
+				</div>
+			</form>
+		</section>
+		<p class="notice">When you mark a request fulfilled, its issue is recorded in the circulation history. Set an expected return date for textbooks and equipment; the requester then appears in Issue / Return for any later return.</p>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
+{% endblock %}

@@ -32,11 +32,13 @@ def run_sql_file(cursor, filename):
 TABLES_IN_DROP_ORDER = (
     "resource_suggestion",
     "maintenance_issue",
+    "user_notification",
     # Drop the audit table before the movement and resource rows it references.
     "inventory_adjustment",
     "item_movement",
     "equipment_booking",
     "resource_request",
+    "collection_location",
     "consumable_demand_history",
     "resource",
     "users",
@@ -71,6 +73,226 @@ def ensure_user_active_column(cursor):
     if cursor.fetchone()["column_count"] == 0:
         cursor.execute(
             "ALTER TABLE `users` ADD COLUMN `is_active` BOOLEAN NOT NULL DEFAULT TRUE"
+        )
+
+
+def ensure_inventory_columns(cursor):
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource'
+        """
+    )
+    columns = {row["column_name"] for row in cursor.fetchall()}
+    if "storage_location" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource` ADD COLUMN `storage_location` VARCHAR(120) DEFAULT NULL"
+        )
+
+    cursor.execute(
+        """
+        ALTER TABLE `resource`
+        MODIFY COLUMN `category`
+          ENUM('Textbooks', 'Stationery', 'Consumables', 'Equipment', 'Other') NOT NULL
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE `resource_request`
+        MODIFY COLUMN `category`
+          ENUM('Textbooks', 'Stationery', 'Consumables', 'Equipment', 'Other') NOT NULL
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE `inventory_adjustment`
+        MODIFY COLUMN `adjustment_type`
+          ENUM('manual', 'received', 'damaged', 'lost', 'obsolete', 'issue', 'return') NOT NULL
+        """
+    )
+
+
+def ensure_request_workflow(cursor):
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource_request'
+        """
+    )
+    columns = {row["column_name"] for row in cursor.fetchall()}
+    if "resource_id" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `resource_id` INT DEFAULT NULL AFTER `user_id`"
+        )
+    if "allocated_quantity" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `allocated_quantity` INT DEFAULT NULL AFTER `quantity`"
+        )
+    if "collection_slot" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `collection_slot` DATETIME DEFAULT NULL AFTER `allocated_quantity`"
+        )
+
+    cursor.execute(
+        """
+        ALTER TABLE `resource_request`
+        MODIFY COLUMN `status`
+          ENUM('In review', 'Approved', 'Ready for collection', 'Declined', 'Fulfilled')
+          NOT NULL DEFAULT 'In review'
+        """
+    )
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS constraint_count
+        FROM information_schema.key_column_usage
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource_request'
+          AND constraint_name = 'resource_request_resource_fk'
+        """
+    )
+    if cursor.fetchone()["constraint_count"] == 0:
+        cursor.execute(
+            """
+            ALTER TABLE `resource_request`
+            ADD KEY `resource_request_resource_idx` (`resource_id`),
+            ADD CONSTRAINT `resource_request_resource_fk`
+              FOREIGN KEY (`resource_id`) REFERENCES `resource` (`resource_id`)
+              ON UPDATE CASCADE ON DELETE SET NULL
+            """
+        )
+    cursor.execute(
+        """
+        UPDATE `resource_request` AS rr
+        JOIN `resource` AS r
+          ON LOWER(TRIM(r.`resource_name`)) = LOWER(TRIM(rr.`resource_name`))
+        SET rr.`resource_id` = r.`resource_id`
+        WHERE rr.`resource_id` IS NULL
+        """
+    )
+
+
+def ensure_collection_locations(cursor):
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource_request'
+        """
+    )
+    columns = {row["column_name"] for row in cursor.fetchall()}
+    if "collection_location_id" not in columns:
+        cursor.execute(
+            """
+            ALTER TABLE `resource_request`
+            ADD COLUMN `collection_location_id` INT DEFAULT NULL AFTER `collection_slot`
+            """
+        )
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS constraint_count
+        FROM information_schema.key_column_usage
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource_request'
+          AND constraint_name = 'resource_request_collection_location_fk'
+        """
+    )
+    if cursor.fetchone()["constraint_count"] == 0:
+        cursor.execute(
+            """
+            ALTER TABLE `resource_request`
+            ADD KEY `resource_request_collection_location_idx` (`collection_location_id`),
+            ADD CONSTRAINT `resource_request_collection_location_fk`
+              FOREIGN KEY (`collection_location_id`) REFERENCES `collection_location` (`location_id`)
+              ON UPDATE CASCADE ON DELETE SET NULL
+            """
+        )
+
+    cursor.executemany(
+        """
+        INSERT IGNORE INTO `collection_location` (`location_name`)
+        VALUES (%s)
+        """,
+        (("Storage Room 01",), ("Printer Room 34",)),
+    )
+
+
+def ensure_circulation_tracking(cursor):
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'item_movement'
+        """
+    )
+    columns = {row["column_name"] for row in cursor.fetchall()}
+    if "issued_quantity" not in columns:
+        cursor.execute(
+            "ALTER TABLE `item_movement` ADD COLUMN `issued_quantity` INT DEFAULT NULL AFTER `quantity`"
+        )
+    if "related_issue_movement_id" not in columns:
+        cursor.execute(
+            "ALTER TABLE `item_movement` ADD COLUMN `related_issue_movement_id` INT DEFAULT NULL AFTER `due_date`"
+        )
+    if "reason" not in columns:
+        cursor.execute(
+            "ALTER TABLE `item_movement` ADD COLUMN `reason` VARCHAR(255) DEFAULT NULL AFTER `related_issue_movement_id`"
+        )
+    cursor.execute(
+        """
+        ALTER TABLE `item_movement`
+        MODIFY COLUMN `movement_type` ENUM('issue', 'return', 'lost', 'damaged') NOT NULL
+        """
+    )
+    cursor.execute(
+        """
+        UPDATE `item_movement`
+        SET `issued_quantity` = `quantity`
+        WHERE `movement_type` = 'issue' AND `issued_quantity` IS NULL
+        """
+    )
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS constraint_count
+        FROM information_schema.key_column_usage
+        WHERE table_schema = DATABASE()
+          AND table_name = 'item_movement'
+          AND constraint_name = 'item_movement_related_issue_fk'
+        """
+    )
+    if cursor.fetchone()["constraint_count"] == 0:
+        cursor.execute(
+            """
+            ALTER TABLE `item_movement`
+            ADD KEY `item_movement_related_issue_idx` (`related_issue_movement_id`),
+            ADD CONSTRAINT `item_movement_related_issue_fk`
+              FOREIGN KEY (`related_issue_movement_id`) REFERENCES `item_movement` (`movement_id`)
+              ON UPDATE CASCADE ON DELETE RESTRICT
+            """
+        )
+
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'inventory_adjustment'
+        """
+    )
+    adjustment_columns = {row["column_name"] for row in cursor.fetchall()}
+    if "quantity_owned_before" not in adjustment_columns:
+        cursor.execute(
+            "ALTER TABLE `inventory_adjustment` ADD COLUMN `quantity_owned_before` INT DEFAULT NULL AFTER `quantity_after`"
+        )
+    if "quantity_owned_after" not in adjustment_columns:
+        cursor.execute(
+            "ALTER TABLE `inventory_adjustment` ADD COLUMN `quantity_owned_after` INT DEFAULT NULL AFTER `quantity_owned_before`"
         )
 
 
@@ -196,11 +418,15 @@ def ensure_inventory_adjustment_history(cursor):
           (`resource_id`, `movement_id`, `adjustment_type`, `quantity_change`,
            `reason`, `recorded_by_user_id`, `created_at`)
         SELECT `resource_id`, `movement_id`, `movement_type`,
-               CASE WHEN `movement_type` = 'issue' THEN -`quantity` ELSE `quantity` END,
+               CASE WHEN `movement_type` IN ('issue', 'lost', 'damaged')
+                    THEN -`quantity` ELSE `quantity` END,
                CASE
                  WHEN `movement_type` = 'issue'
                    THEN CONCAT('Issued to ', `borrower_name`, ' (', `borrower_id`, ')')
-                 ELSE CONCAT('Returned by ', `borrower_name`, ' (', `borrower_id`, ')')
+                 WHEN `movement_type` = 'return'
+                   THEN CONCAT('Returned by ', `borrower_name`, ' (', `borrower_id`, ')')
+                 ELSE CONCAT('Marked ', `movement_type`, ' for ', `borrower_name`,
+                             ' (', `borrower_id`, '): ', COALESCE(`reason`, ''))
                END,
                `recorded_by_user_id`, `created_at`
         FROM `item_movement`
@@ -234,6 +460,10 @@ def main():
                 count = run_sql_file(cursor, filename)
                 if Path(filename).name == "schema.sql":
                     ensure_user_active_column(cursor)
+                    ensure_inventory_columns(cursor)
+                    ensure_request_workflow(cursor)
+                    ensure_collection_locations(cursor)
+                    ensure_circulation_tracking(cursor)
                 connection.commit()
                 print(f"{filename}: executed {count} SQL statements")
             migrated_history = ensure_inventory_sample_history(cursor)

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% set active_page = "bookings-management" %}
+{% block title %}Equipment Bookings | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee{% endblock %}
+{% block dashboard_url %}ltsm-dashboard.html{% endblock %}
+{% block head %}
+	<style>
+		body:has(.equipment-bookings-page) { background: #f4f5f8; }
+		.equipment-bookings-page { display: grid; gap: 1.25rem; }
+		.equipment-bookings-page .page-heading {
+			position: relative; min-height: 170px; margin: 0; padding: clamp(1.5rem, 3vw, 2.25rem);
+			align-items: center; overflow: hidden; border-radius: 12px;
+			background: linear-gradient(115deg, #035e82, #007a9d 68%, #008bb2);
+			box-shadow: 0 10px 26px rgba(3, 94, 130, .2);
+		}
+		.equipment-bookings-page .page-heading::after {
+			position: absolute; top: -120px; right: 14%; width: 300px; height: 300px;
+			border: 28px solid rgba(255, 255, 255, .14); border-radius: 50%; content: ""; pointer-events: none;
+		}
+		.equipment-bookings-page .page-heading > div { position: relative; z-index: 1; }
+		.equipment-bookings-page .page-heading .eyebrow { color: #a9e9db; }
+		.equipment-bookings-page .page-heading h1 { color: #fff; }
+		.equipment-bookings-page .page-heading p:last-child { color: #e5f2f5; }
+		.equipment-bookings-page .panel { min-width: 0; padding: 1.35rem; border-radius: 10px; }
+		.equipment-bookings-page .toolbar { gap: .75rem; }
+		.equipment-bookings-page .search-input { min-height: 44px; border-color: #d5dfe4; border-radius: 7px; background: #fff; }
+		.equipment-bookings-page .table-wrap { overflow-x: auto; border: 1px solid #e1e7eb; border-radius: 9px; }
+		.equipment-bookings-page table { min-width: 880px; }
+		.equipment-bookings-page table thead { background: #eaf2f5; }
+		.equipment-bookings-page table th { padding: .85rem .75rem; color: #035e82; text-align: left; }
+		.equipment-bookings-page table td { padding: .9rem .75rem; color: #46545d; vertical-align: middle; }
+		.equipment-bookings-page .booking-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+		.equipment-bookings-page .calendar-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; }
+		.equipment-bookings-page .calendar-controls,
+		.equipment-bookings-page .calendar-views { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+		.equipment-bookings-page .calendar-title { min-width: 180px; margin: 0 .4rem; color: #173e50; font-size: 1.05rem; text-align: center; }
+		.equipment-bookings-page .calendar-view-button[aria-pressed="true"] { background: #035e82; color: #fff; }
+		.equipment-bookings-page .booking-calendar { margin-top: 1rem; }
+		.equipment-bookings-page .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid #e1e7eb; border-left: 1px solid #e1e7eb; }
+		.equipment-bookings-page .calendar-weekday { padding: .55rem .35rem; background: #eaf2f5; color: #035e82; font-size: .78rem; font-weight: 700; text-align: center; }
+		.equipment-bookings-page .calendar-day { min-width: 0; min-height: 106px; padding: .4rem; border-right: 1px solid #e1e7eb; border-bottom: 1px solid #e1e7eb; background: #fff; }
+		.equipment-bookings-page .calendar-day-select { display: block; margin: 0 0 .35rem; padding: 0; border: 0; background: transparent; color: #31515c; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+		.equipment-bookings-page .calendar-day-select:hover { color: #008bb2; text-decoration: underline; }
+		.equipment-bookings-page .calendar-day--outside { background: #f7f9fa; color: #89969c; }
+		.equipment-bookings-page .calendar-day--selected { box-shadow: inset 0 0 0 2px #008bb2; }
+		.equipment-bookings-page .calendar-day__number { display: block; margin-bottom: .35rem; color: #31515c; font-size: .8rem; font-weight: 700; }
+		.equipment-bookings-page .calendar-day__number--today { color: #008bb2; }
+		.equipment-bookings-page .calendar-booking { margin: .25rem 0; padding: .3rem .4rem; overflow: hidden; border-left: 3px solid #008bb2; border-radius: 4px; background: #eaf2f5; color: #23434f; font-size: .72rem; line-height: 1.3; overflow-wrap: anywhere; }
+		.equipment-bookings-page .calendar-booking--declined { border-left-color: #b94b40; background: #fbefed; }
+		.equipment-bookings-page .calendar-booking--awaiting { border-left-color: #c18a21; background: #fbf2df; }
+		.equipment-bookings-page .calendar-booking__time { display: block; font-weight: 750; }
+		.equipment-bookings-page .calendar-day--single { grid-column: 1 / -1; min-height: 220px; padding: 1rem; }
+		.equipment-bookings-page .calendar-day--single .calendar-booking { max-width: 640px; padding: .75rem; font-size: .88rem; }
+		.equipment-bookings-page .calendar-empty { padding: 1.5rem; color: #62716d; text-align: center; }
+		.equipment-bookings-page .calendar-status-filter { max-width: 230px; }
+		@media (max-width: 650px) {
+			.equipment-bookings-page .page-heading { min-height: 0; align-items: flex-start; }
+			.equipment-bookings-page .panel { padding: 1rem; }
+			.equipment-bookings-page .calendar-toolbar { align-items: stretch; }
+			.equipment-bookings-page .calendar-controls { justify-content: center; }
+			.equipment-bookings-page .calendar-views { justify-content: center; }
+			.equipment-bookings-page .calendar-grid { min-width: 700px; }
+			.equipment-bookings-page .calendar-grid-wrap { overflow-x: auto; }
+			.equipment-bookings-page .calendar-day { min-height: 82px; padding: .25rem; }
+		}
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="equipment-bookings-page">
+		<header class="page-heading">
+			<div><p class="eyebrow">Committee workspace</p><h1>Equipment bookings</h1><p>Review all past and upcoming equipment reservations, including pending and declined bookings.</p></div>
+		</header>
+		<div id="all-bookings-feedback" class="form-feedback" role="status" hidden></div>
+		<section class="panel" aria-label="Equipment bookings calendar">
+			<div class="panel-heading"><div><h2>Booking calendar</h2><p>View reservations by day, week or month.</p></div></div>
+			<div class="calendar-toolbar">
+				<div class="calendar-controls">
+					<button class="button button-secondary button-small" id="booking-calendar-previous" type="button" aria-label="Previous period">‹</button>
+					<button class="button button-secondary button-small" id="booking-calendar-today" type="button">Today</button>
+					<button class="button button-secondary button-small" id="booking-calendar-next" type="button" aria-label="Next period">›</button>
+					<h3 class="calendar-title" id="booking-calendar-title" aria-live="polite"></h3>
+				</div>
+				<div class="calendar-views" role="group" aria-label="Calendar view">
+					<button class="button button-secondary button-small calendar-view-button" type="button" data-calendar-view="day" aria-pressed="false">Day</button>
+					<button class="button button-secondary button-small calendar-view-button" type="button" data-calendar-view="week" aria-pressed="false">Week</button>
+					<button class="button button-secondary button-small calendar-view-button" type="button" data-calendar-view="month" aria-pressed="true">Month</button>
+				</div>
+			</div>
+			<div class="toolbar" style="margin-top:1rem">
+				<label for="calendar-booking-status" class="sr-only">Filter calendar by booking status</label>
+				<select id="calendar-booking-status" class="search-input calendar-status-filter">
+					<option value="">All statuses</option>
+					<option value="Awaiting approval">Awaiting approval</option>
+					<option value="Confirmed">Confirmed</option>
+					<option value="Declined">Declined</option>
+				</select>
+			</div>
+			<div id="booking-calendar" class="booking-calendar calendar-grid-wrap" aria-live="polite"></div>
+		</section>
+		<section class="panel" aria-label="All equipment bookings">
+			<div class="panel-heading"><div><h2>All bookings</h2><p>Use the status filter to find bookings by decision.</p></div></div>
+			<div class="toolbar">
+				<label for="all-bookings-status" class="sr-only">Filter bookings by status</label>
+				<select id="all-bookings-status" class="search-input">
+					<option value="">All statuses</option>
+					<option value="Awaiting approval">Awaiting approval</option>
+					<option value="Confirmed">Confirmed</option>
+					<option value="Declined">Declined</option>
+				</select>
+			</div>
+			<div class="table-wrap">
+				<table id="all-bookings-table">
+					<thead><tr><th>Equipment</th><th>Booked by</th><th>Date and time</th><th>Room</th><th>Purpose</th><th>Status</th><th>Action</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+	</div>
+{% endblock %}
+{% block scripts %}
+	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
+{% endblock %}

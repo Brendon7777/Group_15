@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "my-requests" %}
-<!-- Shows request statuses and updates, with a filter for tracking submitted sample requests. -->
+<!-- Shows request statuses and updates, with a filter for tracking submitted requests. -->
 {% block title %}My Requests | LTSM Portal{% endblock %}
 {% block role %}Teacher / Learner{% endblock %}
 {% block head %}
@@ -95,13 +95,17 @@
 		<div><p class="eyebrow">Request tracking</p><h1>My requests</h1><p>Review the status and latest update for each submitted request.</p></div>
 		<a class="button" href="request-resources.html">＋ New request</a>
 	</header>
+	<section class="panel" data-notification-history="my-requests">
+		<div class="panel-heading"><div><h2>Request notifications</h2><p>Updates from the LTSM committee about your requests.</p></div></div>
+		<ul class="notification-list" data-notification-items><li>Loading notifications…</li></ul>
+	</section>
 
 	<!-- SECTION 3: Filterable table of submitted request statuses and updates. -->
 	<section class="panel">
 		<div class="toolbar">
 			<label for="request-status" style="position:absolute;left:-10000px">Filter requests by status</label>
 			<select id="request-status" class="search-input" data-status-filter="requests-table">
-				<option value="">All statuses</option><option value="In review">In review</option><option value="Approved">Approved</option><option value="Ready for collection">Ready for collection</option><option value="Declined">Declined</option>
+				<option value="">All statuses</option><option value="In review">In review</option><option value="Approved">Approved</option><option value="Ready for collection">Ready for collection</option><option value="Fulfilled">Fulfilled</option><option value="Declined">Declined</option>
 			</select>
 			<a href="view-resources.html">Browse catalogue</a>
 		</div>

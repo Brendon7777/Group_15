@@ -150,7 +150,7 @@
 			<label for="resource-search" class="sr-only" style="position:absolute;left:-10000px">Search resources</label>
 			<input class="search-input" id="resource-search" type="search" placeholder="Search by item or category" data-filter-input="resource-list">
 			<select class="search-input" id="category-filter" aria-label="Filter by category" data-category-filter="resource-list">
-				<option value="">All categories</option><option value="Textbooks">Textbooks</option><option value="Stationery">Stationery</option><option value="Equipment">Equipment</option><option value="Other">Other</option>
+				<option value="">All categories</option><option value="Textbooks">Textbooks</option><option value="Stationery">Stationery</option><option value="Consumables">Consumables</option><option value="Equipment">Equipment</option><option value="Other">Other</option>
 			</select>
 			<a class="button" href="request-resources.html">＋ Request an item</a>
 		</div>
@@ -165,5 +165,6 @@
 {% endblock %}
 {% block scripts %}
 	<!-- SECTION 4: Search and category filter call the database-backed GET /api/resources endpoint. -->
+	<script src="{{ url_for('static', filename='js/resource-images.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}

@@ -46,9 +46,9 @@ def today():
     return now().date()
 
 
-CATEGORIES = ["Textbooks", "Stationery", "Equipment", "Other"]
-CATEGORY_WORD = {"Textbooks": "textbook", "Stationery": "stationery", "Equipment": "equipment", "Other": "other"}
-REQUEST_TONES = {"In review": "warning", "Approved": "ok", "Ready for collection": "blue", "Declined": "danger"}
+CATEGORIES = ["Textbooks", "Stationery", "Consumables", "Equipment", "Other"]
+CATEGORY_WORD = {"Textbooks": "textbook", "Stationery": "stationery", "Consumables": "consumable", "Equipment": "equipment", "Other": "other"}
+REQUEST_TONES = {"In review": "warning", "Approved": "ok", "Ready for collection": "blue", "Fulfilled": "ok", "Declined": "danger"}
 BOOKING_TONES = {"Confirmed": "ok", "Awaiting approval": "warning", "Declined": "danger"}
 MAINTENANCE_TONES = {"Open": "warning", "In repair": "warning", "Out of service": "danger", "Resolved": "ok"}
 
@@ -183,8 +183,20 @@ def resource_rows():
         """
         SELECT resource_id AS id, resource_name AS name,
                COALESCE(description, '') AS description, category,
-               quantity_in_stock AS stock, reorder_level,
-               unit_of_measure AS unit
+               CAST(quantity_in_stock - COALESCE((
+                   SELECT SUM(rr.allocated_quantity)
+                   FROM resource_request AS rr
+                   WHERE rr.resource_id = resource.resource_id
+                     AND rr.status = 'Ready for collection'
+               ), 0) AS SIGNED) AS stock,
+               CAST(COALESCE((
+                   SELECT SUM(rr.allocated_quantity)
+                   FROM resource_request AS rr
+                   WHERE rr.resource_id = resource.resource_id
+                     AND rr.status = 'Ready for collection'
+               ), 0) AS SIGNED) AS reserved,
+               reorder_level,
+               unit_of_measure AS unit, COALESCE(storage_location, '') AS storage_location
         FROM resource
         ORDER BY resource_name, grade, resource_id
         """
@@ -229,7 +241,7 @@ def stock_status(item):
 # --------------------------------------------------------------------------- #
 PUBLIC_PAGES = {"index", "login", "register", "suggest-resource"}
 USER_PAGES = {"user-dashboard", "view-resources", "resource", "request-resources", "my-requests", "book-equipment"}
-COMMITTEE_PAGES = {"ltsm-dashboard", "manage-inventory", "issue-return", "maintenance", "reports", "manage-users", "inventory-summary"}
+COMMITTEE_PAGES = {"ltsm-dashboard", "manage-inventory", "request-management", "manage-bookings", "issue-return", "maintenance", "reports", "manage-users", "inventory-summary"}
 
 
 def dashboard_for(user):
@@ -295,6 +307,91 @@ def page(page):
             summary_warnings=summary_warnings,
         )
     return render_template(f"{page}.html", user=user)
+
+
+NOTIFICATION_MODULES = ("request-management", "my-requests", "bookings")
+
+
+def create_notification(cursor, user_id, module, title, message, target_url):
+    cursor.execute(
+        """
+        INSERT INTO user_notification
+          (user_id, module, title, message, target_url)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (user_id, module, title, message, target_url),
+    )
+
+
+def notify_role(cursor, role, module, title, message, target_url):
+    cursor.execute(
+        "SELECT user_id FROM users WHERE role = %s AND is_active = TRUE",
+        (role,),
+    )
+    for recipient in cursor.fetchall():
+        create_notification(
+            cursor, recipient["user_id"], module, title, message, target_url
+        )
+
+
+@app.get("/api/notifications")
+@api_route()
+def api_notifications(user):
+    module = request.args.get("module", "").strip()
+    if module and module not in NOTIFICATION_MODULES:
+        raise ApiError("Choose a valid notification module.")
+    counts = db.query_all(
+        """
+        SELECT module, COUNT(*) AS unread_count
+        FROM user_notification
+        WHERE user_id = %s AND read_at IS NULL
+        GROUP BY module
+        """,
+        (user["id"],),
+    )
+    items = []
+    if module:
+        items = db.query_all(
+            """
+            SELECT notification_id AS id, module, title, message, target_url,
+                   DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H:%%i:%%s') AS created_at,
+                   (read_at IS NULL) AS unread
+            FROM user_notification
+            WHERE user_id = %s AND module = %s
+            ORDER BY created_at DESC, notification_id DESC
+            LIMIT 50
+            """,
+            (user["id"], module),
+        )
+    return jsonify(
+        unread={item["module"]: item["unread_count"] for item in counts},
+        items=items,
+    )
+
+
+@app.post("/api/notifications/read")
+@api_route()
+def api_mark_notifications_read(user):
+    v = Validator(json_body())
+    module = v.choice("module", "Module", NOTIFICATION_MODULES)
+    v.done()
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE user_notification
+                SET read_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s AND module = %s AND read_at IS NULL
+                """,
+                (user["id"], module),
+            )
+            changed = cursor.rowcount
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    return jsonify(message="Notifications marked as read.", updated=changed)
 
 
 # --------------------------------------------------------------------------- #
@@ -469,10 +566,17 @@ def api_create_request(user):
     v.done()
     inventory_item = db.query_one(
         """
-        SELECT resource_name AS name, category, quantity_in_stock AS stock,
-               unit_of_measure AS unit
-        FROM resource
-        WHERE LOWER(TRIM(resource_name)) = LOWER(%s)
+        SELECT r.resource_id, r.resource_name AS name, r.category,
+               CAST(r.quantity_in_stock - COALESCE((
+                   SELECT SUM(rr.allocated_quantity)
+                   FROM resource_request AS rr
+                   WHERE rr.resource_id = r.resource_id
+                     AND rr.status = 'Ready for collection'
+               ), 0) AS SIGNED) AS stock,
+               r.unit_of_measure AS unit
+        FROM resource AS r
+        WHERE LOWER(TRIM(r.resource_name)) = LOWER(TRIM(%s))
+        ORDER BY r.grade, r.resource_id
         LIMIT 1
         """,
         (row["name"],),
@@ -485,18 +589,32 @@ def api_create_request(user):
                 {"quantity": "Requested quantity exceeds current availability."},
             )
         row["category"] = inventory_item["category"]
-    request_id = db.execute(
-        """
-        INSERT INTO resource_request
-          (user_id, resource_name, category, quantity, needed_by, purpose,
-           submitted_date, status, latest_update)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'In review', 'Committee review in progress')
-        """,
-        (
-            user["id"], row["name"], row["category"], row["quantity"],
-            row["needed_by"], row["purpose"], today(),
-        ),
-    )
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO resource_request
+                  (user_id, resource_id, resource_name, category, quantity, needed_by, purpose,
+                   submitted_date, status, latest_update)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'In review', 'Committee review in progress')
+                """,
+                (
+                    user["id"], inventory_item["resource_id"] if inventory_item else None,
+                    row["name"], row["category"], row["quantity"],
+                    row["needed_by"], row["purpose"], today(),
+                ),
+            )
+            request_id = cursor.lastrowid
+            notify_role(
+                cursor, "ltsm", "request-management", "New resource request",
+                f"{user['name']} requested {row['quantity']} × {row['name']}.",
+                "/request-management.html",
+            )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
     return jsonify(message="Request submitted.", id=request_id), 201
 
 
@@ -506,9 +624,13 @@ def api_my_requests(user):
     status = request.args.get("status", "").strip()
     sql = """
         SELECT request_id AS id, resource_name AS name, category,
-               submitted_date AS submitted, quantity, needed_by, status,
+               submitted_date AS submitted, quantity, allocated_quantity,
+               collection_slot, cl.location_name AS collection_location,
+               needed_by, status,
                latest_update AS `update`
         FROM resource_request
+        LEFT JOIN collection_location AS cl
+          ON cl.location_id = resource_request.collection_location_id
         WHERE user_id = %s
     """
     params = [user["id"]]
@@ -522,6 +644,10 @@ def api_my_requests(user):
             **row,
             "submitted": date_value(row["submitted"]),
             "needed_by": date_value(row["needed_by"]) if row["needed_by"] else None,
+            "collection_slot": (
+                row["collection_slot"].isoformat(sep=" ", timespec="minutes")
+                if row["collection_slot"] else None
+            ),
             "tone": REQUEST_TONES[row["status"]],
         }
         for row in rows
@@ -550,38 +676,47 @@ def api_create_booking(user):
     if start and end and end <= start:
         v._fail("end_time", "End time must be after start time.")
     v.done()
-    item = db.query_one(
-        """
-        SELECT resource_id AS id, resource_name AS name, category,
-               quantity_in_stock AS stock
-        FROM resource
-        WHERE resource_id = %s
-        """,
-        (equipment_id,),
-    )
-    if not item or item["category"] != "Equipment":
-        raise ApiError("Choose equipment from the list.", 400, {"equipment_id": "Unknown equipment."})
-    overlapping = db.query_one(
-        """
-        SELECT COUNT(*) AS booking_count
-        FROM equipment_booking
-        WHERE resource_id = %s AND booking_date = %s
-          AND status != 'Declined'
-          AND start_time < %s AND end_time > %s
-        """,
-        (item["id"], day, end, start),
-    )["booking_count"]
-    if overlapping >= item["stock"]:
-        raise ApiError(f"No {item['name']} is free on {day.isoformat()} between {start} and {end}. Try another time.", 409)
-    booking_id = db.execute(
-        """
-        INSERT INTO equipment_booking
-          (user_id, resource_id, booking_date, start_time, end_time,
-           room, purpose, status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'Awaiting approval')
-        """,
-        (user["id"], item["id"], day, start, end, room, purpose),
-    )
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT resource_id AS id, resource_name AS name, category,
+                       quantity_in_stock AS stock
+                FROM resource WHERE resource_id = %s FOR UPDATE
+                """,
+                (equipment_id,),
+            )
+            item = cursor.fetchone()
+            if not item or item["category"] != "Equipment":
+                raise ApiError("Choose equipment from the list.", 400, {"equipment_id": "Unknown equipment."})
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS booking_count
+                FROM equipment_booking
+                WHERE resource_id = %s AND booking_date = %s
+                  AND status != 'Declined'
+                  AND start_time < %s AND end_time > %s
+                """,
+                (item["id"], day, end, start),
+            )
+            overlapping = cursor.fetchone()["booking_count"]
+            if overlapping >= item["stock"]:
+                raise ApiError(f"No {item['name']} is free on {day.isoformat()} between {start} and {end}. Try another time.", 409)
+            cursor.execute(
+                """
+                INSERT INTO equipment_booking
+                  (user_id, resource_id, booking_date, start_time, end_time,
+                   room, purpose, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'Awaiting approval')
+                """,
+                (user["id"], item["id"], day, start, end, room, purpose),
+            )
+            booking_id = cursor.lastrowid
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
     return jsonify(message=f"Booking requested: {item['name']} on {day.isoformat()}, {start}–{end}. The LTSM committee will confirm it."), 201
 
 
@@ -622,7 +757,11 @@ def api_inventory(user):
     items = []
     for item in filter(lambda i: matches(i, query, category), resource_rows()):
         label, tone = stock_status(item)
-        items.append({**{k: item[k] for k in ("id", "name", "category", "stock", "reorder_level")}, "status": label, "tone": tone})
+        items.append({
+            **{k: item[k] for k in ("id", "name", "category", "stock", "reorder_level", "description", "unit", "storage_location")},
+            "status": label,
+            "tone": tone,
+        })
     return jsonify(items=items)
 
 
@@ -634,6 +773,9 @@ def api_add_inventory(user):
     category = v.choice("category", "Category", CATEGORIES)
     stock = v.integer("quantity", "Quantity", 0, 10000)
     reorder = v.integer("reorder_level", "Reorder level", 0, 10000)
+    description = v.text("description", "Description", 0, 255)
+    unit = v.text("unit", "Unit", 0, 45) or "units"
+    storage_location = v.text("storage_location", "Storage location", 0, 120)
     v.done()
     connection = db.get_db()
     try:
@@ -648,12 +790,21 @@ def api_add_inventory(user):
                 """
                 INSERT INTO resource
                   (resource_name, category, quantity_owned, quantity_in_stock,
-                   reorder_level, description, unit_of_measure)
-                VALUES (%s, %s, %s, %s, %s, %s, 'units')
+                   reorder_level, description, unit_of_measure, storage_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (name, category, stock, stock, reorder, "Added by the LTSM committee"),
+                (name, category, stock, stock, reorder, description, unit, storage_location or None),
             )
             resource_id = cursor.lastrowid
+            cursor.execute(
+                """
+                UPDATE resource_request
+                SET resource_id = %s, category = %s
+                WHERE resource_id IS NULL AND status = 'In review'
+                  AND LOWER(TRIM(resource_name)) = LOWER(TRIM(%s))
+                """,
+                (resource_id, category, name),
+            )
             if stock:
                 record_inventory_adjustment(
                     cursor, resource_id, None, "manual", stock, 0, stock,
@@ -666,20 +817,83 @@ def api_add_inventory(user):
     return jsonify(message=f"{name} added to the inventory.", id=resource_id), 201
 
 
+@app.put("/api/inventory/<int:item_id>")
+@api_route("ltsm")
+def api_update_inventory(user, item_id):
+    v = Validator(json_body())
+    name = v.text("item_name", "Item name", 1, 100)
+    category = v.choice("category", "Category", CATEGORIES)
+    reorder = v.integer("reorder_level", "Reorder level", 0, 10000)
+    description = v.text("description", "Description", 0, 255)
+    unit = v.text("unit", "Unit", 0, 45) or "units"
+    storage_location = v.text("storage_location", "Storage location", 0, 120)
+    v.done()
+
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT resource_id FROM resource WHERE resource_id = %s FOR UPDATE",
+                (item_id,),
+            )
+            if cursor.fetchone() is None:
+                raise ApiError("That inventory item does not exist.", 404)
+            cursor.execute(
+                """
+                SELECT resource_id FROM resource
+                WHERE LOWER(resource_name) = LOWER(%s) AND resource_id <> %s
+                LIMIT 1
+                """,
+                (name, item_id),
+            )
+            if cursor.fetchone():
+                raise ApiError(f"{name} is already in the inventory.", 409, {"item_name": "Already exists."})
+            cursor.execute(
+                """
+                UPDATE resource
+                SET resource_name = %s, category = %s, reorder_level = %s,
+                    description = %s, unit_of_measure = %s, storage_location = %s
+                WHERE resource_id = %s
+                """,
+                (name, category, reorder, description, unit, storage_location or None, item_id),
+            )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    return jsonify(message=f"{name} updated.")
+
+
 def record_inventory_adjustment(cursor, resource_id, movement_id, kind, quantity_change,
-                                quantity_before, quantity_after, reason, user_id):
+                                quantity_before, quantity_after, reason, user_id,
+                                quantity_owned_before=None, quantity_owned_after=None):
     cursor.execute(
         """
         INSERT INTO inventory_adjustment
           (resource_id, movement_id, adjustment_type, quantity_change,
-           quantity_before, quantity_after, reason, recorded_by_user_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+           quantity_before, quantity_after, quantity_owned_before,
+           quantity_owned_after, reason, recorded_by_user_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             resource_id, movement_id, kind, quantity_change,
-            quantity_before, quantity_after, reason, user_id,
+            quantity_before, quantity_after, quantity_owned_before,
+            quantity_owned_after, reason, user_id,
         ),
     )
+
+
+def locked_reserved_quantity(cursor, resource_id):
+    cursor.execute(
+        """
+        SELECT allocated_quantity
+        FROM resource_request
+        WHERE resource_id = %s AND status = 'Ready for collection'
+        FOR UPDATE
+        """,
+        (resource_id,),
+    )
+    return sum(row["allocated_quantity"] or 0 for row in cursor.fetchall())
 
 
 @app.get("/api/inventory/adjustments")
@@ -689,6 +903,7 @@ def api_inventory_adjustments(user):
         """
         SELECT r.resource_name AS item, a.adjustment_type,
                a.quantity_change, a.quantity_before, a.quantity_after,
+               a.quantity_owned_after,
                a.reason, COALESCE(u.full_name, 'Former user') AS recorded_by,
                DATE_FORMAT(a.created_at, '%%Y-%%m-%%d %%H:%%i') AS adjusted_at
         FROM inventory_adjustment AS a
@@ -706,18 +921,18 @@ def api_inventory_adjustments(user):
 def api_adjust_inventory(user):
     v = Validator(json_body())
     item_id = v.integer("item_id", "Item", 1, 10**9)
-    action = v.choice("action", "Adjustment", ("add", "remove"))
+    action = v.choice("action", "Adjustment", ("receive", "add", "remove", "damaged", "lost", "obsolete"))
     quantity = v.integer("quantity", "Quantity", 1, 10000)
     reason = v.text("reason", "Reason", 3, 255)
     v.done()
 
-    quantity_change = quantity if action == "add" else -quantity
+    quantity_change = quantity if action in ("receive", "add") else -quantity
     connection = db.get_db()
     try:
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT resource_id, resource_name, quantity_in_stock
+                SELECT resource_id, resource_name, quantity_in_stock, quantity_owned
                 FROM resource
                 WHERE resource_id = %s
                 FOR UPDATE
@@ -728,26 +943,49 @@ def api_adjust_inventory(user):
             if not item:
                 raise ApiError("Choose an item from the inventory.", 404)
 
+            item["available_stock"] = item["quantity_in_stock"] - locked_reserved_quantity(cursor, item_id)
             quantity_after = item["quantity_in_stock"] + quantity_change
-            if quantity_after < 0:
+            if action not in ("receive", "add") and quantity > item["available_stock"]:
                 raise ApiError(
-                    f"Only {item['quantity_in_stock']} of {item['resource_name']} are in stock.",
+                    f"Only {item['available_stock']} of {item['resource_name']} are available to adjust.",
                     409,
-                    {"quantity": "Cannot remove more than the available stock."},
+                    {"quantity": "Cannot remove stock already allocated to requests."},
                 )
-            cursor.execute(
-                "UPDATE resource SET quantity_in_stock = %s WHERE resource_id = %s",
-                (quantity_after, item_id),
+            if action in ("receive", "add"):
+                cursor.execute(
+                    """
+                    UPDATE resource
+                    SET quantity_in_stock = %s, quantity_owned = quantity_owned + %s
+                    WHERE resource_id = %s
+                    """,
+                    (quantity_after, quantity, item_id),
+                )
+                kind = "received"
+            else:
+                cursor.execute(
+                    "UPDATE resource SET quantity_in_stock = %s WHERE resource_id = %s",
+                    (quantity_after, item_id),
+                )
+                kind = "manual" if action == "remove" else action
+            available_after = quantity_after - (
+                item["quantity_in_stock"] - item["available_stock"]
             )
             record_inventory_adjustment(
-                cursor, item_id, None, "manual", quantity_change,
+                cursor, item_id, None, kind, quantity_change,
                 item["quantity_in_stock"], quantity_after, reason, user["id"],
             )
         connection.commit()
-        verb = "added to" if action == "add" else "removed from"
+        verb = {
+            "receive": "received into",
+            "add": "received into",
+            "remove": "removed from",
+            "damaged": "written off as damaged from",
+            "lost": "written off as lost from",
+            "obsolete": "written off as obsolete from",
+        }[action]
         return jsonify(
             message=f"{quantity} × {item['resource_name']} {verb} stock. "
-                    f"Available stock is now {quantity_after}."
+                    f"Available stock is now {available_after}."
         ), 200
     except Exception:
         connection.rollback()
@@ -768,20 +1006,84 @@ def loan_status(loan):
 def api_loans(user):
     rows = db.query_all(
         """
-        SELECT m.movement_id AS id, m.borrower_name AS borrower,
-               r.resource_name AS item, m.quantity, m.due_date AS due
+        SELECT m.movement_id AS id, m.borrower_id, m.borrower_name AS borrower,
+               m.resource_id AS item_id, r.resource_name AS item,
+               m.movement_date AS issued,
+               CAST(COALESCE(m.issued_quantity, m.quantity) - COALESCE(SUM(e.quantity), 0) AS SIGNED) AS quantity,
+               m.due_date AS due
         FROM item_movement AS m
         JOIN resource AS r ON r.resource_id = m.resource_id
+        LEFT JOIN item_movement AS e
+          ON e.related_issue_movement_id = m.movement_id
+         AND e.movement_type IN ('return', 'lost', 'damaged')
         WHERE m.movement_type = 'issue' AND m.active_loan = TRUE
+        GROUP BY m.movement_id, m.borrower_id, m.borrower_name, m.resource_id,
+                 r.resource_name, m.movement_date, m.issued_quantity, m.quantity, m.due_date
+        HAVING quantity > 0
         ORDER BY m.due_date, m.movement_date, m.movement_id
         """
     )
     items = []
     for loan in rows:
+        loan["issued"] = date_value(loan["issued"])
         loan["due"] = date_value(loan["due"]) if loan["due"] else None
         label, tone = loan_status(loan)
-        items.append({"id": loan["id"], "borrower": loan["borrower"], "item": loan["item"], "quantity": loan["quantity"], "due": loan["due"], "status": label, "tone": tone})
+        items.append({
+            "id": loan["id"], "borrower_id": loan["borrower_id"],
+            "borrower": loan["borrower"], "item_id": loan["item_id"],
+            "item": loan["item"], "quantity": loan["quantity"],
+            "issued": loan["issued"], "due": loan["due"],
+            "status": label, "tone": tone,
+        })
     return jsonify(items=items)
+
+
+@app.get("/api/borrowers")
+@api_route("ltsm")
+def api_borrowers(user):
+    rows = db.query_all(
+        """
+        SELECT school_id AS id, full_name AS name, role
+        FROM users
+        WHERE role IN ('learner', 'staff') AND is_active = TRUE
+        ORDER BY full_name, school_id
+        """
+    )
+    return jsonify(items=rows)
+
+
+@app.get("/api/movement-history")
+@api_route("ltsm")
+def api_movement_history(user):
+    query = request.args.get("q", "").strip()[:100]
+    search = f"%{query}%"
+    sql = """
+        SELECT m.movement_id AS id, m.related_issue_movement_id AS issue_id,
+               m.movement_type, m.borrower_id, m.borrower_name AS borrower,
+               r.resource_name AS item, m.quantity, m.movement_date AS date,
+               m.due_date AS due, m.reason,
+               COALESCE(u.full_name, 'Former user') AS recorded_by,
+               DATE_FORMAT(m.created_at, '%%Y-%%m-%%d %%H:%%i') AS recorded_at
+        FROM item_movement AS m
+        JOIN resource AS r ON r.resource_id = m.resource_id
+        LEFT JOIN users AS u ON u.user_id = m.recorded_by_user_id
+        WHERE (%s = ''
+           OR m.borrower_id LIKE %s
+           OR m.borrower_name LIKE %s
+           OR r.resource_name LIKE %s
+           OR COALESCE(m.reason, '') LIKE %s)
+        ORDER BY m.movement_date DESC, m.movement_id DESC
+        """
+    if not query:
+        sql += " LIMIT 200"
+    rows = db.query_all(
+        sql,
+        (query, search, search, search, search),
+    )
+    for row in rows:
+        row["date"] = date_value(row["date"])
+        row["due"] = date_value(row["due"]) if row["due"] else None
+    return jsonify(items=rows)
 
 
 @app.post("/api/movements")
@@ -789,41 +1091,61 @@ def api_loans(user):
 def api_movement(user):
     data = json_body()
     v = Validator(data)
-    kind = v.choice("movement_type", "Action", ("issue", "return"))
-    item_id = v.integer("item_id", "Item", 1, 10**9)
-    borrower_id = v.text("borrower_id", "Student / staff number", 1, 40)
+    kind = v.choice("movement_type", "Action", ("issue", "return", "lost", "damaged"))
     quantity = v.integer("quantity", "Quantity", 1, 100)
     moved_on = v.day("movement_date", "Date", not_after=today())
-    due = v.day("due_date", "Due date", not_before=moved_on) if kind == "issue" else None
+    if kind == "issue":
+        item_id = v.integer("item_id", "Item", 1, 10**9)
+        borrower_id = v.text("borrower_id", "Recipient", 1, 40)
+        due = v.day("due_date", "Due date", not_before=moved_on)
+        loan_id = None
+        reason = None
+    else:
+        loan_id = v.integer("loan_id", "Outstanding loan", 1, 10**9)
+        item_id = borrower_id = due = None
+        reason = v.text("reason", "Reason", 3, 255) if kind in ("lost", "damaged") else ""
     v.done()
     connection = db.get_db()
     try:
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT resource_id AS id, resource_name AS name,
-                       category, quantity_in_stock AS stock
-                FROM resource WHERE resource_id = %s FOR UPDATE
-                """,
-                (item_id,),
-            )
-            item = cursor.fetchone()
-            if not item:
-                raise ApiError("Choose an item from the list.", 400, {"item_id": "Unknown item."})
-
             if kind == "issue":
-                if quantity > item["stock"]:
+                cursor.execute(
+                    """
+                    SELECT resource_id AS id, resource_name AS name, category,
+                           quantity_in_stock AS stock, quantity_owned AS owned
+                    FROM resource WHERE resource_id = %s FOR UPDATE
+                    """,
+                    (item_id,),
+                )
+                item = cursor.fetchone()
+                if not item:
+                    raise ApiError("Choose an item from the list.", 400, {"item_id": "Unknown item."})
+                item["available_stock"] = item["stock"] - locked_reserved_quantity(cursor, item_id)
+                if quantity > item["available_stock"]:
                     raise ApiError(
-                        f"Only {item['stock']} of {item['name']} in stock.",
+                        f"Only {item['available_stock']} of {item['name']} are available; some stock is allocated to requests.",
                         409,
                         {"quantity": "Not enough stock."},
                     )
                 cursor.execute(
-                    "SELECT full_name FROM users WHERE LOWER(school_id) = LOWER(%s) AND is_active = TRUE LIMIT 1",
+                    """
+                    SELECT full_name, school_id
+                    FROM users
+                    WHERE LOWER(school_id) = LOWER(%s)
+                      AND role IN ('learner', 'staff') AND is_active = TRUE
+                    LIMIT 1
+                    """,
                     (borrower_id,),
                 )
                 borrower_row = cursor.fetchone()
-                borrower = borrower_row["full_name"] if borrower_row else borrower_id
+                if not borrower_row:
+                    raise ApiError(
+                        "Select an active teacher or learner from the recipient list.",
+                        400,
+                        {"borrower_id": "Recipient not found or inactive."},
+                    )
+                borrower = borrower_row["full_name"]
+                borrower_id = borrower_row["school_id"]
                 cursor.execute(
                     "UPDATE resource SET quantity_in_stock = quantity_in_stock - %s WHERE resource_id = %s",
                     (quantity, item_id),
@@ -832,10 +1154,11 @@ def api_movement(user):
                     """
                     INSERT INTO item_movement
                       (resource_id, borrower_id, borrower_name, movement_type,
-                       quantity, movement_date, due_date, active_loan, recorded_by_user_id)
-                    VALUES (%s, %s, %s, 'issue', %s, %s, %s, TRUE, %s)
+                       quantity, issued_quantity, movement_date, due_date,
+                       active_loan, recorded_by_user_id)
+                    VALUES (%s, %s, %s, 'issue', %s, %s, %s, %s, TRUE, %s)
                     """,
-                    (item_id, borrower_id, borrower, quantity, moved_on, due, user["id"]),
+                    (item_id, borrower_id, borrower, quantity, quantity, moved_on, due, user["id"]),
                 )
                 record_inventory_adjustment(
                     cursor, item_id, cursor.lastrowid, "issue", -quantity,
@@ -848,66 +1171,109 @@ def api_movement(user):
 
             cursor.execute(
                 """
-                SELECT movement_id, borrower_name, quantity
+                SELECT resource_id FROM item_movement
+                WHERE movement_id = %s AND movement_type = 'issue'
+                """,
+                (loan_id,),
+            )
+            loan_ref = cursor.fetchone()
+            if not loan_ref:
+                raise ApiError("Choose an outstanding issue from the loan list.", 404)
+            cursor.execute(
+                """
+                SELECT resource_id, resource_name, quantity_in_stock AS stock,
+                       quantity_owned AS owned
+                FROM resource WHERE resource_id = %s FOR UPDATE
+                """,
+                (loan_ref["resource_id"],),
+            )
+            item = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT movement_id, resource_id, borrower_id, borrower_name,
+                       quantity, issued_quantity, movement_date, due_date, active_loan
                 FROM item_movement
-                WHERE resource_id = %s AND LOWER(borrower_id) = LOWER(%s)
-                  AND movement_type = 'issue' AND active_loan = TRUE
-                ORDER BY movement_date, movement_id
+                WHERE movement_id = %s AND movement_type = 'issue'
                 FOR UPDATE
                 """,
-                (item_id, borrower_id),
+                (loan_id,),
             )
-            borrower_loans = cursor.fetchall()
-            loan_total = sum(loan["quantity"] for loan in borrower_loans)
-            if not borrower_loans:
-                raise ApiError("No active loan found for that borrower and item.", 409)
-            if quantity > loan_total:
+            loan = cursor.fetchone()
+            if moved_on < loan["movement_date"]:
+                raise ApiError("A return or loss/damage report cannot be dated before the original issue.", 400)
+            cursor.execute(
+                """
+                SELECT COALESCE(SUM(quantity), 0) AS quantity
+                FROM item_movement
+                WHERE related_issue_movement_id = %s
+                  AND movement_type IN ('return', 'lost', 'damaged')
+                """,
+                (loan_id,),
+            )
+            already_resolved = cursor.fetchone()["quantity"]
+            outstanding = (loan["issued_quantity"] or loan["quantity"]) - already_resolved
+            if not loan["active_loan"] or outstanding <= 0:
+                raise ApiError("That issue has no outstanding quantity.", 409)
+            if quantity > outstanding:
                 raise ApiError(
-                    f"That borrower only has {loan_total} on loan.",
+                    f"Only {outstanding} of {item['resource_name']} are outstanding on this issue.",
                     409,
                     {"quantity": "Too many."},
                 )
-            remaining_return = quantity
-            for loan in borrower_loans:
-                returned = min(remaining_return, loan["quantity"])
-                remaining = loan["quantity"] - returned
-                if returned:
-                    cursor.execute(
-                        """
-                        UPDATE item_movement
-                        SET quantity = %s, active_loan = %s
-                        WHERE movement_id = %s
-                        """,
-                        (
-                            remaining if remaining else loan["quantity"],
-                            remaining > 0,
-                            loan["movement_id"],
-                        ),
-                    )
-                    remaining_return -= returned
-                if remaining_return == 0:
-                    break
-            cursor.execute(
-                "UPDATE resource SET quantity_in_stock = quantity_in_stock + %s WHERE resource_id = %s",
-                (quantity, item_id),
-            )
+            remaining = outstanding - quantity
+            borrower_name = loan["borrower_name"]
+            if kind == "return":
+                cursor.execute(
+                    "UPDATE resource SET quantity_in_stock = quantity_in_stock + %s WHERE resource_id = %s",
+                    (quantity, loan["resource_id"]),
+                )
+            else:
+                if quantity > item["owned"] or item["owned"] - quantity < item["stock"]:
+                    raise ApiError("The inventory's owned quantity is inconsistent with this outstanding loan.", 409)
+                cursor.execute(
+                    "UPDATE resource SET quantity_owned = quantity_owned - %s WHERE resource_id = %s",
+                    (quantity, loan["resource_id"]),
+                )
             cursor.execute(
                 """
                 INSERT INTO item_movement
                   (resource_id, borrower_id, borrower_name, movement_type,
-                   quantity, movement_date, active_loan, recorded_by_user_id)
-                VALUES (%s, %s, %s, 'return', %s, %s, FALSE, %s)
+                   quantity, movement_date, related_issue_movement_id, reason,
+                   active_loan, recorded_by_user_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s)
                 """,
-                (item_id, borrower_id, borrower_loans[0]["borrower_name"], quantity, moved_on, user["id"]),
+                (
+                    loan["resource_id"], loan["borrower_id"], borrower_name,
+                    kind, quantity, moved_on, loan_id, reason or None, user["id"],
+                ),
             )
-            record_inventory_adjustment(
-                cursor, item_id, cursor.lastrowid, "return", quantity,
-                item["stock"], item["stock"] + quantity,
-                f"Returned by {borrower_loans[0]['borrower_name']} ({borrower_id})",
-                user["id"],
+            movement_id = cursor.lastrowid
+            if kind == "return":
+                record_inventory_adjustment(
+                    cursor, loan["resource_id"], movement_id, "return", quantity,
+                    item["stock"], item["stock"] + quantity,
+                    f"Returned by {borrower_name} ({loan['borrower_id']}); issue #{loan_id}",
+                    user["id"],
+                )
+            else:
+                record_inventory_adjustment(
+                    cursor, loan["resource_id"], movement_id, kind, -quantity,
+                    None, None,
+                    f"{quantity} × {item['resource_name']} marked {kind} while issued to "
+                    f"{borrower_name} ({loan['borrower_id']}); issue #{loan_id}. {reason}",
+                    user["id"], item["owned"], item["owned"] - quantity,
+                )
+            cursor.execute(
+                "UPDATE item_movement SET active_loan = %s WHERE movement_id = %s",
+                (remaining > 0, loan_id),
             )
         connection.commit()
-        return jsonify(message=f"Recorded return of {quantity} × {item['name']} from {borrower_loans[0]['borrower_name']}."), 201
+        description = {
+            "return": f"Returned {quantity} × {item['resource_name']} from {borrower_name}.",
+            "lost": f"Recorded {quantity} × {item['resource_name']} as lost from {borrower_name}'s loan.",
+            "damaged": f"Recorded {quantity} × {item['resource_name']} as damaged from {borrower_name}'s loan.",
+        }[kind]
+        return jsonify(message=description), 201
     except Exception:
         connection.rollback()
         raise
@@ -988,11 +1354,25 @@ def plural(count, singular, many=None):
 def api_committee_requests(user):
     status = request.args.get("status", "").strip()
     sql = """
-        SELECT rr.request_id AS id, rr.resource_name AS name,
-               u.full_name AS requested_by, rr.submitted_date AS submitted,
-               rr.needed_by, rr.quantity, rr.status
+        SELECT rr.request_id AS id, rr.resource_id, rr.resource_name AS name,
+               rr.category, rr.purpose, u.full_name AS requested_by,
+               u.school_id AS requester_id, rr.submitted_date AS submitted,
+               rr.needed_by, rr.quantity, rr.allocated_quantity,
+               rr.collection_slot, rr.collection_location_id,
+               cl.location_name AS collection_location,
+               rr.status, rr.latest_update,
+               r.unit_of_measure AS unit,
+               CAST(r.quantity_in_stock - COALESCE((
+                   SELECT SUM(allocated.allocated_quantity)
+                   FROM resource_request AS allocated
+                   WHERE allocated.resource_id = r.resource_id
+                     AND allocated.status = 'Ready for collection'
+               ), 0) AS SIGNED) AS available_stock
         FROM resource_request AS rr
         JOIN users AS u ON u.user_id = rr.user_id
+        LEFT JOIN resource AS r ON r.resource_id = rr.resource_id
+        LEFT JOIN collection_location AS cl
+          ON cl.location_id = rr.collection_location_id
     """
     params = []
     if status:
@@ -1004,10 +1384,39 @@ def api_committee_requests(user):
     for r in rows:
         r["submitted"] = date_value(r["submitted"])
         r["needed_by"] = date_value(r["needed_by"]) if r["needed_by"] else None
+        r["collection_slot"] = (
+            r["collection_slot"].isoformat(sep=" ", timespec="minutes")
+            if r["collection_slot"] else None
+        )
         priority, tone = request_priority(r)
-        items.append({"id": r["id"], "name": r["name"], "requested_by": r["requested_by"], "submitted": r["submitted"],
-                      "quantity": r["quantity"], "status": r["status"], "priority": priority, "priority_tone": tone})
+        items.append({
+            "id": r["id"], "resource_id": r["resource_id"], "name": r["name"],
+            "category": r["category"], "purpose": r["purpose"],
+            "requested_by": r["requested_by"], "requester_id": r["requester_id"],
+            "submitted": r["submitted"], "needed_by": r["needed_by"],
+            "quantity": r["quantity"], "allocated_quantity": r["allocated_quantity"],
+            "collection_slot": r["collection_slot"], "status": r["status"],
+            "collection_location_id": r["collection_location_id"],
+            "collection_location": r["collection_location"],
+            "available_stock": r["available_stock"], "unit": r["unit"],
+            "priority": priority, "priority_tone": tone,
+            "latest_update": r["latest_update"],
+        })
     return jsonify(items=items)
+
+
+@app.get("/api/collection-locations")
+@api_route("ltsm")
+def api_collection_locations(user):
+    rows = db.query_all(
+        """
+        SELECT location_id AS id, location_name AS name
+        FROM collection_location
+        WHERE is_active = TRUE
+        ORDER BY location_name
+        """
+    )
+    return jsonify(items=rows)
 
 
 @app.get("/api/committee/suggestions")
@@ -1037,42 +1446,262 @@ def api_committee_suggestions(user):
 def api_decide_request(user, request_id):
     v = Validator(json_body())
     decision = v.choice("decision", "Decision", ("Approved", "Declined"))
+    collection_slot = None
+    collection_location_id = None
+    if decision == "Approved":
+        slot_value = v.text("collection_slot", "Collection date and time", 1, 16)
+        collection_location_id = v.integer(
+            "collection_location_id", "Collection location", 1, 2147483647
+        )
+        try:
+            collection_slot = datetime.strptime(slot_value, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            v._fail("collection_slot", "Enter a valid collection date and time.")
+        if collection_slot and collection_slot <= now().replace(tzinfo=None):
+            v._fail("collection_slot", "Collection must be scheduled for a future date and time.")
     v.done()
-    row = db.query_one(
-        "SELECT resource_name AS name, status FROM resource_request WHERE request_id = %s",
-        (request_id,),
-    )
-    if row is None:
-        raise ApiError("That request does not exist.", 404)
-    if row["status"] != "In review":
-        raise ApiError(f"{row['name']} was already {row['status'].lower()}.", 409)
-    update = "Approved · collection details to follow" if decision == "Approved" else "Declined by the LTSM committee"
-    db.execute(
-        """
-        UPDATE resource_request
-        SET status = %s, latest_update = %s
-        WHERE request_id = %s AND status = 'In review'
-        """,
-        (decision, update, request_id),
-    )
-    return jsonify(message=f"{row['name']} {decision.lower()}.")
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            inventory_item = None
+            if decision == "Approved":
+                cursor.execute(
+                    "SELECT resource_id FROM resource_request WHERE request_id = %s",
+                    (request_id,),
+                )
+                request_ref = cursor.fetchone()
+                if request_ref is None:
+                    raise ApiError("That request does not exist.", 404)
+                if request_ref["resource_id"] is not None:
+                    cursor.execute(
+                        """
+                        SELECT resource_id, resource_name, quantity_in_stock, unit_of_measure
+                        FROM resource WHERE resource_id = %s FOR UPDATE
+                        """,
+                        (request_ref["resource_id"],),
+                    )
+                    inventory_item = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT request_id, user_id, resource_id, resource_name, quantity,
+                       allocated_quantity, status
+                FROM resource_request WHERE request_id = %s FOR UPDATE
+                """,
+                (request_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise ApiError("That request does not exist.", 404)
+            legacy_unallocated = (
+                row["status"] in ("Approved", "Ready for collection")
+                and row["allocated_quantity"] is None
+            )
+            if row["status"] != "In review" and not legacy_unallocated:
+                raise ApiError(f"{row['resource_name']} was already {row['status'].lower()}.", 409)
+
+            if decision == "Declined":
+                cursor.execute(
+                    """
+                    UPDATE resource_request
+                    SET status = 'Declined', allocated_quantity = NULL,
+                        collection_slot = NULL, collection_location_id = NULL,
+                        latest_update = 'Declined by the LTSM committee'
+                    WHERE request_id = %s
+                    """,
+                    (request_id,),
+                )
+                message = f"{row['resource_name']} declined."
+                notification_status = "Declined"
+            else:
+                if row["resource_id"] is None:
+                    raise ApiError(
+                        f"{row['resource_name']} is not linked to an inventory item and cannot be allocated.",
+                        409,
+                    )
+                if inventory_item is None:
+                    raise ApiError("The requested inventory item no longer exists.", 409)
+                cursor.execute(
+                    """
+                    SELECT location_name FROM collection_location
+                    WHERE location_id = %s AND is_active = TRUE
+                    """,
+                    (collection_location_id,),
+                )
+                location = cursor.fetchone()
+                if location is None:
+                    raise ApiError(
+                        "Choose an active collection location.",
+                        400,
+                        {"collection_location_id": "Select an available collection location."},
+                    )
+                reserved = locked_reserved_quantity(cursor, row["resource_id"])
+                available = inventory_item["quantity_in_stock"] - reserved
+                if row["quantity"] > available:
+                    raise ApiError(
+                        f"Only {available} {inventory_item['unit_of_measure']} are available; "
+                        f"{row['quantity']} were requested.",
+                        409,
+                        {"decision": "Insufficient available stock to approve this request."},
+                    )
+                formatted_slot = collection_slot.strftime("%d %b %Y at %H:%M")
+                update = (
+                    f"{row['quantity']} {inventory_item['unit_of_measure']} allocated; "
+                    f"collect {formatted_slot} at {location['location_name']}"
+                )
+                cursor.execute(
+                    """
+                    UPDATE resource_request
+                    SET status = 'Ready for collection', allocated_quantity = quantity,
+                        collection_slot = %s, collection_location_id = %s,
+                        latest_update = %s
+                    WHERE request_id = %s
+                    """,
+                    (collection_slot, collection_location_id, update, request_id),
+                )
+                message = (
+                    f"{row['resource_name']} allocated. Collection is scheduled for "
+                    f"{formatted_slot} at {location['location_name']}."
+                )
+                notification_status = "Ready for collection"
+            create_notification(
+                cursor,
+                row["user_id"],
+                "my-requests",
+                f"Request {notification_status.lower()}",
+                (
+                    f"Your request for {row['resource_name']} is {notification_status.lower()}. "
+                    f"Collect it on {formatted_slot} at {location['location_name']}."
+                    if decision == "Approved"
+                    else f"Your request for {row['resource_name']} is {notification_status.lower()}."
+                ),
+                "/my-requests.html",
+            )
+        connection.commit()
+        return jsonify(message=message)
+    except Exception:
+        connection.rollback()
+        raise
+
+
+@app.post("/api/committee/requests/<int:request_id>/fulfill")
+@api_route("ltsm")
+def api_fulfill_request(user, request_id):
+    data = json_body()
+    v = Validator(data)
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT resource_id FROM resource_request WHERE request_id = %s",
+                (request_id,),
+            )
+            request_ref = cursor.fetchone()
+            if request_ref is None:
+                raise ApiError("That request does not exist.", 404)
+            if request_ref["resource_id"] is None:
+                raise ApiError("This request is not linked to an inventory item.", 409)
+            cursor.execute(
+                """
+                SELECT resource_id, resource_name, quantity_in_stock
+                FROM resource WHERE resource_id = %s FOR UPDATE
+                """,
+                (request_ref["resource_id"],),
+            )
+            item = cursor.fetchone()
+            if item is None:
+                raise ApiError("The allocated inventory item no longer exists.", 409)
+            cursor.execute(
+                """
+                SELECT rr.request_id, rr.user_id, rr.resource_id, rr.resource_name,
+                       rr.allocated_quantity, rr.status, rr.category,
+                       u.full_name, u.school_id
+                FROM resource_request AS rr
+                JOIN users AS u ON u.user_id = rr.user_id
+                WHERE rr.request_id = %s
+                FOR UPDATE
+                """,
+                (request_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise ApiError("That request does not exist.", 404)
+            if row["status"] != "Ready for collection" or not row["allocated_quantity"]:
+                raise ApiError("Only allocated requests can be marked fulfilled.", 409)
+            is_loan = row["category"] in ("Textbooks", "Equipment")
+            due = v.day("due_date", "Expected return date", not_before=today()) if is_loan else None
+            v.done()
+            if item["quantity_in_stock"] < row["allocated_quantity"]:
+                raise ApiError("The allocated stock is no longer available; review the inventory.", 409)
+
+            stock_after = item["quantity_in_stock"] - row["allocated_quantity"]
+            cursor.execute(
+                "UPDATE resource SET quantity_in_stock = %s WHERE resource_id = %s",
+                (stock_after, item["resource_id"]),
+            )
+            cursor.execute(
+                """
+                INSERT INTO item_movement
+                  (resource_id, borrower_id, borrower_name, movement_type,
+                   quantity, issued_quantity, movement_date, due_date,
+                   active_loan, recorded_by_user_id)
+                VALUES (%s, %s, %s, 'issue', %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    item["resource_id"], row["school_id"], row["full_name"],
+                    row["allocated_quantity"], row["allocated_quantity"], today(), due,
+                    is_loan, user["id"],
+                ),
+            )
+            record_inventory_adjustment(
+                cursor, item["resource_id"], cursor.lastrowid, "issue",
+                -row["allocated_quantity"], item["quantity_in_stock"], stock_after,
+                f"Fulfilled request #{request_id} for {row['full_name']} ({row['school_id']})",
+                user["id"],
+            )
+            cursor.execute(
+                """
+                UPDATE resource_request
+                SET status = 'Fulfilled',
+                    latest_update = CONCAT('Fulfilled: ', allocated_quantity, ' allocated unit(s) issued on ', %s)
+                WHERE request_id = %s AND status = 'Ready for collection'
+                """,
+                (today().isoformat(), request_id),
+            )
+        connection.commit()
+        return jsonify(message=f"{row['allocated_quantity']} × {item['resource_name']} issued to {row['full_name']}.")
+    except Exception:
+        connection.rollback()
+        raise
 
 
 @app.get("/api/committee/bookings")
 @api_route("ltsm")
 def api_committee_bookings(user):
+    status = request.args.get("status", "").strip()
+    include_all = request.args.get("all", "").lower() in ("1", "true", "yes")
+    conditions, params = [], []
+    if not include_all:
+        conditions.append("b.booking_date >= %s")
+        params.append(today())
+    if status:
+        if status not in ("Awaiting approval", "Confirmed", "Declined"):
+            raise ApiError("Choose a valid booking status.")
+        conditions.append("b.status = %s")
+        params.append(status)
+    where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    date_order = "DESC" if include_all else "ASC"
     rows = db.query_all(
-        """
+        f"""
         SELECT b.booking_id AS id, r.resource_name AS equipment,
                u.full_name AS booked_by, b.booking_date AS `date`,
                b.start_time AS `start`, b.end_time AS `end`, b.room, b.status
         FROM equipment_booking AS b
         JOIN resource AS r ON r.resource_id = b.resource_id
         JOIN users AS u ON u.user_id = b.user_id
-        WHERE b.booking_date >= %s
-        ORDER BY b.booking_date, b.start_time, b.booking_id
+        {where_clause}
+        ORDER BY b.booking_date {date_order}, b.start_time, b.booking_id
         """,
-        (today(),),
+        params,
     )
     return jsonify(items=[
         {
@@ -1092,27 +1721,112 @@ def api_decide_booking(user, booking_id):
     v = Validator(json_body())
     decision = v.choice("decision", "Decision", ("Confirmed", "Declined"))
     v.done()
-    booking = db.query_one(
-        """
-        SELECT b.status, r.resource_name AS equipment
-        FROM equipment_booking AS b
-        JOIN resource AS r ON r.resource_id = b.resource_id
-        WHERE b.booking_id = %s
-        """,
-        (booking_id,),
-    )
-    if booking is None:
-        raise ApiError("That booking does not exist.", 404)
-    if booking["status"] != "Awaiting approval":
-        raise ApiError(f"That booking was already {booking['status'].lower()}.", 409)
-    db.execute(
-        """
-        UPDATE equipment_booking SET status = %s
-        WHERE booking_id = %s AND status = 'Awaiting approval'
-        """,
-        (decision, booking_id),
-    )
-    return jsonify(message=f"{booking['equipment']} booking {decision.lower()}.")
+    connection = db.get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT resource_id FROM equipment_booking WHERE booking_id = %s",
+                (booking_id,),
+            )
+            booking_ref = cursor.fetchone()
+            if booking_ref is None:
+                raise ApiError("That booking does not exist.", 404)
+            cursor.execute(
+                """
+                SELECT resource_id, resource_name, quantity_in_stock
+                FROM resource WHERE resource_id = %s FOR UPDATE
+                """,
+                (booking_ref["resource_id"],),
+            )
+            equipment = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT booking_id, user_id, resource_id, booking_date, start_time, end_time, status
+                FROM equipment_booking WHERE booking_id = %s FOR UPDATE
+                """,
+                (booking_id,),
+            )
+            booking = cursor.fetchone()
+            if booking is None:
+                raise ApiError("That booking does not exist.", 404)
+
+            if decision == "Confirmed":
+                if booking["status"] != "Awaiting approval":
+                    raise ApiError(f"That booking was already {booking['status'].lower()}.", 409)
+                if equipment is None:
+                    raise ApiError("The booked equipment no longer exists.", 409)
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS booking_count
+                    FROM equipment_booking
+                    WHERE resource_id = %s AND booking_date = %s
+                      AND booking_id <> %s AND status != 'Declined'
+                      AND start_time < %s AND end_time > %s
+                    """,
+                    (
+                        booking["resource_id"], booking["booking_date"], booking_id,
+                        booking["end_time"], booking["start_time"],
+                    ),
+                )
+                overlapping = cursor.fetchone()["booking_count"]
+                if overlapping >= equipment["quantity_in_stock"]:
+                    raise ApiError(
+                        f"No {equipment['resource_name']} is free during this booking time. "
+                        "Another booking already occupies the available equipment.",
+                        409,
+                        {"decision": "This booking overlaps another reservation."},
+                    )
+                cursor.execute(
+                    "UPDATE equipment_booking SET status = 'Confirmed' WHERE booking_id = %s AND status = 'Awaiting approval'",
+                    (booking_id,),
+                )
+                message = f"{equipment['resource_name']} booking confirmed."
+            else:
+                if booking["status"] == "Declined":
+                    raise ApiError("That booking has already been cancelled or declined.", 409)
+                if booking["status"] == "Confirmed":
+                    start_time = booking["start_time"]
+                    start_time_text = (
+                        start_time.strftime("%H:%M:%S")
+                        if hasattr(start_time, "strftime")
+                        else str(start_time)
+                    )
+                    booking_datetime = datetime.combine(
+                        booking["booking_date"],
+                        datetime.strptime(start_time_text, "%H:%M:%S").time(),
+                    )
+                    if booking_datetime <= now().replace(tzinfo=None):
+                        raise ApiError("A confirmed booking cannot be cancelled after it has started.", 409)
+                cursor.execute(
+                    "UPDATE equipment_booking SET status = 'Declined' WHERE booking_id = %s AND status <> 'Declined'",
+                    (booking_id,),
+                )
+                message = (
+                    f"{equipment['resource_name']} booking cancelled."
+                    if booking["status"] == "Confirmed"
+                    else f"{equipment['resource_name']} booking declined."
+                )
+            notification_title = (
+                "Booking confirmed"
+                if decision == "Confirmed"
+                else "Booking cancelled" if booking["status"] == "Confirmed"
+                else "Booking declined"
+            )
+            create_notification(
+                cursor,
+                booking["user_id"],
+                "bookings",
+                notification_title,
+                f"Your {equipment['resource_name']} booking on "
+                f"{date_value(booking['booking_date'])} is "
+                f"{'confirmed' if decision == 'Confirmed' else 'cancelled' if booking['status'] == 'Confirmed' else 'declined'}.",
+                "/book-equipment.html",
+            )
+        connection.commit()
+        return jsonify(message=message)
+    except Exception:
+        connection.rollback()
+        raise
 
 
 @app.get("/api/dashboard/user")
@@ -1156,13 +1870,20 @@ def api_user_dashboard(user):
     ]
     loan_rows = db.query_all(
         """
-        SELECT r.resource_name AS item, m.quantity,
+        SELECT r.resource_name AS item,
+               CAST(COALESCE(m.issued_quantity, m.quantity) - COALESCE(SUM(e.quantity), 0) AS SIGNED) AS quantity,
                m.movement_date AS issued, m.due_date AS due
         FROM item_movement AS m
         JOIN resource AS r ON r.resource_id = m.resource_id
+        LEFT JOIN item_movement AS e
+          ON e.related_issue_movement_id = m.movement_id
+         AND e.movement_type IN ('return', 'lost', 'damaged')
         WHERE m.borrower_id = %s
           AND m.movement_type = 'issue'
           AND m.active_loan = TRUE
+        GROUP BY m.movement_id, r.resource_name, m.issued_quantity, m.quantity,
+                 m.movement_date, m.due_date
+        HAVING quantity > 0
         ORDER BY m.due_date, m.movement_date, m.movement_id
         """,
         (user["school_id"],),
@@ -1239,7 +1960,7 @@ def api_committee_dashboard(user):
         (today(), week_end),
     )["count"]
     kpis = {
-        "inventory": {"value": sum(i["stock"] for i in resources), "note": f"Across {plural(len({i['category'] for i in resources}), 'category', 'categories')}"},
+        "inventory": {"value": sum(i["stock"] + i["reserved"] for i in resources), "note": f"Across {plural(len({i['category'] for i in resources}), 'category', 'categories')}"},
         "pending_requests": {"value": pending, "note": f"{submitted_today} submitted today"},
         "low_stock": {"value": len(low), "note": "Review replenishment" if low else "Stock levels are healthy"},
         "bookings": {"value": upcoming, "note": f"{due_this_week} due this week"},
@@ -1257,16 +1978,25 @@ def api_reports(user):
     resources = resource_rows()
     movement_rows = db.query_all(
         """
-        SELECT resource_id, SUM(quantity) AS quantity
-        FROM item_movement
-        WHERE movement_type = 'issue' AND active_loan = TRUE
-        GROUP BY resource_id
+        SELECT m.resource_id,
+               CAST(SUM(COALESCE(m.issued_quantity, m.quantity) - COALESCE(e.resolved, 0)) AS SIGNED) AS quantity
+        FROM item_movement AS m
+        LEFT JOIN (
+            SELECT related_issue_movement_id, SUM(quantity) AS resolved
+            FROM item_movement
+            WHERE movement_type IN ('return', 'lost', 'damaged')
+              AND related_issue_movement_id IS NOT NULL
+            GROUP BY related_issue_movement_id
+        ) AS e ON e.related_issue_movement_id = m.movement_id
+        WHERE m.movement_type = 'issue' AND m.active_loan = TRUE
+        GROUP BY m.resource_id
         """
     )
     out = Counter({row["resource_id"]: row["quantity"] for row in movement_rows})
     available = sum(i["stock"] for i in resources)
+    reserved = sum(i["reserved"] for i in resources)
     on_loan = sum(out.values())
-    total = available + on_loan
+    total = available + reserved + on_loan
     low = [i for i in resources if stock_status(i)[0] != "In stock"]
     low_by_category = Counter(i["category"] for i in low)
     request_rows = db.query_all(
@@ -1293,9 +2023,9 @@ def api_reports(user):
             continue
         units = sum(i["stock"] for i in group)
         n_low = low_by_category[name]
-        categories.append({"category": name, "total": units + sum(out[i["id"]] for i in group), "available": units, "low_stock": n_low,
+        categories.append({"category": name, "total": units + sum(i["reserved"] for i in group) + sum(out[i["id"]] for i in group), "available": units, "low_stock": n_low,
                            "condition": "Review stock" if n_low else "Healthy", "tone": "warning" if n_low else "ok"})
-    statuses = [{"status": s, "count": counts[s], "tone": REQUEST_TONES[s]} for s in ("Approved", "Ready for collection", "In review", "Declined")]
+    statuses = [{"status": s, "count": counts[s], "tone": REQUEST_TONES[s]} for s in ("Approved", "Ready for collection", "In review", "Declined", "Fulfilled")]
     return jsonify(summary=summary, categories=categories, requests_by_status=statuses)
 
 

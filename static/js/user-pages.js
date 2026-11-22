@@ -10,47 +10,14 @@
 	if (resourceBody) {
 		const search = $("#resource-search");
 		const category = $("#category-filter");
-		const ICONS = { Textbooks: "▤", Stationery: "✎", Equipment: "⌁" };
-		const CATEGORY_IMAGES = {
-			Textbooks: "mathematics-textbook.jpg",
-			Stationery: "learner stationary pack.jpg",
-			Equipment: "laptop-type A.webp",
-			Other: "abacus.webp"
-		};
-		const RESOURCE_IMAGES = [
-			{ match: ["natural sciences"], file: "grade 8 -  natural sciences textbook.webp" },
-			{ match: ["grade 3", "mathematics workbook"], file: "grade 3- Mathematics workbook.jpg" },
-			{ match: ["grade 2", "english workbook"], file: "Grade 2-English workbook.jpg" },
-			{ match: ["mathematics"], file: "mathematics-textbook.jpg" },
-			{ match: ["whiteboard marker", "white-board marker"], file: "white-board markers.jpg" },
-			{ match: ["printer ink", "ink cartridge"], file: "printer ink-catridges.jpg" },
-			{ match: ["stationery pack"], file: "learner stationary pack.jpg" },
-			{ match: ["exercise book"], file: "A4-exercise book.jpg" },
-			{ match: ["geometry set"], file: "geometry-set.jpg" },
-			{ match: ["projector"], file: "classroom-projector.webp" },
-			{ match: ["tablet"], file: "tablet.jpg" },
-			{ match: ["speaker"], file: "portable-speaker.webp" },
-			{ match: ["camera"], file: "usb-camera.webp" },
-			{ match: ["laptop"], file: "laptop-type A.webp" },
-			{ match: ["printer"], file: "printer-a.webp" },
-			{ match: ["abacus"], file: "abacus.webp" },
-			{ match: ["clock"], file: "teaching-clock.webp" }
-		];
-		const imageFor = (item) => {
-			const name = item.name.toLowerCase();
-			const match = RESOURCE_IMAGES.find(({ match: terms }) => terms.every((term) => name.includes(term)));
-			return match?.file || CATEGORY_IMAGES[item.category];
-		};
 		const reload = ui.createTable({
 			tbody: resourceBody,
 			columns: 5,
 			emptyText: "No resources match your search. Try another keyword or category.",
 			load: async () => (await api.get("/api/resources", { q: search.value, category: category.value })).items,
 			renderRow: (item) => {
-				const image = imageFor(item);
-				const visual = image
-					? `<img class="catalogue-item__image" src="/static/images/inventory/${encodeURIComponent(image)}" alt="${esc(item.name)}">`
-					: `<span class="catalogue-item__icon" aria-hidden="true">${ICONS[item.category] || "▤"}</span>`;
+				const image = window.LTSMResourceImages.imageFor(item);
+				const visual = `<img class="catalogue-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(item.name)}">`;
 				const action = item.category === "Equipment"
 					? `<a class="catalogue-action" href="/book-equipment.html?equipment_id=${encodeURIComponent(item.id)}">Book</a>`
 					: `<a class="catalogue-action" href="/request-resources.html?resource_name=${encodeURIComponent(item.name)}">Request</a>`;
@@ -160,7 +127,14 @@
 			columns: 6,
 			emptyText: () => (status.value ? "No requests have this status." : "You have not submitted any requests yet."),
 			load: async () => (await api.get("/api/requests", { status: status.value })).items,
-			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${ui.formatDate(r.submitted)}</td><td>${esc(r.quantity)}</td><td>${ui.badge(r.status, r.tone)}</td><td>${esc(r.update)}</td></tr>`
+			renderRow: (r) => {
+				const update = [
+					r.update,
+					r.collection_slot && `Collection ${r.collection_slot}`,
+					r.collection_location && !String(r.update || "").includes(r.collection_location) && `Location: ${r.collection_location}`
+				].filter(Boolean).join(" · ");
+				return `<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${ui.formatDate(r.submitted)}</td><td>${esc(r.allocated_quantity ? `${r.allocated_quantity} allocated of ${r.quantity}` : r.quantity)}</td><td>${ui.badge(r.status, r.tone)}</td><td>${esc(update)}</td></tr>`;
+			}
 		});
 		status.addEventListener("change", reload);
 		reload();
