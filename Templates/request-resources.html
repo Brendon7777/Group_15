@@ -152,7 +152,7 @@
 	<!-- SECTION 2: Request page heading and details form. -->
 	<div class="request-resource-page">
 	<header class="page-heading">
-		<div><p class="eyebrow">Resource support</p><h1>Request a resource</h1><p>Tell the LTSM committee what you need and how it will be used.</p></div>
+		<div><p class="eyebrow">Resource support</p><h1>Request resources</h1><p>Ask the LTSM committee for learning materials or equipment and follow up on your requests.</p></div>
 	</header>
 
 	<div class="content-grid">
@@ -165,7 +165,7 @@
 						<tbody>
 							<tr><th scope="row"><label for="resource-name">Resource name</label></th><td><div class="form-field"><input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required><datalist id="catalogue-items"><option value="Natural Sciences Grade 8 textbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist></div></td></tr>
 							<tr><th scope="row"><label for="category">Category</label></th><td><div class="form-field"><select id="category" name="category" required><option value="" disabled selected>Select a category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select></div></td></tr>
-							<tr><th scope="row"><label for="quantity">Quantity</label></th><td><div class="form-field"><input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required><small>Enter a quantity between 1 and 100.</small></div></td></tr>
+							<tr><th scope="row"><label for="quantity">Quantity</label></th><td><div class="form-field"><input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required><small id="available-quantity" aria-live="polite">Enter a product name to check current availability.</small></div></td></tr>
 							<tr><th scope="row"><label for="needed-by">Needed by</label></th><td><div class="form-field"><input id="needed-by" name="needed_by" type="date" required></div></td></tr>
 							<tr><th scope="row"><label for="purpose">Reason for request</label></th><td><div class="form-field"><textarea id="purpose" name="purpose" minlength="10" maxlength="500" placeholder="Describe how this resource will support learning or teaching." required></textarea><small>Include enough detail for the committee to review your request (10–500 characters).</small></div></td></tr>
 						</tbody>
@@ -175,8 +175,10 @@
 				<div class="form-actions"><button class="button request-primary-button" type="submit">Submit request</button><a class="button request-primary-button" href="my-requests.html">Track my requests</a></div>
 			</form>
 		</section>
-		<!-- SECTION 4: Explain the review process and link to the catalogue. -->
+		<!-- SECTION 4: Explain request handling and connect related resource services. -->
 		<aside class="stack">
+			<section class="panel"><h2>Borrow existing equipment?</h2><p style="color:var(--muted)">Book shared school equipment for a specific date and time. Availability is checked before the request is sent.</p><a class="button request-primary-button request-catalogue-button" href="book-equipment.html">Book equipment</a></section>
+			<section class="panel"><h2>Something is missing?</h2><p style="color:var(--muted)">Suggest an item for the LTSM catalogue. Suggestions can be sent anonymously, even without signing in.</p><a class="button request-primary-button request-catalogue-button" href="suggest-resource.html">Suggest a resource</a></section>
 			<section class="panel"><h2>What happens next?</h2><ul><li>The committee reviews your request.</li><li>You can check its progress on My Requests.</li><li>Approved resources will be arranged for collection.</li></ul></section>
 			<section class="panel"><h2>Need something already listed?</h2><p style="color:var(--muted)">Check availability in the catalogue before making a request.</p><a class="button request-primary-button request-catalogue-button" href="view-resources.html">Browse catalogue</a></section>
 		</aside>

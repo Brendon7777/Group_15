@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "issue-return" %}
-<!-- Helps the LTSM committee validate item issue and return records and review current sample loans. -->
+<!-- Helps the LTSM committee validate item issue and return records and review current loans. -->
 {% block title %}Issue and Return Items | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -112,7 +112,7 @@
 	<!-- SECTION 2: Circulation page heading and inventory shortcut. -->
 	<div class="issue-return-page">
 	<header class="page-heading">
-		<div><p class="eyebrow">Circulation desk</p><h1>Issue and return items</h1><p>Record loans, returns and due dates for school resources.</p></div>
+		<div><p class="eyebrow">Circulation desk</p><h1>Issue and return items</h1><p>Record a completed issue to deduct stock, or a return to add it back. Items are selected from the database inventory.</p></div>
 		<a class="button button-secondary" href="manage-inventory.html">View inventory</a>
 	</header>
 	<div class="content-grid">
@@ -122,7 +122,7 @@
 			<form id="movement-form">
 				<div class="form-grid">
 					<div class="form-field"><label for="movement-type">Action</label><select id="movement-type" name="movement_type" required><option value="" selected disabled>Select an action</option><option value="issue">Issue item</option><option value="return">Record return</option></select></div>
-					<div class="form-field"><label for="inventory-item">Item</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option></select></div>
+					<div class="form-field"><label for="inventory-item">Item from inventory</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option></select></div>
 					<div class="form-field"><label for="borrower-id">Student / staff number</label><input id="borrower-id" name="borrower_id" autocomplete="off" maxlength="40" required></div>
 					<div class="form-field"><label for="movement-quantity">Quantity</label><input id="movement-quantity" name="quantity" type="number" min="1" max="100" value="1" required></div>
 					<div class="form-field"><label for="movement-date">Date</label><input id="movement-date" name="movement_date" type="date" required></div>
@@ -132,7 +132,7 @@
 				<button class="button" type="submit">Save record</button>
 			</form>
 		</section>
-		<!-- SECTION 4: Sample records of items currently on loan. -->
+		<!-- SECTION 4: Database records of items currently on loan. -->
 		<section class="panel">
 			<div class="panel-heading"><div><h2>Current loans</h2><p>Items currently on loan.</p></div></div>
 			<div class="table-wrap">

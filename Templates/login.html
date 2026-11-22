@@ -6,6 +6,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Sign In | School Resource Portal</title>
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/selects.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	<!-- SECTION 1: Sign-in layout, form fields and responsive styles. -->
 	<style>
@@ -71,7 +73,17 @@
 		.brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: var(--green); background: var(--gold); font-size: 1.25rem; font-weight: 800; }
 		.brand-name { line-height: 1.2; }
 		.brand-name small { display: block; margin-top: .25rem; color: #d8e4df; font-size: .72rem; font-weight: 500; }
-		.welcome-copy { position: relative; z-index: 1; margin: auto 0; padding: 3rem 0; }
+		.welcome-copy {
+			position: relative;
+			z-index: 1;
+			margin: auto 0;
+			padding: 3rem 0;
+			animation: welcome-float 4s ease-in-out infinite;
+		}
+		@keyframes welcome-float {
+			0%, 100% { opacity: .78; transform: translateY(4px); }
+			50% { opacity: 1; transform: translateY(-4px); }
+		}
 		.eyebrow { margin: 0 0 .8rem; color: var(--gold); font-size: .76rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
 		.welcome-copy h1 { max-width: 340px; margin: 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.045em; line-height: 1.1; }
 		.welcome-copy p { max-width: 330px; margin: 1rem 0 0; color: #d8e4df; }
@@ -106,10 +118,15 @@
 
 		@media (prefers-reduced-motion: reduce) {
 			*, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+			.welcome-copy { animation: none; }
 		}
 	</style>
 </head>
 <body>
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
 	<!-- SECTION 2: Welcome panel and portal identity. -->
 	<main class="login-layout">
 		<section class="welcome-panel" aria-label="School Resource Portal">
@@ -188,6 +205,7 @@
 			}
 		});
 	</script>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>

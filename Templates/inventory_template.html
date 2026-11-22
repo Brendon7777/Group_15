@@ -10,6 +10,13 @@
 	<div class="error-notice" role="alert">{{ load_error }}</div>
 {% else %}
 	<p class="summary-note">Planning preview only: this page does not create purchase orders or change inventory. Results assume no outstanding supplier orders or backorders.</p>
+	{% if summary_warnings %}
+		<section class="warning-notice" role="status" aria-labelledby="summary-data-warning">
+			<h2 id="summary-data-warning">Some inventory forecasts need attention</h2>
+			<p>Recommendations are shown for valid records. Correct these resource records to include them in the forecast:</p>
+			<ul>{% for warning in summary_warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+		</section>
+	{% endif %}
 	{% for policy_key, policy in policies.items() %}
 		<section class="panel" aria-labelledby="{{ policy_key }}-heading">
 			<div class="panel-heading">

@@ -35,7 +35,7 @@
 		.dashboard-heading h1 { max-width: 660px; margin-bottom: .65rem; color: #fff; font-size: clamp(2rem, 4vw, 2.8rem); }
 		.dashboard-heading .eyebrow { color: var(--gold); }
 		.dashboard-heading .dashboard-intro { max-width: 620px; margin-bottom: 0; color: #e2ece7; }
-		.dashboard-nav { margin: 0 0 1.6rem; border-radius: 12px; background: var(--green); box-shadow: 0 5px 14px rgba(18, 59, 53, .12); }
+		.dashboard-nav { position: sticky; top: var(--site-header-height); z-index: 20; margin: 0 0 1.6rem; border-radius: 12px; background: var(--green); box-shadow: 0 5px 14px rgba(18, 59, 53, .12); }
 		.dashboard-nav__inner { display: flex; align-items: stretch; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
 		.dashboard-nav__link { min-height: 48px; padding: .75rem 1rem; display: inline-flex; flex: 0 0 auto; align-items: center; color: #e2ece7; font-size: .86rem; font-weight: 650; text-decoration: none; transition: background .15s ease, color .15s ease; }
 		.dashboard-nav__link:hover, .dashboard-nav__link[aria-current="page"] { border-radius: 9px; background: var(--gold); color: var(--green); }
@@ -76,8 +76,8 @@
 		.dashboard-stats-viewport { max-width: 100%; margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: .35rem; }
 		#dashboard-activity-tiles.dashboard-stats {
 			display: grid !important;
-			width: max-content !important;
-			grid-template-columns: repeat(3, minmax(180px, 205px)) !important;
+			width: 100% !important;
+			grid-template-columns: repeat(4, minmax(180px, 1fr)) !important;
 			grid-auto-flow: row !important;
 			justify-content: start;
 			gap: .9rem;
@@ -132,7 +132,7 @@
 		.dashboard-launchpad-heading h2 { margin-bottom: .25rem; font-size: 1.4rem; letter-spacing: -.03em; }
 		.dashboard-launchpad-heading p { margin: 0; color: var(--muted); font-size: .9rem; }
 		.dashboard-launchpad-heading__icon { width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid rgba(120, 85, 13, .1); border-radius: 14px; background: #fbf2df; color: #78550d; font-size: 1.25rem; }
-		.dashboard-columns { gap: 1rem; }
+		.dashboard-columns { grid-template-columns: 1fr; gap: 1rem; }
 		.dashboard-main-column, .dashboard-side-column { gap: 1rem; }
 		.dashboard-panel { padding: 1.35rem; box-shadow: 0 10px 26px rgba(18, 59, 53, .06); }
 		.dashboard-panel .panel-heading { margin-bottom: 1.1rem; padding-bottom: .9rem; border-bottom: 1px solid #edf1ee; }
@@ -206,6 +206,7 @@
 		@media (prefers-reduced-motion: reduce) {
 			.dashboard-stat, .dashboard-resource, .dashboard-side-column .action-link, .dashboard-heading .button { transition: none; }
 			.dashboard-stat:hover, .dashboard-resource:hover { transform: none; }
+			.dashboard-stat { animation: none; }
 		}
 		body, body * { font-family: Roboto, Helvetica, Arial, sans-serif; }
 		body:has(.dashboard-nav) { background: #f4f5f8; }
@@ -223,10 +224,28 @@
 		.dashboard-heading h1 { letter-spacing: -.025em; }
 		.dashboard-overview__heading, .dashboard-launchpad-heading h2,
 		.dashboard-panel .panel-heading h2 { color: #035e82; letter-spacing: -.015em; }
-		.dashboard-stat { border-radius: .5rem; box-shadow: 0 6px 16px rgba(40, 55, 70, .1); }
+		.dashboard-stat {
+			--stat-glow: rgba(0, 139, 178, .48);
+			border-radius: .5rem;
+			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
+			animation: user-stat-pulse 3.2s ease-in-out infinite;
+		}
+		@keyframes user-stat-pulse {
+			0%, 50%, 100% {
+				opacity: 1;
+				filter: brightness(1);
+				box-shadow: 0 6px 16px rgba(40, 55, 70, .1), 0 0 22px var(--stat-glow);
+			}
+			25%, 75% {
+				opacity: .78;
+				filter: brightness(.9);
+				box-shadow: 0 4px 12px rgba(40, 55, 70, .08), 0 0 4px var(--stat-glow);
+			}
+		}
 		.dashboard-stat:hover { box-shadow: 0 10px 22px rgba(40, 55, 70, .15); }
-		.dashboard-stat--green { background: linear-gradient(145deg, #035e82, #007a9d); }
+		.dashboard-stat--green { --stat-glow: rgba(0, 139, 178, .48); background: linear-gradient(145deg, #035e82, #007a9d); }
 		.dashboard-stat--gold {
+			--stat-glow: rgba(232, 184, 63, .55);
 			background: linear-gradient(145deg, #f2cf68, #e8b83f);
 			color: #3c3425;
 			box-shadow: 0 6px 16px rgba(160, 121, 28, .18);
@@ -235,9 +254,9 @@
 		.dashboard-stat--gold .stat-note,
 		.dashboard-stat--gold .stat-value { color: #3c3425; }
 		.dashboard-stat--gold .dashboard-stat__icon { background: rgba(255, 255, 255, .42); color: #59451d; }
-		.dashboard-stat--blue { background: linear-gradient(145deg, #0daa88, #0b9678); color: #fff; }
+		.dashboard-stat--blue { --stat-glow: rgba(13, 170, 136, .46); background: linear-gradient(145deg, #0daa88, #0b9678); color: #fff; }
 		.dashboard-stat--blue .dashboard-stat__icon { background: rgba(255, 255, 255, .2); }
-		.dashboard-stat--red { background: linear-gradient(145deg, #7554a6, #593b88); color: #fff; }
+		.dashboard-stat--red { --stat-glow: rgba(117, 84, 166, .5); background: linear-gradient(145deg, #7554a6, #593b88); color: #fff; }
 		.dashboard-stat--red .dashboard-stat__icon { background: rgba(255, 255, 255, .18); }
 		.dashboard-launchpad { border-color: #e0e3e9; border-radius: .5rem; background: #fff; }
 		.dashboard-launchpad-heading__eyebrow { color: #007a9d; }
@@ -265,7 +284,6 @@
 			<a class="dashboard-nav__link" href="view-resources.html">Browse resources</a>
 			<a class="dashboard-nav__link" href="request-resources.html">Request resources</a>
 			<a class="dashboard-nav__link" href="my-requests.html">My requests</a>
-			<a class="dashboard-nav__link" href="book-equipment.html">Equipment bookings</a>
 		</div>
 	</nav>
 	<header class="page-heading dashboard-heading">

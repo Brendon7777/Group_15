@@ -30,7 +30,10 @@ def run_sql_file(cursor, filename):
 
 
 TABLES_IN_DROP_ORDER = (
+    "resource_suggestion",
     "maintenance_issue",
+    # Drop the audit table before the movement and resource rows it references.
+    "inventory_adjustment",
     "item_movement",
     "equipment_booking",
     "resource_request",
@@ -175,6 +178,37 @@ def ensure_inventory_sample_history(cursor):
     return updated
 
 
+def ensure_inventory_adjustment_history(cursor):
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS table_count
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name IN ('item_movement', 'inventory_adjustment')
+        """
+    )
+    if cursor.fetchone()["table_count"] != 2:
+        return 0
+
+    cursor.execute(
+        """
+        INSERT IGNORE INTO `inventory_adjustment`
+          (`resource_id`, `movement_id`, `adjustment_type`, `quantity_change`,
+           `reason`, `recorded_by_user_id`, `created_at`)
+        SELECT `resource_id`, `movement_id`, `movement_type`,
+               CASE WHEN `movement_type` = 'issue' THEN -`quantity` ELSE `quantity` END,
+               CASE
+                 WHEN `movement_type` = 'issue'
+                   THEN CONCAT('Issued to ', `borrower_name`, ' (', `borrower_id`, ')')
+                 ELSE CONCAT('Returned by ', `borrower_name`, ' (', `borrower_id`, ')')
+               END,
+               `recorded_by_user_id`, `created_at`
+        FROM `item_movement`
+        """
+    )
+    return cursor.rowcount
+
+
 def main():
     parser = argparse.ArgumentParser(description="Initialize the LTSM MySQL database.")
     parser.add_argument(
@@ -203,9 +237,13 @@ def main():
                 connection.commit()
                 print(f"{filename}: executed {count} SQL statements")
             migrated_history = ensure_inventory_sample_history(cursor)
-            if migrated_history:
+            migrated_adjustments = ensure_inventory_adjustment_history(cursor)
+            if migrated_history or migrated_adjustments:
                 connection.commit()
-                print(f"Updated {migrated_history} legacy sample inventory history record(s)")
+                if migrated_history:
+                    print(f"Updated {migrated_history} legacy sample inventory history record(s)")
+                if migrated_adjustments:
+                    print(f"Added {migrated_adjustments} existing movement(s) to the inventory audit trail")
     except Exception:
         connection.rollback()
         raise

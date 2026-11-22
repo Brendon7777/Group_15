@@ -1,0 +1,65 @@
+@view-transition {
+	navigation: auto;
+}
+
+::view-transition-old(root) {
+	animation: page-exit 160ms ease-in both;
+}
+
+::view-transition-new(root) {
+	animation: page-enter 220ms ease-out both;
+}
+
+@keyframes page-exit {
+	to {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+}
+
+@keyframes page-enter {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@view-transition {
+		navigation: none;
+	}
+}
+
+.page-loading {
+	position: fixed;
+	z-index: 99999;
+	inset: 0;
+	display: grid;
+	place-content: center;
+	justify-items: center;
+	gap: 1rem;
+	background: #fff;
+	color: #035e82;
+	font: 600 .95rem/1.4 "Segoe UI", Arial, sans-serif;
+}
+
+.page-loading[hidden] {
+	display: none;
+}
+
+.page-loading__spinner {
+	width: 48px;
+	height: 48px;
+	border: 4px solid #dcecf0;
+	border-top-color: #008bb2;
+	border-radius: 50%;
+	animation: page-loading-spin .8s linear infinite;
+}
+
+@keyframes page-loading-spin {
+	to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.page-loading__spinner { animation-duration: 2s; }
+}

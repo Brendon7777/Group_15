@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "inventory" %}
-<!-- Lets the LTSM committee filter sample inventory records and validate new item details. -->
+<!-- Lets the LTSM committee filter database inventory records and add new items. -->
 {% block title %}Manage Inventory | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -70,6 +70,7 @@
 		}
 		.inventory-page .inventory-action-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
 		.inventory-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 1.25rem; align-items: start; }
+		.inventory-page .audit-panel { grid-column: 1 / -1; }
 		.inventory-page .panel {
 			min-width: 0;
 			padding: 1.4rem;
@@ -162,7 +163,7 @@
 				</table>
 			</div>
 		</section>
-		<!-- SECTION 4: Validate details for a proposed inventory item. -->
+		<!-- SECTION 4: Add new inventory items. -->
 		<aside class="panel" id="add-item">
 			<h2>Add an inventory item</h2>
 			<form id="inventory-form">
@@ -175,11 +176,47 @@
 				<div id="inventory-feedback" class="form-feedback" role="status" hidden></div>
 				<button class="button inventory-action-button" type="submit">Add item</button>
 			</form>
+			<hr class="form-divider">
+			<h2>Adjust inventory</h2>
+			<p>Select an item from the database, then add or remove available stock. Quantity owned is unchanged.</p>
+			<form id="stock-adjustment-form">
+				<div class="form-field">
+					<label for="adjustment-item">Inventory item</label>
+					<select id="adjustment-item" name="item_id" required>
+						<option value="" selected disabled>Select an inventory item</option>
+					</select>
+				</div>
+				<div class="form-grid">
+					<div class="form-field"><label for="adjustment-action">Adjustment</label><select id="adjustment-action" name="action" required><option value="" selected disabled>Select adjustment</option><option value="add">Add stock</option><option value="remove">Remove stock</option></select></div>
+					<div class="form-field"><label for="adjustment-quantity">Quantity</label><input id="adjustment-quantity" name="quantity" type="number" min="1" max="10000" required></div>
+				</div>
+				<div class="form-field"><label for="adjustment-reason">Reason for adjustment</label><input id="adjustment-reason" name="reason" maxlength="255" required></div>
+				<div id="stock-adjustment-feedback" class="form-feedback" role="status" hidden></div>
+				<button class="button inventory-action-button" type="submit">Adjust inventory</button>
+			</form>
 		</aside>
+		<section class="panel audit-panel">
+			<div class="panel-heading"><div><h2>Stock adjustment audit trail</h2><p>Manual adjustments and issue/return movements, including who recorded each change and why.</p></div></div>
+			<div class="table-wrap">
+				<table id="adjustments-table">
+					<thead><tr><th>Item</th><th>Action</th><th>Change</th><th>Stock after</th><th>Reason</th><th>Recorded by</th><th>Date</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+		<section class="panel audit-panel">
+			<div class="panel-heading"><div><h2>Community resource suggestions</h2><p>Ideas from users for resources to add to the school catalogue. Anonymous suggestions are labelled accordingly.</p></div></div>
+			<div class="table-wrap">
+				<table id="suggestions-table">
+					<thead><tr><th>Suggested item</th><th>Message</th><th>Submitted by</th><th>Date</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Inventory list, filters and the add-item form use /api/inventory (static/js/committee-pages.js). -->
+	<!-- SECTION 5: Inventory and audit history are loaded by static/js/committee-pages.js. -->
 	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}

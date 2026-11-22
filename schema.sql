@@ -65,6 +65,21 @@ CREATE TABLE IF NOT EXISTS `resource_request` (
   CONSTRAINT `resource_request_quantity_check` CHECK (`quantity` BETWEEN 1 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `resource_suggestion` (
+  `suggestion_id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT DEFAULT NULL,
+  `submitter_name` VARCHAR(100) DEFAULT NULL,
+  `resource_name` VARCHAR(100) NOT NULL,
+  `message` VARCHAR(500) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`suggestion_id`),
+  KEY `resource_suggestion_created_idx` (`created_at`),
+  CONSTRAINT `resource_suggestion_user_fk`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `equipment_booking` (
   `booking_id` INT NOT NULL AUTO_INCREMENT,
   `user_id` INT NOT NULL,
@@ -116,6 +131,36 @@ CREATE TABLE IF NOT EXISTS `item_movement` (
     ON UPDATE CASCADE
     ON DELETE SET NULL,
   CONSTRAINT `item_movement_quantity_check` CHECK (`quantity` BETWEEN 1 AND 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `inventory_adjustment` (
+  `adjustment_id` INT NOT NULL AUTO_INCREMENT,
+  `resource_id` INT NOT NULL,
+  `movement_id` INT DEFAULT NULL,
+  `adjustment_type` ENUM('manual', 'issue', 'return') NOT NULL,
+  `quantity_change` INT NOT NULL,
+  `quantity_before` INT DEFAULT NULL,
+  `quantity_after` INT DEFAULT NULL,
+  `reason` VARCHAR(255) NOT NULL,
+  `recorded_by_user_id` INT DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`adjustment_id`),
+  UNIQUE KEY `inventory_adjustment_movement_unique` (`movement_id`),
+  KEY `inventory_adjustment_resource_idx` (`resource_id`, `created_at`),
+  CONSTRAINT `inventory_adjustment_resource_fk`
+    FOREIGN KEY (`resource_id`) REFERENCES `resource` (`resource_id`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `inventory_adjustment_movement_fk`
+    FOREIGN KEY (`movement_id`) REFERENCES `item_movement` (`movement_id`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `inventory_adjustment_recorded_by_fk`
+    FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `inventory_adjustment_quantity_check`
+    CHECK (`quantity_change` <> 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `maintenance_issue` (

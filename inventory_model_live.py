@@ -204,58 +204,75 @@ def _date(value, label):
         raise ValueError(f"{label}: a valid date is required") from exc
 
 
-def products_from_rows(rows):
+def products_from_rows(rows, warnings=None):
     """Convert joined database rows into inputs keyed by resource ID.
 
     Each row is a mapping containing the columns selected by MODEL_INPUT_SQL.
-    Missing histories and prices raise errors rather than silently omitting items.
-    Both JSON text/bytes and driver-decoded Python lists are accepted.
+    When warnings is supplied, invalid resource rows are reported and skipped so
+    valid products can still be calculated. Both JSON text/bytes and driver-decoded
+    Python lists are accepted.
     """
     products = {}
+    invalid_resources = set()
     for row in rows:
-        resource_id = _number(row['resource_id'], 'resource_id', whole=True)
-        label = f"Resource {resource_id} ({row['resource_name']})"
-        if resource_id in products:
-            raise ValueError(f"{label}: duplicate history row")
-        policy = row['review_policy']
-        if policy not in policies:
-            raise ValueError(f"{label}: unsupported review_policy {policy!r}")
-        raw = row['demand_values']
-        if isinstance(raw, (str, bytes, bytearray)):
-            try:
-                history = json.loads(raw)
-            except (ValueError, UnicodeError) as exc:
-                raise ValueError(f"{label}: invalid demand JSON") from exc
-        else:
-            history = raw
-        count = 6 if policy == 'six_month' else 3
-        if not isinstance(history, list) or len(history) != count:
-            raise ValueError(f"{label}: expected {count} historical quantities")
-        if any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in history):
-            raise ValueError(f"{label}: historical quantities must be JSON numbers")
-        history = [_number(v, label + ' demand', whole=True) for v in history]
-        start = _date(row['history_start'], label + ' history_start')
-        end = _date(row['history_end'], label + ' history_end')
-        months = 6 if policy == 'six_month' else 36
-        month_index = start.year * 12 + start.month - 1 + months
-        expected_end = date(month_index // 12, month_index % 12 + 1, 1) - timedelta(days=1)
-        if start.day != 1 or end != expected_end:
-            raise ValueError(f"{label}: dates must span {months} complete months (inclusive)")
-        unit = row['unit_of_measure']
-        if not isinstance(unit, str) or not unit.strip():
-            raise ValueError(f"{label}: stock unit is required")
-        products[resource_id] = {
-            'resource_name': row['resource_name'], 'grade': row.get('grade'),
-            'policy': policy, 'unit': unit,
-            'unit_price': _number(row['unit_price'], label + ' unit_price'),
-            'A': _number(row['A'], label + ' A', whole=True),
-            'history_start': start, 'history_end': end,
-            'monthly_demand' if policy == 'six_month' else 'annual_demand': history,
-        }
+        resource_id = None
+        try:
+            resource_id = _number(row['resource_id'], 'resource_id', whole=True)
+            label = f"Resource {resource_id} ({row['resource_name']})"
+            if resource_id in invalid_resources:
+                continue
+            if resource_id in products:
+                invalid_resources.add(resource_id)
+                products.pop(resource_id, None)
+                raise ValueError(f"{label}: duplicate history row")
+            policy = row['review_policy']
+            if policy not in policies:
+                raise ValueError(f"{label}: unsupported review_policy {policy!r}")
+            raw = row['demand_values']
+            if isinstance(raw, (str, bytes, bytearray)):
+                try:
+                    history = json.loads(raw)
+                except (ValueError, UnicodeError) as exc:
+                    raise ValueError(f"{label}: invalid demand JSON") from exc
+            else:
+                history = raw
+            count = 6 if policy == 'six_month' else 3
+            if history is None:
+                raise ValueError(f"{label}: no saved demand history")
+            if not isinstance(history, list) or len(history) != count:
+                raise ValueError(f"{label}: expected {count} historical quantities")
+            if any(not isinstance(v, (int, float)) or isinstance(v, bool) for v in history):
+                raise ValueError(f"{label}: historical quantities must be JSON numbers")
+            history = [_number(v, label + ' demand', whole=True) for v in history]
+            start = _date(row['history_start'], label + ' history_start')
+            end = _date(row['history_end'], label + ' history_end')
+            months = 6 if policy == 'six_month' else 36
+            month_index = start.year * 12 + start.month - 1 + months
+            expected_end = date(month_index // 12, month_index % 12 + 1, 1) - timedelta(days=1)
+            if start.day != 1 or end != expected_end:
+                raise ValueError(f"{label}: dates must span {months} complete months (inclusive)")
+            unit = row['unit_of_measure']
+            if not isinstance(unit, str) or not unit.strip():
+                raise ValueError(f"{label}: stock unit is required")
+            products[resource_id] = {
+                'resource_name': row['resource_name'], 'grade': row.get('grade'),
+                'policy': policy, 'unit': unit,
+                'unit_price': _number(row['unit_price'], label + ' unit_price'),
+                'A': _number(row['A'], label + ' A', whole=True),
+                'history_start': start, 'history_end': end,
+                'monthly_demand' if policy == 'six_month' else 'annual_demand': history,
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            if warnings is None:
+                raise
+            warnings.append(str(exc))
+            if resource_id is not None:
+                products.pop(resource_id, None)
+                invalid_resources.add(resource_id)
     return products
 
 
-def load_products(connection):
+def load_products(connection, warnings=None):
     """Read current stock and fixed histories with one query; never writes data."""
     cursor = connection.cursor()
     try:
@@ -265,7 +282,7 @@ def load_products(connection):
                 for row in cursor.fetchall()]
     finally:
         cursor.close()
-    return products_from_rows(rows)
+    return products_from_rows(rows, warnings)
 
 
 def calculate_results(product_inputs, selected_service_level=service_level):
@@ -307,9 +324,9 @@ def calculate_results(product_inputs, selected_service_level=service_level):
     return results
 
 
-def calculate_from_database(connection, selected_service_level=service_level):
+def calculate_from_database(connection, selected_service_level=service_level, warnings=None):
     """Website entry point: reload live stock, then calculate all consumables."""
-    return calculate_results(load_products(connection), selected_service_level)
+    return calculate_results(load_products(connection, warnings), selected_service_level)
 
 
 def print_summary(results):

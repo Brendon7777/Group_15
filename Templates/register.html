@@ -5,6 +5,8 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="theme-color" content="#123b35">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/selects.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	<title>Create an Account | LTSM Portal</title>
 	<!-- SECTION 1: Registration layout, fields and responsive styles. -->
@@ -117,6 +119,10 @@
 	</style>
 </head>
 <body>
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
 	<!-- SECTION 2: Welcome panel and account creation form. -->
 	<main class="register-layout">
 		<section class="welcome-panel" aria-label="LTSM Portal">
@@ -204,6 +210,7 @@
 		confirmPasswordInput.addEventListener("input", validatePasswordMatch);
 		// Form submission is handled by static/js/auth.js (POST /api/register).
 	</script>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>

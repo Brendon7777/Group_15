@@ -74,13 +74,52 @@
 		category.addEventListener("change", reload);
 		reload();
 
+		const adjustmentItem = $("#adjustment-item");
+		async function loadAdjustmentItems() {
+			try {
+				const { items } = await api.get("/api/inventory");
+				ui.fillSelect(adjustmentItem, items, (item) => ({
+					value: item.id,
+					label: `${item.name} | ${item.category} | ${item.stock} in stock | Reorder at ${item.reorder_level} | ${item.status}`
+				}));
+			} catch (error) {
+				ui.showFeedback($("#stock-adjustment-feedback"), "error", `Could not load inventory items. ${error.message}`);
+			}
+		}
+		loadAdjustmentItems();
+		const reloadAdjustments = ui.createTable({
+			tbody: $("#adjustments-table tbody"),
+			columns: 7,
+			emptyText: "No stock adjustments have been recorded.",
+			load: async () => (await api.get("/api/inventory/adjustments")).items,
+			renderRow: (a) => `<tr><td>${esc(a.item)}</td><td>${esc(a.adjustment_type)}</td><td>${Number(a.quantity_change) > 0 ? "+" : ""}${esc(a.quantity_change)}</td><td>${a.quantity_after === null ? "—" : esc(a.quantity_after)}</td><td>${esc(a.reason)}</td><td>${esc(a.recorded_by)}</td><td>${esc(a.adjusted_at)}</td></tr>`
+		});
+		reloadAdjustments();
+		const suggestionsBody = $("#suggestions-table tbody");
+		const reloadSuggestions = ui.createTable({
+			tbody: suggestionsBody,
+			columns: 4,
+			emptyText: "No resource suggestions have been submitted.",
+			load: async () => (await api.get("/api/committee/suggestions")).items,
+			renderRow: (suggestion) => `<tr><td>${esc(suggestion.name)}</td><td>${esc(suggestion.message)}</td><td>${esc(suggestion.submitted_by)}</td><td>${esc(suggestion.submitted)}</td></tr>`
+		});
+		reloadSuggestions();
+
 		ui.bindForm($("#inventory-form"), {
 			feedbackId: "inventory-feedback",
 			endpoint: "/api/inventory",
 			busyText: "Adding…",
 			payload: (v) => ({ item_name: v.item_name.trim(), category: v.category, quantity: Number(v.quantity), reorder_level: Number(v.reorder_level) }),
 			success: (data) => data.message,
-			onSuccess: reload
+			onSuccess: () => Promise.all([reload(), loadAdjustmentItems()])
+		});
+		ui.bindForm($("#stock-adjustment-form"), {
+			feedbackId: "stock-adjustment-feedback",
+			endpoint: "/api/inventory/adjust",
+			busyText: "Adjusting…",
+			payload: (v) => ({ item_id: Number(v.item_id), action: v.action, quantity: Number(v.quantity), reason: v.reason.trim() }),
+			success: (data) => data.message,
+			onSuccess: () => Promise.all([reload(), loadAdjustmentItems(), reloadAdjustments()])
 		});
 	}
 

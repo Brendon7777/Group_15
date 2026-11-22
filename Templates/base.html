@@ -10,6 +10,7 @@
 	<style>
 		:root {
 			color-scheme: light;
+			--site-header-height: 97px;
 			--green: #123b35;
 			--green-mid: #315b50;
 			--green-light: #eaf2ef;
@@ -31,17 +32,17 @@
 		a { color: var(--green); }
 		button, input, select, textarea { font: inherit; }
 		button, a { -webkit-tap-highlight-color: transparent; }
-		.site-header { position: relative; z-index: 1; background: var(--white); box-shadow: 0 3px 6px rgba(31, 45, 38, .12); }
+		.site-header { position: sticky; top: 0; z-index: 30; background: var(--white); box-shadow: 0 3px 6px rgba(31, 45, 38, .12); }
 		.header-inner { width: min(100% - 2rem, 1200px); min-height: 97px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 		.site-brand { display: inline-flex; align-items: center; gap: .75rem; color: var(--green); text-decoration: none; }
-		.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--gold); font-size: 1.2rem; font-weight: 800; }
+		.brand-mark { width: 54px; height: 54px; display: block; flex: 0 0 auto; object-fit: contain; }
 		.brand-copy { font-weight: 750; line-height: 1.2; }
 		.brand-copy small { display: block; margin-top: .2rem; color: var(--muted); font-size: .68rem; font-weight: 500; }
 		.header-actions { display: flex; align-items: center; gap: 1rem; }
 		.role-chip { padding: .4rem .7rem; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: .78rem; font-weight: 700; }
 		.signout-link { color: var(--muted); font-size: .88rem; font-weight: 650; text-decoration: none; }
 		.signout-link:hover, .nav-link:hover { color: var(--green-mid); text-decoration: underline; text-underline-offset: 4px; }
-		.site-navigation { background: var(--green); }
+		.site-navigation { position: sticky; top: var(--site-header-height); z-index: 20; background: var(--green); }
 		.nav-inner { width: min(100% - 2rem, 1200px); margin: 0 auto; display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
 		.nav-link { flex: 0 0 auto; padding: .85rem .9rem; color: #d8e4df; font-size: .88rem; font-weight: 650; text-decoration: none; }
 		.nav-link:hover, .nav-link[aria-current="page"] { color: var(--green); background: var(--gold); text-decoration: none; }
@@ -109,18 +110,24 @@
 		.site-footer { padding: 1.3rem 1rem; color: #d8e4df; background: var(--green); text-align: center; font-size: .82rem; }
 		.site-footer p { margin: 0; }
 		@media (max-width: 850px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .content-grid { grid-template-columns: 1fr; } .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-		@media (max-width: 560px) { .header-inner { min-height: 66px; } .brand-copy small { display: none; } .role-chip { display: none; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
+		@media (max-width: 560px) { :root { --site-header-height: 66px; } .header-inner { min-height: 66px; } .brand-mark { width: 44px; height: 44px; } .brand-copy small { display: none; } .role-chip { display: none; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
 		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 	</style>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/selects.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	{% block head %}{% endblock %}
 </head>
 <body>
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
 	<!-- SECTION 2: Portal identity and signed-in user actions. -->
 	<header class="site-header">
 		<div class="header-inner">
 			<a class="site-brand" href="user-dashboard.html" aria-label="LTSM Portal dashboard">
-				<span class="brand-mark" aria-hidden="true">L</span>
+				<img class="brand-mark" src="{{ url_for('static', filename='images/ltsm-logo-mark.png') }}" alt="">
 				<span class="brand-copy">LTSM Portal<small>Learning and Teaching Support Materials</small></span>
 			</a>
 			<div class="header-actions">
@@ -144,9 +151,8 @@
 				{% else %}
 					<a class="nav-link" href="user-dashboard.html">Dashboard</a>
 					<a class="nav-link" href="view-resources.html" {% if active_page == 'resources' %}aria-current="page"{% endif %}>Browse resources</a>
-					<a class="nav-link" href="request-resources.html" {% if active_page == 'request' %}aria-current="page"{% endif %}>Request resources</a>
+					<a class="nav-link" href="request-resources.html" {% if active_page in ['request', 'bookings'] %}aria-current="page"{% endif %}>Request resources</a>
 					<a class="nav-link" href="my-requests.html" {% if active_page == 'my-requests' %}aria-current="page"{% endif %}>My requests</a>
-					<a class="nav-link" href="book-equipment.html" {% if active_page == 'bookings' %}aria-current="page"{% endif %}>Equipment bookings</a>
 				{% endif %}
 			</div>
 		</nav>
@@ -157,6 +163,7 @@
 	</main>
 	<!-- SECTION 5: Shared footer and page-specific scripts. -->
 	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials · Sample-data preview</p></footer>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </body>

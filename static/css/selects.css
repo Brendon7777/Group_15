@@ -1,0 +1,10 @@
+select {
+	color-scheme: dark;
+	background-color: #111 !important;
+	color: #fff !important;
+}
+
+select option {
+	background-color: #111 !important;
+	color: #fff !important;
+}
