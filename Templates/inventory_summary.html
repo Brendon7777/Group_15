@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% set active_page = "inventory-summary" %}
+{% block title %}Inventory Summary | LTSM Portal{% endblock %}
+{% block role %}LTSM Committee Member{% endblock %}
+{% block head %}
+	<style>
+		.inventory-summary { display: grid; gap: 1.25rem; }
+		.inventory-summary .page-heading { min-height: 0; }
+		.inventory-summary .summary-note { color: var(--muted); line-height: 1.6; }
+		.inventory-summary .table-wrap { overflow-x: auto; }
+		.inventory-summary table { min-width: 930px; }
+		.inventory-summary td, .inventory-summary th { white-space: nowrap; }
+		.inventory-summary td:first-child, .inventory-summary th:first-child { white-space: normal; }
+		.inventory-summary .risk-badge { display: inline-block; border-radius: 999px; padding: .3rem .6rem; font-size: .78rem; font-weight: 700; }
+		.inventory-summary .risk-red { background: #fee2e2; color: #991b1b; }
+		.inventory-summary .risk-yellow { background: #fff0bb; color: #745000; }
+		.inventory-summary .risk-green { background: #dcf3e3; color: #175a32; }
+		.inventory-summary .error-notice { padding: 1rem; border: 1px solid #e6a4a4; border-radius: .75rem; background: #fff1f1; color: #7f1d1d; }
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="inventory-summary">
+		{% include "inventory_template.html" %}
+	</div>
+{% endblock %}

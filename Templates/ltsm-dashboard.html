@@ -242,6 +242,8 @@
 		<div class="committee-nav__inner">
 			<a class="committee-nav__link" href="ltsm-dashboard.html" aria-current="page">Dashboard</a>
 			<a class="committee-nav__link" href="manage-inventory.html">Inventory</a>
+			<a class="committee-nav__link" href="inventory-summary.html">Inventory summary</a>
+			<a class="committee-nav__link" href="manage-users.html">User accounts</a>
 			<a class="committee-nav__link" href="issue-return.html">Issue / return</a>
 			<a class="committee-nav__link" href="maintenance.html">Maintenance</a>
 			<a class="committee-nav__link" href="reports.html">Reports</a>
@@ -250,10 +252,14 @@
 	<header class="page-heading">
 		<div>
 			<p class="eyebrow">Committee workspace</p>
-			<h1>Resource management</h1>
+			<h1>Welcome, {{ user.name }}</h1>
 			<p>Monitor inventory, respond to requests and keep school equipment in service.</p>
 		</div>
-		<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
+		<div class="page-heading-actions">
+			<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
+			<a class="button button-secondary" href="inventory-summary.html">View inventory summary</a>
+			<a class="button button-secondary" href="manage-users.html">Manage user accounts</a>
+		</div>
 	</header>
 
 	<section class="dashboard-overview" aria-labelledby="committee-activity-heading">
@@ -315,6 +321,8 @@
 				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
 				<ul class="action-list colored-action-list management-action-list">
 					<li><a class="action-link" href="manage-inventory.html">Manage inventory <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="inventory-summary.html">View inventory summary <span aria-hidden="true">→</span></a></li>
+					<li><a class="action-link" href="manage-users.html">Manage user accounts <span aria-hidden="true">→</span></a></li>
 					<li><a class="action-link" href="issue-return.html">Issue or return items <span aria-hidden="true">→</span></a></li>
 					<li><a class="action-link" href="maintenance.html">Log maintenance <span aria-hidden="true">→</span></a></li>
 					<li><a class="action-link" href="reports.html">View reports <span aria-hidden="true">→</span></a></li>

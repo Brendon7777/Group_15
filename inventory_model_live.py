@@ -8,11 +8,10 @@ The caller owns the connection and transaction. Call again after committed stock
 changes using a fresh read transaction so the query sees current stock.
 This module does not place orders, write stock or assume deliveries occurred.
 
-Database source: the saved consumables view joins resource and demand history.
-Create the view in ltsm_db, and connect the website to that database.
+Database source: resource joined with consumable_demand_history.
 
 Database mapping:
-    resource.`quantity owned` -> A, never reduced by historical demand again
+    resource.quantity_in_stock -> A, never reduced by historical demand again
     consumable_demand_history.demand_values -> six monthly / three annual values
     resource.review_policy -> six_month or annual
     resource.unit_of_measure and resource.unit_price -> stock unit and price
@@ -41,11 +40,14 @@ policies = {
 }
 
 MODEL_INPUT_SQL = """
-SELECT resource_id, resource_name, grade, review_policy,
-       unit_of_measure, unit_price, `quantity owned` AS A,
-       history_start, history_end, demand_values
-FROM consumables
-ORDER BY resource_id
+SELECT r.resource_id, r.resource_name, r.grade, r.review_policy,
+       r.unit_of_measure, r.unit_price, r.quantity_in_stock AS A,
+       h.history_start, h.history_end, h.demand_values
+FROM resource AS r
+LEFT JOIN consumable_demand_history AS h
+  ON h.resource_id = r.resource_id
+WHERE r.review_policy IS NOT NULL
+ORDER BY r.resource_id, h.history_start
 """
 
 def average_monthly_demand(monthly_demand):

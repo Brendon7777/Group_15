@@ -89,7 +89,17 @@ Open http://127.0.0.1:5000 and sign in with a demo account (password for all: `P
 | Learner | learner01@example.com |
 | LTSM Committee Member | ltsm01@example.com |
 
-`app.py` currently keeps its data in memory (it resets when the server restarts). Replace the list operations inside each endpoint with SQL queries when the database layer is ready. The request and response shapes are documented in `API_CONTRACT.md`.
+Database setup and account persistence:
+
+```
+python init_db.py
+```
+
+This creates missing tables, applies the user-account status migration, safely corrects recognized legacy sample inventory histories, and loads sample data only when the resource table is empty. Registration and login use the MySQL `users` table. LTSM Committee Members can manage accounts at `manage-users.html`; deactivation blocks sign-in while retaining account history. Do not use `python init_db.py --reset` unless you intend to drop the project tables and their data.
+
+The LTSM-only live inventory forecast is available at `inventory-summary.html`. It reads current stock and prices from `resource` and demand history from `consumable_demand_history`; it does not place orders or modify stock. Each six-month resource needs six monthly demand values over six complete months, and each annual resource needs three annual values over 36 complete months. The initializer migrates the recognized sample data without resetting the database; other malformed history is reported on the summary page and must be corrected.
+
+Other portal features still use in-memory sample data and reset when the server restarts. The request and response shapes are documented in `API_CONTRACT.md`.
 
 **Tests, deployment and documentation (Task 4A)**
 

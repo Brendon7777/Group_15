@@ -5,6 +5,59 @@
 	const $ = (selector) => document.querySelector(selector);
 	const esc = ui.escape;
 
+	/* User management: committee-only account listing, creation and access toggles. */
+	const usersBody = $("#users-table tbody");
+	if (usersBody) {
+		const feedback = $("#users-list-feedback");
+		const reloadUsers = ui.createTable({
+			tbody: usersBody,
+			columns: 6,
+			emptyText: "No user accounts have been created.",
+			load: async () => (await api.get("/api/committee/users")).items,
+			renderRow: (user) => {
+				const role = { learner: "Learner", staff: "Teacher / staff", ltsm: "LTSM committee" }[user.role] || user.role;
+				const access = user.is_active ? "Active" : "Deactivated";
+				const action = user.is_current_user
+					? '<span class="muted">Current account</span>'
+					: `<button class="button button-secondary" type="button" data-user-id="${esc(user.id)}" data-active="${user.is_active ? "true" : "false"}">${user.is_active ? "Deactivate" : "Reactivate"}</button>`;
+				return `<tr><td>${esc(user.name)}</td><td>${esc(user.school_id)}</td><td>${esc(user.email)}</td><td>${esc(role)}</td><td>${esc(access)}</td><td class="account-actions">${action}</td></tr>`;
+			}
+		});
+		reloadUsers();
+
+		ui.bindForm($("#user-management-form"), {
+			feedbackId: "user-management-feedback",
+			endpoint: "/api/committee/users",
+			busyText: "Creating…",
+			payload: (values) => ({
+				full_name: values.full_name.trim(),
+				role: values.role,
+				school_id: values.school_id.trim(),
+				email: values.email.trim(),
+				password: values.password
+			}),
+			success: (data) => data.message,
+			onSuccess: reloadUsers
+		});
+
+		usersBody.addEventListener("click", async (event) => {
+			const button = event.target.closest("[data-user-id]");
+			if (!button) return;
+			const isActive = button.dataset.active === "true";
+			if (isActive && !window.confirm("Deactivate this account? It will no longer be able to sign in.")) return;
+			ui.hideFeedback(feedback);
+			ui.setBusy(button, true, isActive ? "Deactivating…" : "Reactivating…");
+			try {
+				const result = await api.post(`/api/committee/users/${encodeURIComponent(button.dataset.userId)}/status`, { is_active: !isActive });
+				ui.showFeedback(feedback, "success", result.message);
+				await reloadUsers();
+			} catch (error) {
+				ui.showFeedback(feedback, "error", error.message);
+				ui.setBusy(button, false);
+			}
+		});
+	}
+
 	/* Manage inventory: GET /api/inventory?q=&category= and POST /api/inventory */
 	const inventoryBody = $("#inventory-table tbody");
 	if (inventoryBody) {

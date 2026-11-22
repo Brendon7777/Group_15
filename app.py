@@ -5,7 +5,7 @@ Serves the Jinja templates in Templates/ and the JSON API under /api that the
 fetch() code in static/js/ calls. See API_CONTRACT.md for every endpoint.
 
 NOTE FOR THE GROUP: the data below lives in Python lists so the front end can be
-connected and tested today. When the MySQL layer is ready (see staff.sql), replace
+connected and tested today. When the MySQL layer is ready (see schema.sql), replace
 the list operations inside each endpoint with SQL queries - the request/response
 shapes in API_CONTRACT.md stay the same, so the JavaScript does not change.
 
@@ -22,7 +22,10 @@ from functools import wraps
 from zoneinfo import ZoneInfo
 
 from flask import Flask, jsonify, redirect, render_template, request, session
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
+import db
+import model
+import inventory_model_live
 
 try:  # optional: load settings from a local .env file (see .env.example)
     from dotenv import load_dotenv
@@ -34,6 +37,7 @@ APP_ENV = os.environ.get("APP_ENV", "development")
 APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "Africa/Johannesburg")
 
 app = Flask(__name__, template_folder="Templates", static_folder="static")
+db.init_app(app)
 _secret = os.environ.get("SECRET_KEY")
 if not _secret:
     if APP_ENV == "production":
@@ -224,7 +228,8 @@ def json_body():
 
 
 def current_user():
-    return next((u for u in USERS if u["id"] == session.get("uid")), None)
+    user_id = session.get("uid")
+    return model.get_user_by_id(user_id) if user_id is not None else None
 
 
 def api_route(*roles):
@@ -276,7 +281,7 @@ def stock_status(item):
 # --------------------------------------------------------------------------- #
 PUBLIC_PAGES = {"index", "login", "register"}
 USER_PAGES = {"user-dashboard", "view-resources", "request-resources", "my-requests", "book-equipment"}
-COMMITTEE_PAGES = {"ltsm-dashboard", "manage-inventory", "issue-return", "maintenance", "reports"}
+COMMITTEE_PAGES = {"ltsm-dashboard", "manage-inventory", "issue-return", "maintenance", "reports", "manage-users", "inventory-summary"}
 
 
 def dashboard_for(user):
@@ -309,7 +314,31 @@ def page(page):
         return redirect("/login")
     if page in COMMITTEE_PAGES and user["role"] != "ltsm":
         return redirect(dashboard_for(user))
-    return render_template(f"{page}.html")
+    if page == "inventory-summary":
+        try:
+            results = inventory_model_live.calculate_from_database(db.get_db())
+        except Exception:
+            app.logger.exception("Could not calculate the live inventory summary")
+            return render_template(
+                "inventory_summary.html",
+                user=user,
+                load_error="The inventory summary could not be calculated from the database. Please check the resource and demand-history records.",
+            ), 503
+        by_policy = {
+            policy: sorted(
+                (result for result in results.values() if result["policy"] == policy),
+                key=lambda result: result["resource_id"],
+            )
+            for policy in inventory_model_live.policies
+        }
+        return render_template(
+            "inventory_summary.html",
+            user=user,
+            results=by_policy,
+            policies=inventory_model_live.policies,
+            service_level=inventory_model_live.service_level,
+        )
+    return render_template(f"{page}.html", user=user)
 
 
 # --------------------------------------------------------------------------- #
@@ -319,8 +348,12 @@ def page(page):
 def api_login():
     data = json_body()
     username = str(data.get("username", "")).strip().lower()
-    user = next((u for u in USERS if username in (u["email"].lower(), u["school_id"].lower())), None)
-    if not (user and user["role"] == data.get("role") and check_password_hash(user["hash"], str(data.get("password", "")))):
+    user = model.authenticate_user(
+        username,
+        str(data.get("password", "")),
+        data.get("role"),
+    )
+    if user is None:
         raise ApiError("Incorrect role, username or password.", 401)  # one message so accounts cannot be probed
     session.clear()
     session["uid"] = user["id"]
@@ -347,12 +380,77 @@ def api_register():
     elif data.get("confirm_password") != password:
         v._fail("confirm_password", "Passwords do not match.")
     v.done()
-    if any(u["email"].lower() == email for u in USERS):
-        raise ApiError("An account with that email address already exists.", 409, {"email": "Already registered."})
-    if any(u["school_id"].lower() == school_id.lower() for u in USERS):
-        raise ApiError("An account with that student / staff number already exists.", 409, {"school_id": "Already registered."})
-    USERS.append({"id": next_id(USERS), "name": name, "email": email, "school_id": school_id, "role": role, "hash": generate_password_hash(password)})
+    try:
+        model.create_user(name, school_id, email, password, role)
+    except model.UserAlreadyExistsError as error:
+        field = error.field
+        label = "email address" if field == "email" else "student / staff number"
+        raise ApiError(
+            f"An account with that {label} already exists.",
+            409,
+            {field: "Already registered."},
+        ) from error
     return jsonify(message="Account created."), 201
+
+
+@app.get("/api/committee/users")
+@api_route("ltsm")
+def api_committee_users(user):
+    users = model.list_users()
+    return jsonify(items=[
+        {
+            "id": row["user_id"],
+            "name": row["full_name"],
+            "school_id": row["school_id"],
+            "email": row["email"],
+            "role": row["role"],
+            "is_active": bool(row["is_active"]),
+            "is_current_user": row["user_id"] == user["id"],
+        }
+        for row in users
+    ])
+
+
+@app.post("/api/committee/users")
+@api_route("ltsm")
+def api_committee_create_user(user):
+    data = json_body()
+    validator = Validator(data)
+    name = validator.text("full_name", "Full name", 2, 100)
+    role = validator.choice("role", "Role", ("learner", "staff", "ltsm"))
+    school_id = validator.text("school_id", "Student / staff number", 1, 40)
+    email = validator.email("email", "Email address")
+    password = data.get("password")
+    if not isinstance(password, str) or not 8 <= len(password) <= 128:
+        validator._fail("password", "Password must be 8–128 characters.")
+    validator.done()
+    try:
+        new_user_id = model.create_user(name, school_id, email, password, role)
+    except model.UserAlreadyExistsError as error:
+        field = error.field
+        label = "email address" if field == "email" else "student / staff number"
+        raise ApiError(
+            f"An account with that {label} already exists.",
+            409,
+            {field: "Already registered."},
+        ) from error
+    return jsonify(message="User account created.", id=new_user_id), 201
+
+
+@app.post("/api/committee/users/<int:user_id>/status")
+@api_route("ltsm")
+def api_committee_set_user_status(user, user_id):
+    data = json_body()
+    active = data.get("is_active")
+    if not isinstance(active, bool):
+        raise ApiError("Account status must be true or false.", 400, {"is_active": "Choose a valid status."})
+    try:
+        updated = model.set_user_active(user_id, active, user["id"])
+    except model.UserManagementError as error:
+        raise ApiError(str(error), 409, {"user_id": error.code}) from error
+    if not updated:
+        raise ApiError("That user account does not exist.", 404)
+    return jsonify(message="User account reactivated." if active else "User account deactivated.")
 
 
 # --------------------------------------------------------------------------- #

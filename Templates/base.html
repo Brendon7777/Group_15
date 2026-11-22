@@ -131,14 +131,16 @@
 	</header>
 	<!-- SECTION 3: Navigation changes according to the active user role. -->
 	{% if active_page not in ['dashboard', 'committee'] %}
-		<nav class="site-navigation {% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
+		<nav class="site-navigation {% if active_page in ['inventory', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
 			<div class="nav-inner">
-				{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}
+				{% if active_page in ['inventory', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}
 					<a class="nav-link" href="ltsm-dashboard.html">Dashboard</a>
 					<a class="nav-link" href="manage-inventory.html" {% if active_page == 'inventory' %}aria-current="page"{% endif %}>Inventory</a>
+					<a class="nav-link" href="inventory-summary.html" {% if active_page == 'inventory-summary' %}aria-current="page"{% endif %}>Inventory summary</a>
 					<a class="nav-link" href="issue-return.html" {% if active_page == 'issue-return' %}aria-current="page"{% endif %}>Issue / return</a>
 					<a class="nav-link" href="maintenance.html" {% if active_page == 'maintenance' %}aria-current="page"{% endif %}>Maintenance</a>
 					<a class="nav-link" href="reports.html" {% if active_page == 'reports' %}aria-current="page"{% endif %}>Reports</a>
+					<a class="nav-link" href="manage-users.html" {% if active_page == 'users' %}aria-current="page"{% endif %}>User accounts</a>
 				{% else %}
 					<a class="nav-link" href="user-dashboard.html">Dashboard</a>
 					<a class="nav-link" href="view-resources.html" {% if active_page == 'resources' %}aria-current="page"{% endif %}>Browse resources</a>

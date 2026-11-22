@@ -1,0 +1,65 @@
+<header class="page-heading">
+	<div>
+		<p class="eyebrow">Committee tools · Inventory planning</p>
+		<h1>Live inventory summary</h1>
+		<p>Order recommendations use current on-hand stock, saved demand history, and resource prices.</p>
+	</div>
+</header>
+
+{% if load_error %}
+	<div class="error-notice" role="alert">{{ load_error }}</div>
+{% else %}
+	<p class="summary-note">Planning preview only: this page does not create purchase orders or change inventory. Results assume no outstanding supplier orders or backorders.</p>
+	{% for policy_key, policy in policies.items() %}
+		<section class="panel" aria-labelledby="{{ policy_key }}-heading">
+			<div class="panel-heading">
+				<div>
+					<h2 id="{{ policy_key }}-heading">{{ policy.title }}</h2>
+					<p>{{ policy.review_interval }}-month review · {{ policy.lead_time }}-month lead time · {{ (service_level * 100)|round|int }}% service level</p>
+				</div>
+				<p class="summary-note">Order in {{ policy.order_month }} · receive in {{ policy.receipt_month }}</p>
+			</div>
+			{% if results[policy_key] %}
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Resource</th>
+								<th scope="col">History window</th>
+								<th scope="col">On hand</th>
+								<th scope="col">Average demand</th>
+								<th scope="col">Safety stock</th>
+								<th scope="col">Target stock</th>
+								<th scope="col">Recommended order</th>
+								<th scope="col">Unit price</th>
+								<th scope="col">Estimated cost</th>
+								{% if policy_key == "six_month" %}<th scope="col">Stockout warning</th>{% endif %}
+							</tr>
+						</thead>
+						<tbody>
+							{% for result in results[policy_key] %}
+								<tr>
+									<th scope="row">{{ result.resource_name }}{% if result.grade %} · {{ result.grade }}{% endif %}</th>
+									<td>{{ result.history_start.strftime("%d %b %Y") }} – {{ result.history_end.strftime("%d %b %Y") }}</td>
+									<td>{{ result.A }} {{ result.unit }}</td>
+									<td>{{ result.average|round|int }} {{ result.unit }}{% if policy_key == "six_month" %}/month{% else %}/year{% endif %}</td>
+									<td>{{ result.SS|round(0, "ceil")|int }}</td>
+									<td>{{ result.S|round(0, "ceil")|int }}</td>
+									<td><strong>{{ result.quantity }} {{ result.unit }}</strong></td>
+									<td>R{{ "%.2f"|format(result.unit_price) }}</td>
+									<td>R{{ "%.2f"|format(result.cost) }}</td>
+									{% if policy_key == "six_month" %}
+										<td><span class="risk-badge risk-{{ result.colour }}">{{ result.risk }}</span></td>
+									{% endif %}
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			{% else %}
+				<p class="empty-state">No resources with valid {{ policy.title|lower }} demand history are available.</p>
+			{% endif %}
+		</section>
+	{% endfor %}
+	<p class="summary-note">Displayed demand averages are rounded to the nearest whole unit. Safety and target stock are rounded up; calculations retain precision. Six-month stockout warnings are categories, not probabilities.</p>
+{% endif %}
