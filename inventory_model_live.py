@@ -30,11 +30,11 @@ from statistics import pstdev
 service_level = 0.95
 policies = {
     'six_month': {
-        'title': 'Six-month consumables', 'review_interval': 6, 'lead_time': 1,
+        'title': 'Six-month product forecasts', 'review_interval': 6, 'lead_time': 1,
         'order_month': 'June', 'receipt_month': 'July',
     },
     'annual': {
-        'title': 'Annual consumables', 'review_interval': 12, 'lead_time': 2,
+        'title': 'Annual product forecasts', 'review_interval': 12, 'lead_time': 2,
         'order_month': 'November', 'receipt_month': 'January',
     },
 }

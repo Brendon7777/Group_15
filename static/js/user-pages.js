@@ -21,7 +21,10 @@
 				const action = item.category === "Equipment"
 					? `<a class="catalogue-action" href="/book-equipment.html?equipment_id=${encodeURIComponent(item.id)}">Book</a>`
 					: `<a class="catalogue-action" href="/request-resources.html?resource_name=${encodeURIComponent(item.name)}">Request</a>`;
-				return `<tr><td><div class="catalogue-item">${visual}<span><span class="catalogue-item__name">${esc(item.name)}</span><span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td><span class="catalogue-count">${esc(item.stock)}</span><span class="sr-only"> ${esc(item.unit)} available</span></td><td>${action}</td></tr>`;
+				const quantityLabel = item.category === "Equipment"
+					? `${item.stock} available`
+					: `${item.stock} ${item.unit} in stock`;
+				return `<tr><td><div class="catalogue-item">${visual}<span><span class="catalogue-item__name">${esc(item.name)}</span><span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td>${esc(quantityLabel)}</td><td>${action}</td></tr>`;
 			}
 		});
 		search.addEventListener("input", ui.debounce(reload));
@@ -149,7 +152,10 @@
 		async function loadEquipment() {
 			try {
 				const { items } = await api.get("/api/equipment");
-				ui.fillSelect(equipmentSelect, items, (item) => ({ value: item.id, label: `${item.name} (${item.stock} in stock)` }));
+				ui.fillSelect(equipmentSelect, items, (item) => ({
+					value: item.id,
+					label: `${item.name} (${item.stock} available)${item.storage_location ? ` · Stored at ${item.storage_location}` : ""}`
+				}));
 				const requestedEquipmentId = new URLSearchParams(window.location.search).get("equipment_id");
 				if (requestedEquipmentId && items.some((item) => String(item.id) === requestedEquipmentId)) {
 					equipmentSelect.value = requestedEquipmentId;

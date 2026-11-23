@@ -254,7 +254,7 @@
 
 		const reloadRequests = ui.createTable({
 			tbody: requestTableBody,
-			columns: 7,
+			columns: 8,
 			emptyText: "No requests match this status filter.",
 			load: async () => {
 				const { items } = await api.get("/api/committee/requests", { status: requestStatus.value });
@@ -281,7 +281,7 @@
 				const quantity = request.allocated_quantity
 					? `${request.quantity} requested · ${request.allocated_quantity} allocated`
 					: `${request.quantity} ${request.unit || ""}`.trim();
-				return `<tr><td><strong>${esc(request.name)}</strong><br><small>${esc(request.category)}</small></td><td>${esc(request.requested_by)}<br><small>${esc(request.requester_id)}</small></td><td>${request.needed_by ? ui.formatDate(request.needed_by, false) : "Not specified"}</td><td>${esc(quantity)}</td><td>${esc(available)}</td><td>${ui.badge(request.status, statusTone[request.status])}</td><td>${action}</td></tr>`;
+				return `<tr><td><strong>${esc(request.name)}</strong><br><small>${esc(request.category)}</small></td><td>${esc(request.requested_by)}<br><small>${esc(request.requester_id)}</small></td><td>${esc(request.submitted_at || "Unknown")}</td><td>${request.needed_by ? ui.formatDate(request.needed_by, false) : "Not specified"}</td><td>${esc(quantity)}</td><td>${esc(available)}</td><td>${ui.badge(request.status, statusTone[request.status])}</td><td>${action}</td></tr>`;
 			}
 		});
 		requestStatus.addEventListener("change", reloadRequests);
@@ -441,7 +441,10 @@
 			renderRow: (i) => {
 				inventoryById.set(String(i.id), i);
 				const image = window.LTSMResourceImages.imageFor(i);
-				return `<tr><td><div class="inventory-item"><img class="inventory-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(i.name)}"><span>${esc(i.name)}</span></div></td><td>${esc(i.category)}</td><td>${esc(i.stock)} ${esc(i.unit)}</td><td>${esc(i.reorder_level)} ${esc(i.unit)}</td><td>${esc(i.storage_location || "Not set")}</td><td>${ui.badge(i.status, i.tone)}</td><td><button class="button button-secondary button-small" type="button" data-edit-inventory="${esc(i.id)}">Edit</button></td></tr>`;
+				const quantityLabel = i.category === "Equipment"
+					? `${i.stock} available`
+					: `${i.stock} ${i.unit} in stock`;
+				return `<tr><td><div class="inventory-item"><img class="inventory-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(i.name)}"><span>${esc(i.name)}</span></div></td><td>${esc(i.category)}</td><td>${esc(quantityLabel)}</td><td>${esc(i.reorder_level)} ${esc(i.unit)}</td><td>${esc(i.storage_location || "Not set")}</td><td>${ui.badge(i.status, i.tone)}</td><td><button class="button button-secondary button-small" type="button" data-edit-inventory="${esc(i.id)}">Edit</button></td></tr>`;
 			}
 		});
 		search.addEventListener("input", ui.debounce(reload));
@@ -454,7 +457,7 @@
 				const { items } = await api.get("/api/inventory");
 				ui.fillSelect(adjustmentItem, items, (item) => ({
 					value: item.id,
-					label: `${item.name} | ${item.category} | ${item.stock} ${item.unit} in stock | Reorder at ${item.reorder_level} | ${item.status}`
+					label: `${item.name} | ${item.category} | ${item.category === "Equipment" ? `${item.stock} available` : `${item.stock} ${item.unit} in stock`} | Reorder at ${item.reorder_level} | ${item.status}`
 				}));
 			} catch (error) {
 				ui.showFeedback($("#stock-adjustment-feedback"), "error", `Could not load inventory items. ${error.message}`);
@@ -564,7 +567,10 @@
 		async function loadItems() {
 			try {
 				const { items } = await api.get("/api/inventory");
-				ui.fillSelect(itemSelect, items, (item) => ({ value: item.id, label: `${item.name} (${item.stock} in stock)` }));
+				ui.fillSelect(itemSelect, items, (item) => ({
+					value: item.id,
+					label: `${item.name} (${item.category === "Equipment" ? `${item.stock} available` : `${item.stock} in stock`})`
+				}));
 			} catch (error) {
 				ui.showFeedback(feedback, "error", `Could not load inventory items. ${error.message}`);
 			}

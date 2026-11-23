@@ -8,8 +8,11 @@ Run:  python app.py   then open http://127.0.0.1:5000
 """
 import os
 import re
+import smtplib
+import ssl
 from collections import Counter
 from datetime import date, datetime, timedelta
+from email.message import EmailMessage
 from functools import wraps
 from zoneinfo import ZoneInfo
 
@@ -207,6 +210,12 @@ def date_value(value):
     return value.isoformat() if hasattr(value, "isoformat") else value
 
 
+def datetime_value(value):
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    return str(value)
+
+
 def time_value(value):
     return value.strftime("%H:%M") if hasattr(value, "strftime") else str(value)[:5]
 
@@ -321,6 +330,59 @@ def create_notification(cursor, user_id, module, title, message, target_url):
         """,
         (user_id, module, title, message, target_url),
     )
+
+
+def send_email(to_email, subject, body):
+    """Send a plain-text email. Missing SMTP configuration disables delivery, not the app."""
+    if not to_email:
+        return False
+
+    host = os.environ.get("SMTP_HOST", "").strip()
+    if not host:
+        app.logger.warning("Email not sent: SMTP_HOST is not configured.")
+        return False
+
+    try:
+        port = int(os.environ.get("SMTP_PORT", "587"))
+    except ValueError:
+        app.logger.error("Email not sent: SMTP_PORT must be a whole number.")
+        return False
+    username = os.environ.get("SMTP_USERNAME", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "")
+    from_email = os.environ.get("SMTP_FROM", username).strip()
+    from_name = os.environ.get("SMTP_FROM_NAME", "LTSM Portal").strip()
+    use_ssl = os.environ.get("SMTP_USE_SSL", "false").strip().lower() in ("1", "true", "yes")
+    use_tls = os.environ.get("SMTP_USE_TLS", "true").strip().lower() in ("1", "true", "yes")
+
+    if not from_email:
+        app.logger.warning("Email not sent: SMTP_FROM or SMTP_USERNAME must be configured.")
+        return False
+
+    message = EmailMessage()
+    message["From"] = f"{from_name} <{from_email}>" if from_name else from_email
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    try:
+        if use_ssl:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(host, port, context=context, timeout=20) as smtp:
+                if username:
+                    smtp.login(username, password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(host, port, timeout=20) as smtp:
+                if use_tls:
+                    smtp.starttls(context=ssl.create_default_context())
+                if username:
+                    smtp.login(username, password)
+                smtp.send_message(message)
+        app.logger.info("Email sent to %s: %s", to_email, subject)
+        return True
+    except (smtplib.SMTPException, OSError, ssl.SSLError, ValueError) as error:
+        app.logger.error("Email delivery failed for %s: %s", to_email, error)
+        return False
 
 
 def notify_role(cursor, role, module, title, message, target_url):
@@ -596,13 +658,13 @@ def api_create_request(user):
                 """
                 INSERT INTO resource_request
                   (user_id, resource_id, resource_name, category, quantity, needed_by, purpose,
-                   submitted_date, status, latest_update)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'In review', 'Committee review in progress')
+                   submitted_date, submitted_at, status, latest_update)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'In review', 'Committee review in progress')
                 """,
                 (
                     user["id"], inventory_item["resource_id"] if inventory_item else None,
                     row["name"], row["category"], row["quantity"],
-                    row["needed_by"], row["purpose"], today(),
+                    row["needed_by"], row["purpose"], today(), now().replace(tzinfo=None),
                 ),
             )
             request_id = cursor.lastrowid
@@ -658,7 +720,10 @@ def api_my_requests(user):
 @api_route()
 def api_equipment(user):
     return jsonify(items=[
-        {"id": item["id"], "name": item["name"], "stock": item["stock"]}
+        {
+            "id": item["id"], "name": item["name"], "stock": item["stock"],
+            "storage_location": item["storage_location"],
+        }
         for item in resource_rows()
         if item["category"] == "Equipment"
     ])
@@ -676,6 +741,8 @@ def api_create_booking(user):
     if start and end and end <= start:
         v._fail("end_time", "End time must be after start time.")
     v.done()
+    booking_start = datetime.combine(day, datetime.strptime(start, "%H:%M").time())
+    booking_end = datetime.combine(day, datetime.strptime(end, "%H:%M").time())
     connection = db.get_db()
     try:
         with connection.cursor() as cursor:
@@ -694,11 +761,15 @@ def api_create_booking(user):
                 """
                 SELECT COUNT(*) AS booking_count
                 FROM equipment_booking
-                WHERE resource_id = %s AND booking_date = %s
+                WHERE resource_id = %s
+                  AND booking_date BETWEEN DATE_SUB(%s, INTERVAL 1 DAY)
+                                       AND DATE_ADD(%s, INTERVAL 1 DAY)
                   AND status != 'Declined'
-                  AND start_time < %s AND end_time > %s
+                  AND TIMESTAMP(booking_date, start_time)
+                      < DATE_ADD(%s, INTERVAL 20 MINUTE)
+                  AND DATE_ADD(TIMESTAMP(booking_date, end_time), INTERVAL 20 MINUTE) > %s
                 """,
-                (item["id"], day, end, start),
+                (item["id"], day, day, booking_end, booking_start),
             )
             overlapping = cursor.fetchone()["booking_count"]
             if overlapping >= item["stock"]:
@@ -1357,6 +1428,7 @@ def api_committee_requests(user):
         SELECT rr.request_id AS id, rr.resource_id, rr.resource_name AS name,
                rr.category, rr.purpose, u.full_name AS requested_by,
                u.school_id AS requester_id, rr.submitted_date AS submitted,
+               rr.submitted_at,
                rr.needed_by, rr.quantity, rr.allocated_quantity,
                rr.collection_slot, rr.collection_location_id,
                cl.location_name AS collection_location,
@@ -1378,11 +1450,12 @@ def api_committee_requests(user):
     if status:
         sql += " WHERE rr.status = %s"
         params.append(status)
-    sql += " ORDER BY rr.submitted_date DESC, rr.request_id DESC"
+    sql += " ORDER BY rr.submitted_at ASC, rr.request_id ASC"
     rows = db.query_all(sql, params)
     items = []
     for r in rows:
         r["submitted"] = date_value(r["submitted"])
+        r["submitted_at"] = datetime_value(r["submitted_at"])
         r["needed_by"] = date_value(r["needed_by"]) if r["needed_by"] else None
         r["collection_slot"] = (
             r["collection_slot"].isoformat(sep=" ", timespec="minutes")
@@ -1393,7 +1466,8 @@ def api_committee_requests(user):
             "id": r["id"], "resource_id": r["resource_id"], "name": r["name"],
             "category": r["category"], "purpose": r["purpose"],
             "requested_by": r["requested_by"], "requester_id": r["requester_id"],
-            "submitted": r["submitted"], "needed_by": r["needed_by"],
+            "submitted": r["submitted"], "submitted_at": r["submitted_at"],
+            "needed_by": r["needed_by"],
             "quantity": r["quantity"], "allocated_quantity": r["allocated_quantity"],
             "collection_slot": r["collection_slot"], "status": r["status"],
             "collection_location_id": r["collection_location_id"],
@@ -1484,7 +1558,7 @@ def api_decide_request(user, request_id):
             cursor.execute(
                 """
                 SELECT request_id, user_id, resource_id, resource_name, quantity,
-                       allocated_quantity, status
+                       allocated_quantity, status, submitted_at
                 FROM resource_request WHERE request_id = %s FOR UPDATE
                 """,
                 (request_id,),
@@ -1499,6 +1573,33 @@ def api_decide_request(user, request_id):
             if row["status"] != "In review" and not legacy_unallocated:
                 raise ApiError(f"{row['resource_name']} was already {row['status'].lower()}.", 409)
 
+            if decision == "Approved" and row["resource_id"] is not None:
+                cursor.execute(
+                    """
+                    SELECT request_id, resource_name
+                    FROM resource_request
+                    WHERE resource_id = %s AND status = 'In review'
+                      AND (
+                        submitted_at < %s
+                        OR (submitted_at = %s AND request_id < %s)
+                      )
+                    ORDER BY submitted_at ASC, request_id ASC
+                    LIMIT 1
+                    FOR UPDATE
+                    """,
+                    (
+                        row["resource_id"], row["submitted_at"],
+                        row["submitted_at"], request_id,
+                    ),
+                )
+                earlier_request = cursor.fetchone()
+                if earlier_request:
+                    raise ApiError(
+                        f"Review earlier request #{earlier_request['request_id']} for "
+                        f"{earlier_request['resource_name']} first to keep allocation first-come, first-served.",
+                        409,
+                    )
+
             if decision == "Declined":
                 cursor.execute(
                     """
@@ -1512,6 +1613,9 @@ def api_decide_request(user, request_id):
                 )
                 message = f"{row['resource_name']} declined."
                 notification_status = "Declined"
+                notification_message = (
+                    f"Your request for {row['resource_name']} was declined by the LTSM committee."
+                )
             else:
                 if row["resource_id"] is None:
                     raise ApiError(
@@ -1563,20 +1667,30 @@ def api_decide_request(user, request_id):
                     f"{formatted_slot} at {location['location_name']}."
                 )
                 notification_status = "Ready for collection"
+                notification_message = (
+                    f"Your request for {row['resource_name']} was approved. "
+                    f"Collect it on {formatted_slot} at {location['location_name']}."
+                )
+            cursor.execute(
+                "SELECT email FROM users WHERE user_id = %s",
+                (row["user_id"],),
+            )
+            requester = cursor.fetchone()
             create_notification(
                 cursor,
                 row["user_id"],
                 "my-requests",
                 f"Request {notification_status.lower()}",
-                (
-                    f"Your request for {row['resource_name']} is {notification_status.lower()}. "
-                    f"Collect it on {formatted_slot} at {location['location_name']}."
-                    if decision == "Approved"
-                    else f"Your request for {row['resource_name']} is {notification_status.lower()}."
-                ),
+                notification_message,
                 "/my-requests.html",
             )
         connection.commit()
+        if requester:
+            send_email(
+                requester["email"],
+                f"Request {notification_status.lower()} - {row['resource_name']}",
+                f"{notification_message}\n\nRequest reference: #{request_id}",
+            )
         return jsonify(message=message)
     except Exception:
         connection.rollback()
@@ -1614,7 +1728,7 @@ def api_fulfill_request(user, request_id):
                 """
                 SELECT rr.request_id, rr.user_id, rr.resource_id, rr.resource_name,
                        rr.allocated_quantity, rr.status, rr.category,
-                       u.full_name, u.school_id
+                       u.full_name, u.school_id, u.email
                 FROM resource_request AS rr
                 JOIN users AS u ON u.user_id = rr.user_id
                 WHERE rr.request_id = %s
@@ -1667,7 +1781,24 @@ def api_fulfill_request(user, request_id):
                 """,
                 (today().isoformat(), request_id),
             )
+            fulfillment_message = (
+                f"Your request for {row['resource_name']} has been fulfilled. "
+                f"{row['allocated_quantity']} unit(s) were issued."
+            )
+            create_notification(
+                cursor,
+                row["user_id"],
+                "my-requests",
+                "Request fulfilled",
+                fulfillment_message,
+                "/my-requests.html",
+            )
         connection.commit()
+        send_email(
+            row["email"],
+            f"Request fulfilled - {row['resource_name']}",
+            f"{fulfillment_message}\n\nRequest reference: #{request_id}",
+        )
         return jsonify(message=f"{row['allocated_quantity']} × {item['resource_name']} issued to {row['full_name']}.")
     except Exception:
         connection.rollback()
@@ -1741,8 +1872,12 @@ def api_decide_booking(user, booking_id):
             equipment = cursor.fetchone()
             cursor.execute(
                 """
-                SELECT booking_id, user_id, resource_id, booking_date, start_time, end_time, status
-                FROM equipment_booking WHERE booking_id = %s FOR UPDATE
+                SELECT eb.booking_id, eb.user_id, eb.resource_id, eb.booking_date,
+                       eb.start_time, eb.end_time, eb.status, u.email
+                FROM equipment_booking AS eb
+                JOIN users AS u ON u.user_id = eb.user_id
+                WHERE eb.booking_id = %s
+                FOR UPDATE
                 """,
                 (booking_id,),
             )
@@ -1759,13 +1894,25 @@ def api_decide_booking(user, booking_id):
                     """
                     SELECT COUNT(*) AS booking_count
                     FROM equipment_booking
-                    WHERE resource_id = %s AND booking_date = %s
+                    WHERE resource_id = %s
+                      AND booking_date BETWEEN DATE_SUB(%s, INTERVAL 1 DAY)
+                                           AND DATE_ADD(%s, INTERVAL 1 DAY)
                       AND booking_id <> %s AND status != 'Declined'
-                      AND start_time < %s AND end_time > %s
+                      AND TIMESTAMP(booking_date, start_time)
+                          < DATE_ADD(%s, INTERVAL 20 MINUTE)
+                      AND DATE_ADD(TIMESTAMP(booking_date, end_time), INTERVAL 20 MINUTE) > %s
                     """,
                     (
-                        booking["resource_id"], booking["booking_date"], booking_id,
-                        booking["end_time"], booking["start_time"],
+                        booking["resource_id"], booking["booking_date"],
+                        booking["booking_date"], booking_id,
+                        datetime.combine(
+                            booking["booking_date"],
+                            datetime.strptime(time_value(booking["end_time"]), "%H:%M").time(),
+                        ),
+                        datetime.combine(
+                            booking["booking_date"],
+                            datetime.strptime(time_value(booking["start_time"]), "%H:%M").time(),
+                        ),
                     ),
                 )
                 overlapping = cursor.fetchone()["booking_count"]
@@ -1812,17 +1959,25 @@ def api_decide_booking(user, booking_id):
                 else "Booking cancelled" if booking["status"] == "Confirmed"
                 else "Booking declined"
             )
+            notification_message = (
+                f"Your {equipment['resource_name']} booking on "
+                f"{date_value(booking['booking_date'])} is "
+                f"{'confirmed' if decision == 'Confirmed' else 'cancelled' if booking['status'] == 'Confirmed' else 'declined'}."
+            )
             create_notification(
                 cursor,
                 booking["user_id"],
                 "bookings",
                 notification_title,
-                f"Your {equipment['resource_name']} booking on "
-                f"{date_value(booking['booking_date'])} is "
-                f"{'confirmed' if decision == 'Confirmed' else 'cancelled' if booking['status'] == 'Confirmed' else 'declined'}.",
+                notification_message,
                 "/book-equipment.html",
             )
         connection.commit()
+        send_email(
+            booking["email"],
+            f"{notification_title} - {equipment['resource_name']}",
+            f"{notification_message}\n\nBooking reference: #{booking_id}",
+        )
         return jsonify(message=message)
     except Exception:
         connection.rollback()

@@ -89,7 +89,7 @@
 			columns: 5,
 			emptyText: "No requests are waiting for review.",
 			load: async () => (await api.get("/api/committee/requests", { status: "In review" })).items,
-			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.requested_by)}</td><td>${ui.formatDate(r.submitted, false)}</td><td>${ui.badge(r.priority, r.priority_tone)}</td><td><div class="request-decision-actions"><a class="request-decision-button" href="request-management.html?request_id=${encodeURIComponent(r.id)}">Review</a><button class="request-decision-button request-decision-button--decline" type="button" data-kind="request" data-id="${esc(r.id)}" data-decision="Declined" aria-label="Decline ${esc(r.name)} request">Decline</button></div></td></tr>`
+			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.requested_by)}</td><td>${esc(r.submitted_at || "Unknown")}</td><td>${ui.badge(r.priority, r.priority_tone)}</td><td><div class="request-decision-actions"><a class="request-decision-button" href="request-management.html?request_id=${encodeURIComponent(r.id)}">Review</a><button class="request-decision-button request-decision-button--decline" type="button" data-kind="request" data-id="${esc(r.id)}" data-decision="Declined" aria-label="Decline ${esc(r.name)} request">Decline</button></div></td></tr>`
 		});
 		const reloadBookings = ui.createTable({
 			tbody: $("#committee-bookings-table tbody"),

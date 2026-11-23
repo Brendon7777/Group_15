@@ -19,6 +19,10 @@
 		.inventory-summary .warning-notice { padding: 1rem; border: 1px solid #e5c46a; border-radius: .75rem; background: #fff8df; color: #614b13; }
 		.inventory-summary .warning-notice h2 { margin-top: 0; font-size: 1.1rem; }
 		.inventory-summary .warning-notice ul { margin-bottom: 0; }
+		.inventory-summary .variable-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem 1rem; margin: 1rem 0 0; }
+		.inventory-summary .variable-list div { padding: .8rem; border-radius: 8px; background: #f4f8fa; }
+		.inventory-summary .variable-list dt { color: #035e82; font-weight: 700; }
+		.inventory-summary .variable-list dd { margin: .25rem 0 0; color: var(--muted); line-height: 1.5; }
 	</style>
 {% endblock %}
 {% block content %}

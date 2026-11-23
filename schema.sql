@@ -84,11 +84,13 @@ CREATE TABLE IF NOT EXISTS `resource_request` (
   `needed_by` DATE DEFAULT NULL,
   `purpose` VARCHAR(500) NOT NULL,
   `submitted_date` DATE NOT NULL,
+  `submitted_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `status` ENUM('In review', 'Approved', 'Ready for collection', 'Declined', 'Fulfilled') NOT NULL DEFAULT 'In review',
   `latest_update` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`request_id`),
   KEY `resource_request_user_idx` (`user_id`),
   KEY `resource_request_resource_idx` (`resource_id`),
+  KEY `resource_request_fifo_idx` (`resource_id`, `status`, `submitted_at`, `request_id`),
   KEY `resource_request_status_idx` (`status`),
   KEY `resource_request_collection_location_idx` (`collection_location_id`),
   CONSTRAINT `resource_request_user_fk`

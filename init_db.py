@@ -136,6 +136,33 @@ def ensure_request_workflow(cursor):
         cursor.execute(
             "ALTER TABLE `resource_request` ADD COLUMN `collection_slot` DATETIME DEFAULT NULL AFTER `allocated_quantity`"
         )
+    if "submitted_at" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `submitted_at` DATETIME(6) DEFAULT NULL AFTER `submitted_date`"
+        )
+        cursor.execute(
+            "UPDATE `resource_request` SET `submitted_at` = CAST(`submitted_date` AS DATETIME) WHERE `submitted_at` IS NULL"
+        )
+        cursor.execute(
+            "ALTER TABLE `resource_request` MODIFY COLUMN `submitted_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+        )
+
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS index_count
+        FROM information_schema.statistics
+        WHERE table_schema = DATABASE()
+          AND table_name = 'resource_request'
+          AND index_name = 'resource_request_fifo_idx'
+        """
+    )
+    if cursor.fetchone()["index_count"] == 0:
+        cursor.execute(
+            """
+            ALTER TABLE `resource_request`
+            ADD KEY `resource_request_fifo_idx` (`resource_id`, `status`, `submitted_at`, `request_id`)
+            """
+        )
 
     cursor.execute(
         """
