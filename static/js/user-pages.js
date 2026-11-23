@@ -10,13 +10,19 @@
 	if (resourceBody) {
 		const search = $("#resource-search");
 		const category = $("#category-filter");
-		const ICONS = { Textbooks: "▤", Stationery: "✎", Equipment: "⌁" };
 		const reload = ui.createTable({
 			tbody: resourceBody,
-			columns: 4,
+			columns: 5,
 			emptyText: "No resources match your search. Try another keyword or category.",
 			load: async () => (await api.get("/api/resources", { q: search.value, category: category.value })).items,
-			renderRow: (item) => `<tr><td><div class="catalogue-item"><span class="catalogue-item__icon" aria-hidden="true">${ICONS[item.category] || "▤"}</span><span><span class="catalogue-item__name">${esc(item.name)}</span><span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td><span class="catalogue-count">${esc(item.stock)}</span><span class="sr-only"> ${esc(item.unit)} available</span></td></tr>`
+			renderRow: (item) => {
+				const image = window.LTSMResourceImages.imageFor(item);
+				const visual = `<img class="catalogue-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(item.name)}">`;
+				const action = item.category === "Equipment"
+					? `<a class="catalogue-action" href="/book-equipment.html?equipment_id=${encodeURIComponent(item.id)}">Book</a>`
+					: `<a class="catalogue-action" href="/request-resources.html?resource_name=${encodeURIComponent(item.name)}">Request</a>`;
+				return `<tr><td><div class="catalogue-item">${visual}<span><span class="catalogue-item__name">${esc(item.name)}</span><span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td><span class="catalogue-count">${esc(item.stock)}</span><span class="sr-only"> ${esc(item.unit)} available</span></td><td>${action}</td></tr>`;
+			}
 		});
 		search.addEventListener("input", ui.debounce(reload));
 		category.addEventListener("change", reload);
@@ -27,17 +33,88 @@
 	const requestForm = $("#request-form");
 	if (requestForm) {
 		const suggestions = $("#catalogue-items");
+		const resourceName = $("#resource-name");
+		const requestCategory = $("#category");
+		const quantityInput = $("#quantity");
+		const availabilityNote = $("#available-quantity");
+		const requestedResourceName = new URLSearchParams(window.location.search).get("resource_name");
+		if (requestedResourceName) resourceName.value = requestedResourceName;
+		const resourceCatalog = new Map();
+		const validCategories = new Set(Array.from(requestCategory.options).filter((option) => !option.disabled).map((option) => option.value));
+		const matchingResource = () => resourceCatalog.get(resourceName.value.trim().toLocaleLowerCase());
+		const updateRequestCategory = () => {
+			const name = resourceName.value.trim();
+			const item = matchingResource();
+			requestCategory.value = !name ? "" : validCategories.has(item?.category) ? item.category : "Other";
+			availabilityNote.textContent = item
+				? `Available now: ${item.stock} ${item.unit} for this request.`
+				: name ? "Availability is not listed for this item." : "Enter a product name to check current availability.";
+		};
+
+		resourceName.addEventListener("input", updateRequestCategory);
+		resourceName.addEventListener("change", updateRequestCategory);
+		quantityInput.addEventListener("input", () => {
+			const item = matchingResource();
+			if (item && Number(quantityInput.value) > item.stock) {
+				availabilityNote.textContent = `Only ${item.stock} ${item.unit} available. Reduce the requested quantity to continue.`;
+			} else {
+				updateRequestCategory();
+			}
+		});
 		if (suggestions) {
 			api.get("/api/resources")
-				.then(({ items }) => { suggestions.innerHTML = items.map((item) => `<option value="${esc(item.name)}">`).join(""); })
-				.catch(() => { /* keep the built-in suggestions */ });
+				.then(({ items }) => {
+					items.forEach((item) => resourceCatalog.set(item.name.trim().toLocaleLowerCase(), item));
+					suggestions.innerHTML = items.map((item) => `<option value="${esc(item.name)}">`).join("");
+					updateRequestCategory();
+				})
+				.catch(() => {
+					availabilityNote.textContent = "Could not load current availability. Stock will be checked when you submit.";
+				});
 		}
 		ui.bindForm(requestForm, {
 			feedbackId: "request-feedback",
 			endpoint: "/api/requests",
 			busyText: "Submitting…",
+			beforeSubmit: () => {
+				const item = matchingResource();
+				if (item && Number(quantityInput.value) > item.stock) {
+					ui.showFeedback($("#request-feedback"), "error", `Only ${item.stock} ${item.unit} of ${item.name} are currently available. Reduce the quantity before submitting.`);
+					quantityInput.focus();
+					return false;
+				}
+				return true;
+			},
 			payload: (v) => ({ resource_name: v.resource_name.trim(), category: v.category, quantity: Number(v.quantity), needed_by: v.needed_by, purpose: v.purpose.trim() }),
 			success: () => "Request submitted. The LTSM committee will review it – track its progress on My requests."
+		});
+	}
+
+	const suggestionForm = $("#suggestion-form");
+	if (suggestionForm) {
+		const anonymous = $("#suggestion-anonymous");
+		const nameField = $("#suggestion-name-field");
+		const submitterName = $("#submitter-name");
+		const updateAnonymousFields = () => {
+			const userIsSignedIn = document.body.dataset.userSignedIn === "true";
+			const needsName = !anonymous.checked && !userIsSignedIn;
+			nameField.hidden = !needsName;
+			submitterName.required = needsName;
+		};
+		anonymous.addEventListener("change", updateAnonymousFields);
+		updateAnonymousFields();
+		ui.bindForm(suggestionForm, {
+			feedbackId: "suggestion-feedback",
+			endpoint: "/api/suggestions",
+			busyText: "Sending…",
+			payload: (values) => ({
+				resource_name: values.resource_name.trim(),
+				message: values.message.trim(),
+				anonymous: values.anonymous === "on",
+				submitter_name: values.submitter_name.trim()
+			}),
+			success: (data) => data.message,
+			afterReset: updateAnonymousFields
 		});
 	}
 
@@ -50,7 +127,14 @@
 			columns: 6,
 			emptyText: () => (status.value ? "No requests have this status." : "You have not submitted any requests yet."),
 			load: async () => (await api.get("/api/requests", { status: status.value })).items,
-			renderRow: (r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${ui.formatDate(r.submitted)}</td><td>${esc(r.quantity)}</td><td>${ui.badge(r.status, r.tone)}</td><td>${esc(r.update)}</td></tr>`
+			renderRow: (r) => {
+				const update = [
+					r.update,
+					r.collection_slot && `Collection ${r.collection_slot}`,
+					r.collection_location && !String(r.update || "").includes(r.collection_location) && `Location: ${r.collection_location}`
+				].filter(Boolean).join(" · ");
+				return `<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${ui.formatDate(r.submitted)}</td><td>${esc(r.allocated_quantity ? `${r.allocated_quantity} allocated of ${r.quantity}` : r.quantity)}</td><td>${ui.badge(r.status, r.tone)}</td><td>${esc(update)}</td></tr>`;
+			}
 		});
 		status.addEventListener("change", reload);
 		reload();
@@ -66,6 +150,10 @@
 			try {
 				const { items } = await api.get("/api/equipment");
 				ui.fillSelect(equipmentSelect, items, (item) => ({ value: item.id, label: `${item.name} (${item.stock} in stock)` }));
+				const requestedEquipmentId = new URLSearchParams(window.location.search).get("equipment_id");
+				if (requestedEquipmentId && items.some((item) => String(item.id) === requestedEquipmentId)) {
+					equipmentSelect.value = requestedEquipmentId;
+				}
 			} catch (error) {
 				ui.showFeedback(feedback, "error", `Could not load equipment. ${error.message}`);
 			}

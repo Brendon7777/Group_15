@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#123b35">
+	<title>Suggest a Resource | LTSM Portal</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
+	<style>
+		:root { color-scheme: light; --green: #123b35; --gold: #e8b95b; --ink: #172b28; --muted: #62716d; --paper: #fbfaf6; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; display: grid; grid-template-rows: auto 1fr auto; color: var(--ink); background: var(--paper); font-family: "Segoe UI", Arial, sans-serif; line-height: 1.6; }
+		a { color: var(--green); }
+		.site-header, .site-footer { padding: 1rem max(1.25rem, calc((100% - 900px) / 2)); background: #fff; }
+		.site-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; gap: 1rem; box-shadow: 0 3px 8px #123b3518; }
+		.site-brand { display: flex; align-items: center; gap: .75rem; color: var(--green); text-decoration: none; font-weight: 750; }
+		.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--gold); font-size: 1.2rem; }
+		.portal-clock { min-width: 104px; display: grid; justify-items: end; line-height: 1.2; }
+		.portal-clock span { color: var(--muted); font-size: .64rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+		.portal-clock time { color: var(--green); font-size: 1rem; font-variant-numeric: tabular-nums; font-weight: 750; letter-spacing: .03em; }
+		main { width: min(100% - 2rem, 760px); margin: 2rem auto; }
+		.heading { margin-bottom: 1.25rem; padding: 2rem; border-radius: 12px; color: #fff; background: linear-gradient(115deg, #035e82, #008bb2); }
+		.eyebrow { margin: 0 0 .4rem; color: #a9e9db; font-size: .75rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
+		h1 { margin: 0 0 .5rem; font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.15; }
+		.heading p:last-child { margin: 0; color: #e5f2f5; }
+		.panel { padding: 1.5rem; border: 1px solid #e0e3e9; border-radius: 10px; background: #fff; box-shadow: 0 5px 16px #28374612; }
+		.panel > p { color: var(--muted); }
+		.form-field { margin-bottom: 1rem; }
+		.form-field label { margin-bottom: .35rem; display: block; font-weight: 650; }
+		.form-field input, .form-field textarea { box-sizing: border-box; width: 100%; padding: .7rem .8rem; border: 1px solid #d5dfe4; border-radius: 7px; color: var(--ink); font: inherit; }
+		.form-field textarea { min-height: 130px; resize: vertical; }
+		.form-field input:focus, .form-field textarea:focus { outline: 3px solid #008bb233; border-color: #008bb2; }
+		.form-field small { display: block; margin-top: .3rem; color: var(--muted); font-size: .8rem; }
+		.anonymous-choice { display: flex; align-items: flex-start; gap: .55rem; margin: 1rem 0; }
+		.anonymous-choice input { margin-top: .35rem; accent-color: var(--green); }
+		.anonymous-choice label { font-weight: 650; }
+		.button { min-height: 44px; padding: .65rem 1rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--green); border-radius: 7px; color: #fff; background: var(--green); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+		.button:hover { background: #20554b; }
+		.button-secondary { color: var(--green); background: #fff; }
+		.form-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+		.site-footer { color: var(--muted); text-align: center; font-size: .82rem; }
+		.site-footer p { margin: 0; }
+		@media (max-width: 560px) { .site-header { gap: .6rem; padding-right: .75rem; padding-left: .75rem; } .portal-clock { min-width: 80px; } .portal-clock time { font-size: .9rem; } .portal-clock span { font-size: .56rem; } .heading { padding: 1.5rem; } .panel { padding: 1rem; } }
+	</style>
+</head>
+<body data-user-signed-in="{{ 'true' if user else 'false' }}">
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
+	<header class="site-header">
+		<a class="site-brand" href="/"><span class="brand-mark" aria-hidden="true">L</span><span>LTSM Portal</span></a>
+		<div class="portal-clock" aria-label="Local time"><span>Local time</span><time data-live-clock aria-live="off">--:--:--</time></div>
+		{% if user %}<a href="/request-resources.html">Back to resource requests</a>{% else %}<a href="/login">Sign in</a>{% endif %}
+	</header>
+	<main>
+		<header class="heading">
+			<p class="eyebrow">Help improve school resources</p>
+			<h1>Suggest something for the LTSM team</h1>
+			<p>Tell the committee what resource you think should be added to the catalogue. You can send your suggestion anonymously.</p>
+		</header>
+		<section class="panel">
+			<form id="suggestion-form">
+				<div class="form-field"><label for="suggestion-name">Resource or item</label><input id="suggestion-name" name="resource_name" maxlength="100" required></div>
+				<div class="form-field"><label for="suggestion-message">Why would it be useful?</label><textarea id="suggestion-message" name="message" minlength="10" maxlength="500" required></textarea><small>Enter 10–500 characters to help the committee understand your suggestion.</small></div>
+				<div class="anonymous-choice"><input id="suggestion-anonymous" name="anonymous" type="checkbox" checked><label for="suggestion-anonymous">Send anonymously</label></div>
+				<div class="form-field" id="suggestion-name-field" hidden><label for="submitter-name">Your name</label><input id="submitter-name" name="submitter_name" maxlength="100" autocomplete="name"><small>If you are signed in, the committee will see your account name instead.</small></div>
+				<div id="suggestion-feedback" class="form-feedback" role="status" hidden></div>
+				<div class="form-actions"><button class="button" type="submit">Send suggestion</button><a class="button button-secondary" href="/login">Back to sign in</a></div>
+			</form>
+		</section>
+	</main>
+	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials</p></footer>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/live-clock.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+</body>
+</html>

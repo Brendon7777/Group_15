@@ -14,6 +14,9 @@
 		body:has(.committee-dashboard) .nav-link:hover,
 		body:has(.committee-dashboard) .nav-link[aria-current="page"] { background: #008bb2; color: #fff; }
 		.committee-nav {
+			position: sticky;
+			top: var(--site-header-height);
+			z-index: 20;
 			margin-bottom: .25rem;
 			overflow: hidden;
 			border-radius: 10px;
@@ -39,6 +42,7 @@
 			text-decoration: none;
 			transition: background .15s ease, color .15s ease;
 		}
+		.committee-nav__link .notification-badge { align-self: center; }
 		.committee-nav__link:hover, .committee-nav__link[aria-current="page"] {
 			border-radius: 7px;
 			background: #008bb2;
@@ -85,9 +89,10 @@
 			color: #fff;
 			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
 		}
-		.committee-dashboard .stat-card:nth-child(1) { background: linear-gradient(145deg, #035e82, #007a9d); }
-		.committee-dashboard .stat-card:nth-child(2) { background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.committee-dashboard .stat-card:nth-child(1) { --stat-glow: rgba(0, 139, 178, .48); background: linear-gradient(145deg, #035e82, #007a9d); }
+		.committee-dashboard .stat-card:nth-child(2) { --stat-glow: rgba(13, 170, 136, .46); background: linear-gradient(145deg, #0daa88, #0b9678); }
 		.committee-dashboard .stat-card:nth-child(3) {
+			--stat-glow: rgba(232, 184, 63, .55);
 			background: linear-gradient(145deg, #f2cf68, #e8b83f);
 			color: #3c3425;
 			box-shadow: 0 6px 16px rgba(160, 121, 28, .18);
@@ -96,7 +101,7 @@
 		.committee-dashboard .stat-card:nth-child(3) .stat-value,
 		.committee-dashboard .stat-card:nth-child(3) .stat-note { color: #3c3425; }
 		.committee-dashboard .stat-card:nth-child(3) .stat-card__icon { background: rgba(255, 255, 255, .4); }
-		.committee-dashboard .stat-card:nth-child(4) { background: linear-gradient(145deg, #7554a6, #593b88); }
+		.committee-dashboard .stat-card:nth-child(4) { --stat-glow: rgba(117, 84, 166, .5); background: linear-gradient(145deg, #7554a6, #593b88); }
 		.committee-dashboard .stat-label, .committee-dashboard .stat-note { color: #e5f2f5; }
 		.committee-dashboard .stat-value { color: #fff; }
 		.committee-dashboard .panel {
@@ -140,8 +145,8 @@
 		.committee-dashboard .stats-grid {
 			margin: 0;
 			display: grid !important;
-			width: max-content !important;
-			grid-template-columns: repeat(3, minmax(180px, 205px)) !important;
+			width: 100% !important;
+			grid-template-columns: repeat(4, minmax(180px, 1fr)) !important;
 			grid-auto-flow: row !important;
 			justify-content: start;
 			gap: .9rem;
@@ -154,6 +159,19 @@
 			overflow: hidden;
 			border-color: transparent;
 			transition: transform .16s ease, box-shadow .16s ease;
+			animation: stat-card-pulse 3.2s ease-in-out infinite;
+		}
+		@keyframes stat-card-pulse {
+			0%, 50%, 100% {
+				opacity: 1;
+				filter: brightness(1);
+				box-shadow: 0 6px 16px rgba(40, 55, 70, .1), 0 0 22px var(--stat-glow, rgba(0, 139, 178, .4));
+			}
+			25%, 75% {
+				opacity: .78;
+				filter: brightness(.9);
+				box-shadow: 0 4px 12px rgba(40, 55, 70, .08), 0 0 4px var(--stat-glow, rgba(0, 139, 178, .12));
+			}
 		}
 		.committee-dashboard .stat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 30px rgba(40, 55, 70, .16); }
 		.committee-dashboard .stat-card::after {
@@ -174,7 +192,7 @@
 		.committee-dashboard .stat-value { display: block; margin: 0; color: inherit; font-size: 2.2rem; font-weight: 780; letter-spacing: -.04em; line-height: 1.1; }
 		.committee-dashboard .stat-note { display: block; margin: 0; color: inherit; font-size: .76rem; line-height: 1.4; opacity: .86; }
 		.committee-dashboard .content-grid {
-			grid-template-columns: minmax(0, 1.65fr) minmax(270px, .85fr);
+			grid-template-columns: minmax(0, 1fr);
 			gap: 1.25rem;
 			align-items: start;
 		}
@@ -197,7 +215,6 @@
 			gap: .3rem 1rem;
 			list-style: none;
 		}
-		.committee-dashboard .management-action-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 		.committee-dashboard .colored-action-list > li { min-width: 0; }
 		.committee-dashboard .colored-action-list .action-link {
 			width: 100%;
@@ -220,6 +237,7 @@
 		.committee-dashboard .colored-action-list .badge { background: rgba(255, 255, 255, .88); color: #33414a; }
 		@media (prefers-reduced-motion: reduce) {
 			.committee-dashboard .colored-action-list .action-link { transition: none; }
+			.committee-dashboard .stat-card { animation: none; }
 		}
 		@media (max-width: 850px) {
 			.committee-dashboard .content-grid { grid-template-columns: 1fr; }
@@ -231,7 +249,6 @@
 			.committee-dashboard { gap: 1rem; }
 			.committee-dashboard .panel { padding: 1rem; }
 			.committee-dashboard .panel-heading { flex-wrap: wrap; }
-			.committee-dashboard .management-action-list { grid-template-columns: 1fr; }
 		}
 	</style>
 {% endblock %}
@@ -241,7 +258,11 @@
 	<nav class="committee-nav" aria-label="LTSM committee navigation">
 		<div class="committee-nav__inner">
 			<a class="committee-nav__link" href="ltsm-dashboard.html" aria-current="page">Dashboard</a>
+			<a class="committee-nav__link" href="request-management.html" data-notification-link="request-management">Request management<span class="notification-badge" data-notification-badge="request-management" hidden></span></a>
+			<a class="committee-nav__link" href="manage-bookings.html">Equipment bookings</a>
 			<a class="committee-nav__link" href="manage-inventory.html">Inventory</a>
+			<a class="committee-nav__link" href="inventory-summary.html">Inventory summary</a>
+			<a class="committee-nav__link" href="manage-users.html">User accounts</a>
 			<a class="committee-nav__link" href="issue-return.html">Issue / return</a>
 			<a class="committee-nav__link" href="maintenance.html">Maintenance</a>
 			<a class="committee-nav__link" href="reports.html">Reports</a>
@@ -250,10 +271,9 @@
 	<header class="page-heading">
 		<div>
 			<p class="eyebrow">Committee workspace</p>
-			<h1>Resource management</h1>
+			<h1>Welcome, {{ user.name }}</h1>
 			<p>Monitor inventory, respond to requests and keep school equipment in service.</p>
 		</div>
-		<a class="button" href="manage-inventory.html">＋ Add inventory item</a>
 	</header>
 
 	<section class="dashboard-overview" aria-labelledby="committee-activity-heading">
@@ -284,11 +304,11 @@
 		</section>
 	</div>
 
-	<!-- SECTION 4: Pending request decisions and equipment booking actions. -->
+	<!-- SECTION 4: Pending request reviews and equipment booking actions. -->
 	<div class="content-grid">
 		<div class="stack">
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Accept or decline each request for committee review.</p></div></div>
+				<div class="panel-heading"><div><h2>Pending resource requests</h2><p>Review request details, confirm stock and schedule collection.</p></div><a href="request-management.html">View all</a></div>
 				<div class="table-wrap">
 					<table id="committee-requests-table">
 						<thead><tr><th>Request</th><th>Requested by</th><th>Date</th><th>Priority</th><th>Action</th></tr></thead>
@@ -297,7 +317,7 @@
 				</div>
 			</section>
 			<section class="panel">
-				<div class="panel-heading"><div><h2>Equipment bookings</h2><p>Upcoming reservations that need attention.</p></div></div>
+				<div class="panel-heading"><div><h2>Upcoming equipment bookings</h2><p>Upcoming reservations that need attention.</p></div><a href="manage-bookings.html">View all</a></div>
 				<div class="table-wrap">
 					<table id="committee-bookings-table">
 						<thead><tr><th>Equipment</th><th>Booked by</th><th>When</th><th>Status</th><th>Action</th></tr></thead>
@@ -306,25 +326,10 @@
 				</div>
 			</section>
 		</div>
-		<aside class="stack">
-			<section class="panel">
-				<div class="panel-heading"><div><h2>Low-stock alerts</h2><p>Items at or below their reorder point.</p></div></div>
-				<ul class="action-list colored-action-list low-stock-list" id="low-stock-list" aria-live="polite"></ul>
-			</section>
-			<section class="panel">
-				<div class="panel-heading"><div><h2>Management actions</h2><p>Go directly to a committee task.</p></div></div>
-				<ul class="action-list colored-action-list management-action-list">
-					<li><a class="action-link" href="manage-inventory.html">Manage inventory <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="issue-return.html">Issue or return items <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="maintenance.html">Log maintenance <span aria-hidden="true">→</span></a></li>
-					<li><a class="action-link" href="reports.html">View reports <span aria-hidden="true">→</span></a></li>
-				</ul>
-			</section>
-		</aside>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: KPIs, low-stock alerts and accept / decline actions use the API (static/js/dashboard-pages.js). -->
+	<!-- SECTION 5: KPIs and request / booking actions use the API (static/js/dashboard-pages.js). -->
 	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

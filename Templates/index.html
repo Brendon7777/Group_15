@@ -5,6 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="theme-color" content="#123b35">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<title>LTSM Portal | Learning and Teaching Support Material</title>
 	<!-- SECTION 1: Landing page theme and responsive component styles. -->
 	<style>
@@ -31,6 +32,9 @@
 		a { color: inherit; }
 
 		.site-header {
+			position: sticky;
+			top: 0;
+			z-index: 20;
 			max-width: 1160px;
 			margin: 0 auto;
 			padding: 22px 28px;
@@ -39,6 +43,9 @@
 			justify-content: space-between;
 			gap: 20px;
 		}
+		.portal-clock { min-width: 104px; display: grid; justify-items: end; line-height: 1.2; }
+		.portal-clock span { color: var(--muted); font-size: .64rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+		.portal-clock time { color: var(--green); font-size: 1rem; font-variant-numeric: tabular-nums; font-weight: 750; letter-spacing: .03em; }
 
 		.brand {
 			display: inline-flex;
@@ -192,9 +199,16 @@
 			font-weight: 750;
 			letter-spacing: .12em;
 			text-transform: uppercase;
+			animation: art-copy-arrive .6s ease-out both;
 		}
 
-		.book-stack { position: relative; z-index: 1; width: 78%; margin: 25px auto 18px; }
+		.book-stack {
+			position: relative;
+			z-index: 1;
+			width: 78%;
+			margin: 25px auto 18px;
+			perspective: 600px;
+		}
 
 		.book {
 			height: 58px;
@@ -205,13 +219,33 @@
 			color: #fff;
 			font-size: .82rem;
 			font-weight: 700;
+			animation: book-loop 6s ease-in-out infinite;
 		}
 
-		.book:nth-child(1) { width: 90%; background: #527c70; }
-		.book:nth-child(2) { width: 100%; background: #d5a64f; color: #3c3425; }
-		.book:nth-child(3) { width: 84%; background: #315b65; }
+		.book:nth-child(1) { width: 90%; background: #527c70; animation-delay: 0s; }
+		.book:nth-child(2) { width: 100%; background: #d5a64f; color: #3c3425; animation-delay: 1.2s; }
+		.book:nth-child(3) { width: 84%; background: #315b65; animation-delay: 2.4s; }
 
-		.art-caption { position: relative; z-index: 1; margin: 0; color: var(--green); font-size: 1.1rem; font-weight: 700; }
+		.art-caption {
+			position: relative;
+			z-index: 1;
+			margin: 0;
+			color: var(--green);
+			font-size: 1.1rem;
+			font-weight: 700;
+			animation: art-copy-arrive .6s ease-out .85s both;
+		}
+
+		@keyframes book-loop {
+			0%, 8% { opacity: 0; transform: translateY(16px); }
+			20%, 62% { opacity: 1; transform: translateY(0); }
+			78%, 100% { opacity: 0; transform: translateY(-18px); }
+		}
+
+		@keyframes art-copy-arrive {
+			from { opacity: 0; transform: translateY(8px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
 
 		.features {
 			padding: 68px 28px 76px;
@@ -224,7 +258,7 @@
 
 		.features-intro { margin: 8px 0 30px; color: var(--muted); }
 
-		.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+		.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; overflow: hidden; }
 
 		.feature {
 			min-height: 170px;
@@ -232,6 +266,17 @@
 			border: 1px solid #e1e9e4;
 			border-radius: 12px;
 			background: #fff;
+			animation: feature-slide-loop 10s ease-in-out infinite;
+		}
+
+		.feature:nth-child(2) { animation-delay: -2.5s; }
+		.feature:nth-child(3) { animation-delay: -5s; }
+		.feature:nth-child(4) { animation-delay: -7.5s; }
+
+		@keyframes feature-slide-loop {
+			0%, 8% { opacity: 0; transform: translateX(110%); }
+			20%, 55% { opacity: 1; transform: translateX(0); }
+			68%, 100% { opacity: 0; transform: translateX(-110%); }
 		}
 
 		.feature-icon {
@@ -264,23 +309,41 @@
 		}
 
 		@media (max-width: 520px) {
-			.site-header { padding: 16px 20px; }
+			.site-header { padding: 16px 20px; gap: 10px; }
 			.brand { font-size: .98rem; }
+			.portal-clock { min-width: 82px; }
+			.portal-clock time { font-size: .9rem; }
+			.portal-clock span { font-size: .56rem; }
 			.hero { padding: 34px 20px 54px; }
 			.hero-art { min-height: 300px; }
 			.art-card { min-height: 290px; padding: 22px; }
 			.features { padding: 48px 20px; }
 			.feature-grid { grid-template-columns: 1fr; }
 		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.art-label, .book, .art-caption {
+				animation: none;
+				opacity: 1;
+				transform: none;
+			}
+			.feature { animation: none; }
+		}
 	</style>
 </head>
 <body>
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
 	<!-- SECTION 2: Portal branding and sign-in entry point. -->
 	<header class="site-header">
 		<a class="brand" href="index.html" aria-label="LTSM Portal home">
 			<span class="brand-mark" aria-hidden="true">L</span>
 			<span>LTSM Portal</span>
 		</a>
+		<div class="portal-clock" aria-label="Local time"><span>Local time</span><time data-live-clock aria-live="off">--:--:--</time></div>
+		<a class="header-link" href="suggest-resource.html">Suggest a resource</a>
 		<a class="header-link" href="login.html">Sign in <span aria-hidden="true">→</span></a>
 	</header>
 
@@ -325,8 +388,8 @@
 					</article>
 					<article class="feature">
 						<span class="feature-icon" aria-hidden="true">▣</span>
-						<h3>Equipment Bookings</h3>
-						<p>Access and book shared school equipment.</p>
+						<h3>Borrow Shared Equipment</h3>
+						<p>Open equipment booking from the Resource Requests hub.</p>
 					</article>
 					<article class="feature">
 						<span class="feature-icon" aria-hidden="true">↗</span>
@@ -347,5 +410,7 @@
 	<footer>
 		<p>© 2026 LTSM Portal · Learning and Teaching Support Material Management</p>
 	</footer>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/live-clock.js') }}"></script>
 </body>
 </html>

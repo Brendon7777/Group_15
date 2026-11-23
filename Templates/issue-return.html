@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "issue-return" %}
-<!-- Helps the LTSM committee validate item issue and return records and review current sample loans. -->
+<!-- Helps the LTSM committee validate item issue and return records and review current loans. -->
 {% block title %}Issue and Return Items | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -112,57 +112,94 @@
 	<!-- SECTION 2: Circulation page heading and inventory shortcut. -->
 	<div class="issue-return-page">
 	<header class="page-heading">
-		<div><p class="eyebrow">Circulation desk</p><h1>Issue and return items</h1><p>Record loans, returns and due dates for school resources.</p></div>
+		<div><p class="eyebrow">Circulation desk</p><h1>Allocation and retrieval tracking</h1><p>Issue resources to registered teachers or learners, then record each return, loss, or damage against the original issue.</p></div>
 		<a class="button button-secondary" href="manage-inventory.html">View inventory</a>
 	</header>
 	<div class="content-grid">
-		<!-- SECTION 3: Validate a new issue or return record. -->
+		<!-- SECTION 3: Record an issue or a linked loan event. -->
 		<section class="panel">
-			<h2>Record an item movement</h2>
+			<h2>Record an allocation or loan event</h2>
 			<form id="movement-form">
 				<div class="form-grid">
-					<div class="form-field"><label for="movement-type">Action</label><select id="movement-type" name="movement_type" required><option value="" selected disabled>Select an action</option><option value="issue">Issue item</option><option value="return">Record return</option></select></div>
-					<div class="form-field"><label for="inventory-item">Item</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option></select></div>
-					<div class="form-field"><label for="borrower-id">Student / staff number</label><input id="borrower-id" name="borrower_id" autocomplete="off" maxlength="40" required></div>
+					<div class="form-field"><label for="movement-type">Action</label><select id="movement-type" name="movement_type" required><option value="" selected disabled>Select an action</option><option value="issue">Issue item</option><option value="return">Record return</option><option value="lost">Record item lost</option><option value="damaged">Record item damaged</option></select></div>
+					<div class="form-field" id="issue-item-field"><label for="inventory-item">Item from inventory</label><select id="inventory-item" name="item" required><option value="" selected disabled>Select an item</option></select></div>
+					<div class="form-field" id="borrower-field"><label for="borrower-id">Teacher or learner</label><select id="borrower-id" name="borrower_id" required><option value="" selected disabled>Select a registered recipient</option></select></div>
+					<div class="form-field" id="loan-field" hidden><label for="loan-id">Outstanding issue</label><select id="loan-id" name="loan_id" disabled><option value="" selected disabled>Select an outstanding issue</option></select></div>
 					<div class="form-field"><label for="movement-quantity">Quantity</label><input id="movement-quantity" name="quantity" type="number" min="1" max="100" value="1" required></div>
 					<div class="form-field"><label for="movement-date">Date</label><input id="movement-date" name="movement_date" type="date" required></div>
 					<div class="form-field" id="due-date-field"><label for="due-date">Due date</label><input id="due-date" name="due_date" type="date" required></div>
+					<div class="form-field" id="reason-field" hidden><label for="movement-reason">Reason / details</label><input id="movement-reason" name="reason" maxlength="255" disabled></div>
 				</div>
 				<div id="movement-feedback" class="form-feedback" role="status" hidden></div>
 				<button class="button" type="submit">Save record</button>
 			</form>
 		</section>
-		<!-- SECTION 4: Sample records of items currently on loan. -->
+		<!-- SECTION 4: Outstanding quantities calculated from linked movement events. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Current loans</h2><p>Items currently on loan.</p></div></div>
+			<div class="panel-heading"><div><h2>Outstanding issues</h2><p>Remaining quantities are calculated from each issue and its linked return, loss, or damage events.</p></div></div>
 			<div class="table-wrap">
-				<table id="loans-table"><thead><tr><th>Borrower</th><th>Item</th><th>Due</th><th>Status</th></tr></thead>
+				<table id="loans-table"><thead><tr><th>Issue</th><th>Borrower</th><th>Item</th><th>Issued</th><th>Outstanding</th><th>Due</th><th>Status</th></tr></thead>
 					<tbody></tbody>
 				</table>
 			</div>
 		</section>
 	</div>
+	<section class="panel">
+		<div class="panel-heading"><div><h2>Allocation and retrieval history</h2><p>Recent issues, returns, losses, and damage reports with their linked issue and recording staff member.</p></div></div>
+		<div class="form-field"><label for="movement-history-search">Search by borrower or item</label><input id="movement-history-search" type="search" maxlength="100" placeholder="Name, school ID, or item"></div>
+		<div class="table-wrap">
+			<table id="movement-history-table"><thead><tr><th>Event</th><th>Issue</th><th>Borrower</th><th>Item</th><th>Quantity</th><th>Date / due</th><th>Details</th><th>Recorded by</th><th>Recorded at</th></tr></thead>
+				<tbody></tbody>
+			</table>
+		</div>
+	</section>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Set movement dates and show the due date only for issues; saving is handled by static/js/committee-pages.js. -->
+	<!-- SECTION 5: Conditional fields follow the selected action; persistence is handled by static/js/committee-pages.js. -->
 	<script>
 		const movementType = document.getElementById("movement-type");
 		const dueDateField = document.getElementById("due-date-field");
 		const dueDateInput = document.getElementById("due-date");
 		const movementDate = document.getElementById("movement-date");
+		const issueItemField = document.getElementById("issue-item-field");
+		const borrowerField = document.getElementById("borrower-field");
+		const loanField = document.getElementById("loan-field");
+		const loanSelect = document.getElementById("loan-id");
+		const reasonField = document.getElementById("reason-field");
+		const reasonInput = document.getElementById("movement-reason");
+		const quantityInput = document.getElementById("movement-quantity");
+		const submitButton = document.querySelector("#movement-form button[type='submit']");
 		const localToday = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 		movementDate.value = localToday;
 		movementDate.max = localToday;
 		dueDateInput.min = localToday;
+		movementType.value = "issue";
 
 		movementType.addEventListener("change", () => {
 			const isIssue = movementType.value === "issue";
+			const isWriteOff = movementType.value === "lost" || movementType.value === "damaged";
+			issueItemField.hidden = !isIssue;
+			issueItemField.querySelector("select").disabled = !isIssue;
+			borrowerField.hidden = !isIssue;
+			borrowerField.querySelector("select").disabled = !isIssue;
+			loanField.hidden = isIssue;
+			loanSelect.disabled = isIssue;
 			dueDateField.hidden = !isIssue;
 			dueDateInput.required = isIssue;
+			dueDateInput.disabled = !isIssue;
+			reasonField.hidden = !isWriteOff;
+			reasonInput.disabled = !isWriteOff;
+			reasonInput.required = isWriteOff;
+			quantityInput.max = "100";
+			submitButton.textContent = isIssue ? "Record issue" : movementType.value === "return" ? "Record return" : `Record ${movementType.value}`;
 		});
+		movementType.dispatchEvent(new Event("change"));
 		dueDateInput.addEventListener("input", () => dueDateInput.setCustomValidity(""));
-		movementDate.addEventListener("input", () => dueDateInput.setCustomValidity(""));
+		movementDate.addEventListener("input", () => {
+			dueDateInput.min = movementDate.value || localToday;
+			dueDateInput.setCustomValidity("");
+		});
 	</script>
 	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}

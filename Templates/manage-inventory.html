@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = "inventory" %}
-<!-- Lets the LTSM committee filter sample inventory records and validate new item details. -->
+<!-- Lets the LTSM committee filter database inventory records and add new items. -->
 {% block title %}Manage Inventory | LTSM Portal{% endblock %}
 {% block role %}LTSM Committee{% endblock %}
 {% block dashboard_url %}ltsm-dashboard.html{% endblock %}
@@ -70,6 +70,7 @@
 		}
 		.inventory-page .inventory-action-button:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: 2px; }
 		.inventory-page .content-grid { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: 1.25rem; align-items: start; }
+		.inventory-page .audit-panel { grid-column: 1 / -1; }
 		.inventory-page .panel {
 			min-width: 0;
 			padding: 1.4rem;
@@ -92,12 +93,12 @@
 			border-color: #008bb2;
 		}
 		.inventory-page .table-wrap { overflow-x: auto; border: 1px solid #e1e7eb; border-radius: 10px; background: #fff; }
-		.inventory-page table { width: 100%; min-width: 680px; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+		.inventory-page table { width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; }
 		.inventory-page table thead { background: #eaf2f5; }
 		.inventory-page table th { padding: .95rem .75rem; color: #035e82; font-size: .75rem; letter-spacing: .05em; text-align: left; }
 		.inventory-page table td { padding: 1rem .75rem; border-bottom: 1px solid #e9eef1; color: #46545d; overflow-wrap: anywhere; }
-		.inventory-page table th,
-		.inventory-page table td { width: 20%; }
+		.inventory-item { min-width: 180px; display: flex; align-items: center; gap: .75rem; }
+		.inventory-item__image { width: 48px; height: 48px; flex: 0 0 auto; border: 1px solid #e1e7eb; border-radius: 8px; background: #fff; object-fit: contain; }
 		.inventory-page table th:first-child { border-radius: 9px 0 0; }
 		.inventory-page table th:last-child { border-radius: 0 9px 0 0; }
 		.inventory-page tbody tr { transition: background .15s ease; }
@@ -153,33 +154,92 @@
 			<div class="toolbar">
 				<label for="inventory-search" style="position:absolute;left:-10000px">Search inventory</label>
 				<input id="inventory-search" class="search-input" type="search" placeholder="Search inventory" data-filter-input="inventory-table">
-				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option></select>
+				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select>
 			</div>
 			<div class="table-wrap">
 				<table id="inventory-table">
-					<thead><tr><th>Item</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Status</th></tr></thead>
+					<thead><tr><th>Item</th><th>Category</th><th>In stock</th><th>Reorder at</th><th>Storage location</th><th>Status</th><th>Actions</th></tr></thead>
 					<tbody></tbody>
 				</table>
 			</div>
 		</section>
-		<!-- SECTION 4: Validate details for a proposed inventory item. -->
+		<!-- SECTION 4: Add new inventory items. -->
 		<aside class="panel" id="add-item">
 			<h2>Add an inventory item</h2>
 			<form id="inventory-form">
 				<div class="form-field"><label for="item-name">Item name</label><input id="item-name" name="item_name" required maxlength="100"></div>
-				<div class="form-field"><label for="item-category">Category</label><select id="item-category" name="category" required><option value="" selected disabled>Select category</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select></div>
+				<div class="form-field"><label for="item-category">Category</label><select id="item-category" name="category" required><option value="" selected disabled>Select category</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select></div>
 				<div class="form-grid">
 					<div class="form-field"><label for="item-quantity">Quantity</label><input id="item-quantity" name="quantity" type="number" min="0" max="10000" required></div>
 					<div class="form-field"><label for="reorder-level">Reorder level</label><input id="reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
 				</div>
+				<div class="form-field"><label for="item-description">Description</label><input id="item-description" name="description" maxlength="255"></div>
+				<div class="form-grid">
+					<div class="form-field"><label for="item-unit">Unit of measure</label><input id="item-unit" name="unit" maxlength="45" value="units" required></div>
+					<div class="form-field"><label for="item-location">Storage location</label><input id="item-location" name="storage_location" maxlength="120" placeholder="e.g. Store room A, shelf 2"></div>
+				</div>
 				<div id="inventory-feedback" class="form-feedback" role="status" hidden></div>
 				<button class="button inventory-action-button" type="submit">Add item</button>
 			</form>
+			<hr class="form-divider">
+			<section id="edit-item-panel" hidden>
+				<h2>Edit an inventory item</h2>
+				<form id="inventory-edit-form">
+					<input type="hidden" name="item_id">
+					<div class="form-field"><label for="edit-item-name">Item name</label><input id="edit-item-name" name="item_name" maxlength="100" required></div>
+					<div class="form-field"><label for="edit-item-category">Category</label><select id="edit-item-category" name="category" required><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select></div>
+					<div class="form-grid">
+						<div class="form-field"><label for="edit-reorder-level">Reorder level</label><input id="edit-reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
+						<div class="form-field"><label for="edit-item-unit">Unit of measure</label><input id="edit-item-unit" name="unit" maxlength="45" required></div>
+					</div>
+					<div class="form-field"><label for="edit-item-description">Description</label><input id="edit-item-description" name="description" maxlength="255"></div>
+					<div class="form-field"><label for="edit-item-location">Storage location</label><input id="edit-item-location" name="storage_location" maxlength="120"></div>
+					<div id="inventory-edit-feedback" class="form-feedback" role="status" hidden></div>
+					<div class="form-actions"><button class="button inventory-action-button" type="submit">Save changes</button><button class="button button-secondary inventory-action-button" id="cancel-inventory-edit" type="button">Cancel</button></div>
+				</form>
+			</section>
+			<hr class="form-divider">
+			<h2>Receive stock or record a write-off</h2>
+			<p>Record new deliveries, or remove stock as damaged, lost, obsolete, or another reason. Each change records the quantity, reason, user, and time.</p>
+			<form id="stock-adjustment-form">
+				<div class="form-field">
+					<label for="adjustment-item">Inventory item</label>
+					<select id="adjustment-item" name="item_id" required>
+						<option value="" selected disabled>Select an inventory item</option>
+					</select>
+				</div>
+				<div class="form-grid">
+					<div class="form-field"><label for="adjustment-action">Stock action</label><select id="adjustment-action" name="action" required><option value="" selected disabled>Select stock action</option><option value="receive">Receive stock</option><option value="damaged">Write off damaged</option><option value="lost">Write off lost</option><option value="obsolete">Write off obsolete</option><option value="remove">Other removal</option></select></div>
+					<div class="form-field"><label for="adjustment-quantity">Quantity</label><input id="adjustment-quantity" name="quantity" type="number" min="1" max="10000" required></div>
+				</div>
+				<div class="form-field"><label for="adjustment-reason">Reason for adjustment</label><input id="adjustment-reason" name="reason" maxlength="255" required></div>
+				<div id="stock-adjustment-feedback" class="form-feedback" role="status" hidden></div>
+				<button class="button inventory-action-button" type="submit">Adjust inventory</button>
+			</form>
 		</aside>
+		<section class="panel audit-panel">
+			<div class="panel-heading"><div><h2>Stock adjustment audit trail</h2><p>Received stock, write-offs, manual adjustments and issue/return movements, including who recorded each change and why.</p></div></div>
+			<div class="table-wrap">
+				<table id="adjustments-table">
+					<thead><tr><th>Item</th><th>Action</th><th>Change</th><th>Stock / owned after</th><th>Reason</th><th>Recorded by</th><th>Date</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
+		<section class="panel audit-panel">
+			<div class="panel-heading"><div><h2>Community resource suggestions</h2><p>Ideas from users for resources to add to the school catalogue. Anonymous suggestions are labelled accordingly.</p></div></div>
+			<div class="table-wrap">
+				<table id="suggestions-table">
+					<thead><tr><th>Suggested item</th><th>Message</th><th>Submitted by</th><th>Date</th></tr></thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</section>
 	</div>
 	</div>
 {% endblock %}
 {% block scripts %}
-	<!-- SECTION 5: Inventory list, filters and the add-item form use /api/inventory (static/js/committee-pages.js). -->
+	<!-- SECTION 5: Inventory and audit history are loaded by static/js/committee-pages.js. -->
+	<script src="{{ url_for('static', filename='js/resource-images.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/committee-pages.js') }}"></script>
 {% endblock %}

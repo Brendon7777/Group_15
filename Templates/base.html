@@ -10,6 +10,7 @@
 	<style>
 		:root {
 			color-scheme: light;
+			--site-header-height: 97px;
 			--green: #123b35;
 			--green-mid: #315b50;
 			--green-light: #eaf2ef;
@@ -31,19 +32,24 @@
 		a { color: var(--green); }
 		button, input, select, textarea { font: inherit; }
 		button, a { -webkit-tap-highlight-color: transparent; }
-		.site-header { position: relative; z-index: 1; background: var(--white); box-shadow: 0 3px 6px rgba(31, 45, 38, .12); }
+		.site-header { position: sticky; top: 0; z-index: 30; background: var(--white); box-shadow: 0 3px 6px rgba(31, 45, 38, .12); }
 		.header-inner { width: min(100% - 2rem, 1200px); min-height: 97px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 		.site-brand { display: inline-flex; align-items: center; gap: .75rem; color: var(--green); text-decoration: none; }
-		.brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--gold); font-size: 1.2rem; font-weight: 800; }
+		.brand-mark { width: 54px; height: 54px; display: block; flex: 0 0 auto; object-fit: contain; }
 		.brand-copy { font-weight: 750; line-height: 1.2; }
 		.brand-copy small { display: block; margin-top: .2rem; color: var(--muted); font-size: .68rem; font-weight: 500; }
 		.header-actions { display: flex; align-items: center; gap: 1rem; }
+		.portal-clock { min-width: 104px; display: grid; justify-items: end; line-height: 1.2; }
+		.portal-clock span { color: var(--muted); font-size: .64rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+		.portal-clock time { color: var(--green); font-size: 1rem; font-variant-numeric: tabular-nums; font-weight: 750; letter-spacing: .03em; }
 		.role-chip { padding: .4rem .7rem; border-radius: 999px; background: var(--green-light); color: var(--green); font-size: .78rem; font-weight: 700; }
 		.signout-link { color: var(--muted); font-size: .88rem; font-weight: 650; text-decoration: none; }
 		.signout-link:hover, .nav-link:hover { color: var(--green-mid); text-decoration: underline; text-underline-offset: 4px; }
-		.site-navigation { background: var(--green); }
+		.site-navigation { position: sticky; top: var(--site-header-height); z-index: 20; background: var(--green); }
 		.nav-inner { width: min(100% - 2rem, 1200px); margin: 0 auto; display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: thin; }
 		.nav-link { flex: 0 0 auto; padding: .85rem .9rem; color: #d8e4df; font-size: .88rem; font-weight: 650; text-decoration: none; }
+		.notification-badge { min-width: 1.25rem; height: 1.25rem; margin-left: .4rem; padding: 0 .32rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: #d93025; color: #fff; font-size: .68rem; font-weight: 800; line-height: 1; }
+		.notification-badge[hidden] { display: none; }
 		.nav-link:hover, .nav-link[aria-current="page"] { color: var(--green); background: var(--gold); text-decoration: none; }
 		.site-navigation--user, .site-navigation--committee { background: #035e82; }
 		.site-navigation--user .nav-link, .site-navigation--committee .nav-link { color: #eaf6f9; }
@@ -61,6 +67,14 @@
 		.panel-heading { margin-bottom: 1rem; display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
 		.panel-heading h2 { margin: 0; }
 		.panel-heading p { margin: .3rem 0 0; color: var(--muted); font-size: .88rem; }
+		.notification-list { margin: 0; padding: 0; display: grid; gap: .55rem; list-style: none; }
+		.notification-item { padding: .8rem .9rem; border: 1px solid var(--line); border-left: 4px solid #d93025; border-radius: 8px; background: #fff; }
+		.notification-item--read { border-left-color: #b8c5bf; }
+		.notification-item a { display: block; color: var(--green); text-decoration: none; }
+		.notification-item a:hover { text-decoration: underline; text-underline-offset: 3px; }
+		.notification-item strong { display: block; margin-bottom: .15rem; }
+		.notification-item p { margin: 0; color: var(--muted); font-size: .86rem; }
+		.notification-item time { display: block; margin-top: .35rem; color: var(--muted); font-size: .74rem; }
 		.stats-grid { margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 		.stat-card { min-height: 132px; padding: 1.15rem; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
 		.stat-label { margin-bottom: .65rem; display: block; color: var(--muted); font-size: .83rem; font-weight: 600; }
@@ -109,21 +123,31 @@
 		.site-footer { padding: 1.3rem 1rem; color: #d8e4df; background: var(--green); text-align: center; font-size: .82rem; }
 		.site-footer p { margin: 0; }
 		@media (max-width: 850px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .content-grid { grid-template-columns: 1fr; } .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-		@media (max-width: 560px) { .header-inner { min-height: 66px; } .brand-copy small { display: none; } .role-chip { display: none; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
+		@media (max-width: 560px) { :root { --site-header-height: 66px; } .header-inner { min-height: 66px; gap: .5rem; } .brand-mark { width: 44px; height: 44px; } .brand-copy small { display: none; } .header-actions { gap: .6rem; } .role-chip { display: none; } .portal-clock { min-width: 82px; } .portal-clock time { font-size: .9rem; } .portal-clock span { font-size: .56rem; } .signout-link { font-size: .78rem; } .page-shell { padding-top: 1.5rem; } .page-heading { align-items: flex-start; flex-direction: column; } .stats-grid, .card-grid, .form-grid { grid-template-columns: 1fr; } .form-field--wide { grid-column: auto; } .panel { padding: 1rem; } }
 		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 	</style>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/selects.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
 	{% block head %}{% endblock %}
 </head>
-<body>
+<body data-notification-module="{% if active_page == 'request-management' %}request-management{% elif active_page == 'my-requests' %}my-requests{% elif active_page == 'bookings' %}bookings{% endif %}">
+	<div class="page-loading" role="status" aria-live="polite" hidden>
+		<span class="page-loading__spinner" aria-hidden="true"></span>
+		<span>Loading page…</span>
+	</div>
 	<!-- SECTION 2: Portal identity and signed-in user actions. -->
 	<header class="site-header">
 		<div class="header-inner">
 			<a class="site-brand" href="user-dashboard.html" aria-label="LTSM Portal dashboard">
-				<span class="brand-mark" aria-hidden="true">L</span>
+				<img class="brand-mark" src="{{ url_for('static', filename='images/ltsm-logo-mark.png') }}" alt="">
 				<span class="brand-copy">LTSM Portal<small>Learning and Teaching Support Materials</small></span>
 			</a>
 			<div class="header-actions">
+				<div class="portal-clock" aria-label="Local time">
+					<span>Local time</span>
+					<time data-live-clock aria-live="off">--:--:--</time>
+				</div>
 				<span class="role-chip">{% block role %}Portal workspace{% endblock %}</span>
 				<a class="signout-link" href="login.html" data-signout>Sign out</a>
 			</div>
@@ -131,20 +155,24 @@
 	</header>
 	<!-- SECTION 3: Navigation changes according to the active user role. -->
 	{% if active_page not in ['dashboard', 'committee'] %}
-		<nav class="site-navigation {% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
+		<nav class="site-navigation {% if active_page in ['inventory', 'request-management', 'bookings-management', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}site-navigation--committee{% else %}site-navigation--user{% endif %}" aria-label="{% if active_page in ['inventory', 'request-management', 'bookings-management', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}LTSM committee navigation{% else %}User navigation{% endif %}">
 			<div class="nav-inner">
-				{% if active_page in ['inventory', 'issue-return', 'maintenance', 'reports'] %}
+				{% if active_page in ['inventory', 'request-management', 'bookings-management', 'inventory-summary', 'issue-return', 'maintenance', 'reports', 'users'] %}
 					<a class="nav-link" href="ltsm-dashboard.html">Dashboard</a>
+					<a class="nav-link" href="request-management.html" data-notification-link="request-management" {% if active_page == 'request-management' %}aria-current="page"{% endif %}>Request management<span class="notification-badge" data-notification-badge="request-management" hidden></span></a>
+					<a class="nav-link" href="manage-bookings.html" {% if active_page == 'bookings-management' %}aria-current="page"{% endif %}>Equipment bookings</a>
 					<a class="nav-link" href="manage-inventory.html" {% if active_page == 'inventory' %}aria-current="page"{% endif %}>Inventory</a>
+					<a class="nav-link" href="inventory-summary.html" {% if active_page == 'inventory-summary' %}aria-current="page"{% endif %}>Inventory summary</a>
 					<a class="nav-link" href="issue-return.html" {% if active_page == 'issue-return' %}aria-current="page"{% endif %}>Issue / return</a>
 					<a class="nav-link" href="maintenance.html" {% if active_page == 'maintenance' %}aria-current="page"{% endif %}>Maintenance</a>
 					<a class="nav-link" href="reports.html" {% if active_page == 'reports' %}aria-current="page"{% endif %}>Reports</a>
+					<a class="nav-link" href="manage-users.html" {% if active_page == 'users' %}aria-current="page"{% endif %}>User accounts</a>
 				{% else %}
 					<a class="nav-link" href="user-dashboard.html">Dashboard</a>
 					<a class="nav-link" href="view-resources.html" {% if active_page == 'resources' %}aria-current="page"{% endif %}>Browse resources</a>
-					<a class="nav-link" href="request-resources.html" {% if active_page == 'request' %}aria-current="page"{% endif %}>Request resources</a>
-					<a class="nav-link" href="my-requests.html" {% if active_page == 'my-requests' %}aria-current="page"{% endif %}>My requests</a>
-					<a class="nav-link" href="book-equipment.html" {% if active_page == 'bookings' %}aria-current="page"{% endif %}>Equipment bookings</a>
+					<a class="nav-link" href="request-resources.html" {% if active_page in ['request', 'bookings'] %}aria-current="page"{% endif %}>Request resources</a>
+					<a class="nav-link" href="my-requests.html" data-notification-link="my-requests" {% if active_page == 'my-requests' %}aria-current="page"{% endif %}>My requests<span class="notification-badge" data-notification-badge="my-requests" hidden></span></a>
+					<a class="nav-link" href="book-equipment.html" data-notification-link="bookings">Equipment bookings<span class="notification-badge" data-notification-badge="bookings" hidden></span></a>
 				{% endif %}
 			</div>
 		</nav>
@@ -155,7 +183,10 @@
 	</main>
 	<!-- SECTION 5: Shared footer and page-specific scripts. -->
 	<footer class="site-footer"><p>&copy; 2026 LTSM Portal · Learning and Teaching Support Materials · Sample-data preview</p></footer>
+	<script src="{{ url_for('static', filename='js/page-transitions.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/live-clock.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </body>
 </html>
