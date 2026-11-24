@@ -139,6 +139,7 @@ Repository name: Group-15
 ### Method 1
 
 Use the website hosted on render : https://group-15-1.onrender.com/
+If google chrome throws a "dangerous website error", please open the app using microsoft edge
 
 
 ### Method 2
