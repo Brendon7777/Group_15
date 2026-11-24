@@ -150,12 +150,12 @@
 	<div class="content-grid">
 		<!-- SECTION 3: Searchable and filterable inventory catalogue. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Current quantities and reorder points. Older-grade book records stay here for history but are hidden from the teacher catalogue.</p></div></div>
+			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Current quantities and reorder points. Textbooks outside Foundation Phase Grades 1–3 are not shown in this inventory.</p></div></div>
 			<div class="toolbar">
 				<label for="inventory-search" style="position:absolute;left:-10000px">Search inventory</label>
 				<input id="inventory-search" class="search-input" type="search" placeholder="Search inventory" data-filter-input="inventory-table">
-				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select>
-				<select class="search-input" aria-label="Filter consumable type" data-type-filter="inventory-table"><option value="">All item types</option><option value="consumable">Consumable</option><option value="non_consumable">Non-consumable</option></select>
+				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Equipment</option><option>Other</option></select>
+				<select class="search-input" aria-label="Filter inventory type" data-type-filter="inventory-table"><option value="">All item types</option><option value="non_consumable">Non-consumable</option></select>
 			</div>
 			<div class="table-wrap">
 				<table id="inventory-table">

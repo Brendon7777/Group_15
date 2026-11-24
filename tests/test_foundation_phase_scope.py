@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import app
 
@@ -105,6 +105,62 @@ class FoundationPhaseScopeTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         get_db.assert_not_called()
+
+    def test_inventory_list_hides_textbooks_outside_foundation_grades(self):
+        client = app.app.test_client()
+        with client.session_transaction() as session:
+            session["uid"] = 24
+        items = [
+            {"id": 1, "name": "Grade 3 workbook", "category": "Textbooks", "inventory_type": "non_consumable", "grade": "Grade 3", "stock": 5, "reorder_level": 1, "description": "", "unit": "books", "storage_location": "", "unit_price": None},
+            {"id": 2, "name": "Grade 8 workbook", "category": "Textbooks", "inventory_type": "non_consumable", "grade": "Grade 8", "stock": 5, "reorder_level": 1, "description": "", "unit": "books", "storage_location": "", "unit_price": None},
+            {"id": 3, "name": "Geometry set", "category": "Stationery", "inventory_type": "consumable", "grade": None, "stock": 5, "reorder_level": 1, "description": "", "unit": "sets", "storage_location": "", "unit_price": None},
+        ]
+
+        with (
+            patch("app.model.get_user_by_id", return_value={"id": 24, "role": "ltsm"}),
+            patch("app.resource_rows", return_value=items),
+        ):
+            response = client.get("/api/inventory")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["name"] for item in response.json["items"]],
+            ["Grade 3 workbook", "Geometry set"],
+        )
+
+    def test_updating_a_non_textbook_clears_its_legacy_grade(self):
+        client = app.app.test_client()
+        with client.session_transaction() as session:
+            session["uid"] = 23
+
+        cursor = MagicMock()
+        cursor.fetchone.side_effect = [
+            {"resource_id": 9, "category": "Stationery", "grade": "Grade 8"},
+            None,
+        ]
+        cursor_context = MagicMock()
+        cursor_context.__enter__.return_value = cursor
+        connection = MagicMock()
+        connection.cursor.return_value = cursor_context
+        payload = {
+            "item_name": "Geometry set",
+            "category": "Stationery",
+            "inventory_type": "consumable",
+            "reorder_level": 10,
+            "description": "Classroom geometry kit",
+            "unit": "sets",
+            "storage_location": "",
+            "unit_price": 95,
+        }
+
+        with (
+            patch("app.model.get_user_by_id", return_value={"id": 23, "role": "ltsm"}),
+            patch("app.db.get_db", return_value=connection),
+        ):
+            response = client.put("/api/inventory/9", json=payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(cursor.execute.call_args.args[1][3])
 
     def test_free_text_book_request_rejects_out_of_scope_grade(self):
         client = app.app.test_client()

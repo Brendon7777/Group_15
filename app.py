@@ -1018,7 +1018,8 @@ def api_inventory(user):
     inventory_type = request.args.get("type", "").strip()
     items = []
     for item in filter(
-        lambda i: matches(i, query, category)
+        lambda i: resource_in_foundation_scope(i["category"], i["grade"])
+        and matches(i, query, category)
         and (not inventory_type or i["inventory_type"] == inventory_type),
         resource_rows(),
     ):
@@ -1132,7 +1133,7 @@ def api_update_inventory(user, item_id):
                         {"grade": "Choose Grade 1, Grade 2, or Grade 3."},
                     )
             if category != "Textbooks":
-                grade = current_item["grade"]
+                grade = None
             cursor.execute(
                 """
                 SELECT resource_id FROM resource

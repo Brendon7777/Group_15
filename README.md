@@ -91,26 +91,14 @@ Successful `/api` endpoints return JSON; controlled API errors also use JSON. Pr
 | GET | `/api/reports` | Load the committee report summary. |
 | GET | `/health` | Return application health and server time. |
 
-**Group Members**
+## Group members and contributions
 
-Brendon Sithole
-
-23547309
-
-
-Tebogo Napyane
-
-20553596
-
-
-Phiwayinkhosi Nxumalo
-
-22780450
-
-
-Kimberleigh Hartley
-
-19008423
+| Group member | Student number | Contributions |
+| --- | --- | --- |
+| Brendon Sithole | 23547309 | Focused on backend development and deployment; contributed to the report and PowerPoint video with the group. |
+| Tebogo Napyane | 20553596 | Focused on backend development and deployment; contributed to the report and PowerPoint video with the group. |
+| Phiwayinkhosi Nxumalo (Phiwa) | 22780450 | Focused on microflows and contributed to frontend development; contributed to the report and PowerPoint video with the group. |
+| Kimberleigh Hartley (Kim) | 19008423 | Focused on microflows and contributed to frontend development; contributed to the report and PowerPoint video with the group. |
 
 
 
@@ -199,7 +187,7 @@ The pages use Flask-rendered Jinja templates and a Flask JSON API, so run the ap
 
 **For the lecturer testing the committee/admin features:** sign in with the **LTSM Committee Member** account in the table above (`ltsm01@example.com`). It is seeded by `python init_db.py` and already has access to LTSM pages, including account management. You do not need to create a separate admin account for the lecturer.
 
-**For a teacher/staff account:** on the sign-in page, select **Create one**, enter the account details and a password of at least 8 characters, then sign in with the registered email or staff number and password. Registration creates a Teacher / Staff account; it does not grant LTSM/admin access.
+**For a teacher/staff account:** on the sign-in page, select **Create one** and submit the account details with a password of at least 8 characters. The registration is a pending account request; an LTSM Committee Member must approve it before the user can sign in with the registered email or staff number and password. Registration does not grant LTSM/admin access.
 
 If the database owner initialized the database before this login was corrected, the owner can run `python init_db.py` again from an authorized environment. It updates the old seeded demo password hash without resetting the database or changing passwords that have already been changed; testers should not run the initializer unless the owner asks them to.
 
