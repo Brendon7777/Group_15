@@ -145,7 +145,7 @@ This is a full-stack Flask and MySQL application, not a front-end-only prototype
 
 ### Clone and run locally
 
-Run Flask to serve both the Jinja pages and JSON API.
+The portal is also available at [the hosted application](https://group-15-1.onrender.com/). To run it locally, start Flask to serve the Jinja pages and JSON API.
 
 1. Install Git and Python, then clone the repository and enter its folder:
 
@@ -191,7 +191,7 @@ Run Flask to serve both the Jinja pages and JSON API.
 5. Start the app on each tester's computer:
 
    ```
-   python app.py
+   python app.py   or flask run
    ```
 
    Open http://127.0.0.1:5000. Each tester's local app will read and write the same Aiven database. On a freshly initialized test database, the initializer seeds these demo accounts; the password for both is `Password123!`:
