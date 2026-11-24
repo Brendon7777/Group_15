@@ -136,8 +136,15 @@ This is a full-stack Flask and MySQL application, not a front-end-only prototype
 
 Repository name: Group-15
 
+### Method 1
+
+Use the website hosted on render : https://group-15-1.onrender.com/
+
+
+### Method 2
 
 ## Clone and run locally
+
 
 The pages use Flask-rendered Jinja templates and a Flask JSON API, so run the app with Flask; opening the pages with Live Server will not work.
 
@@ -185,21 +192,17 @@ The pages use Flask-rendered Jinja templates and a Flask JSON API, so run the ap
 5. Start the app on each tester's computer:
 
    ```
-   python app.py
+   python app.py   or flask run
    ```
 
    Open http://127.0.0.1:5000. Each tester's local app will read and write the same Aiven database. On a freshly initialized test database, the initializer seeds these demo accounts; the password for both is `Password123!`:
 
-| Role | Username |
-| --- | --- |
-| Teacher | g2.teacher1@example.com |
-| LTSM Committee Member | ltsm01@example.com |
 
 ### Accounts for testing
 
-**For the lecturer testing the committee/admin features:** sign in with the **LTSM Committee Member** account in the table above (`ltsm01@example.com`). It is seeded by `python init_db.py` and already has access to LTSM pages, including account management. You do not need to create a separate admin account for the lecturer.
+**For the lecturer testing the committee/admin features:** sign in with the **LTSM Committee Member** account in the table above (`admin@gmail.com`). It is seeded by `python init_db.py` and already has access to LTSM pages, including account management.
 
-**For a teacher/staff account:** on the sign-in page, select **Create one**, enter the account details and a password of at least 8 characters, then sign in with the registered email or staff number and password. Registration creates a Teacher / Staff account; it does not grant LTSM/admin access.
+**For a teacher/staff account:** on the sign-in page, select **Create one**, enter the account details and a password of at least 8 characters, then sign in as lstm member via the admin@gmail.com website , approve the account creation request under user accounts , sign out and sign in with the registered email  and password. Registration creates a Teacher / Staff account; it does not grant LTSM/admin access.
 
 If the database owner initialized the database before this login was corrected, the owner can run `python init_db.py` again from an authorized environment. It updates the old seeded demo password hash without resetting the database or changing passwords that have already been changed; testers should not run the initializer unless the owner asks them to.
 
