@@ -62,7 +62,9 @@ def get_user_by_id(user_id):
     return _app_user(row)
 
 
-def create_user(full_name, school_id, email, password, account_type):
+def create_user(
+    full_name, school_id, email, password, account_type, account_status="approved"
+):
     existing_email = query_one(
         "SELECT user_id FROM users WHERE email = %s",
         (email,),
@@ -78,14 +80,18 @@ def create_user(full_name, school_id, email, password, account_type):
         raise UserAlreadyExistsError("school_id")
 
     role = "staff" if account_type == "teacher" else account_type
+    if account_status not in ("pending", "approved"):
+        raise ValueError("Account status must be pending or approved.")
     password_hash = generate_password_hash(password)
+    is_active = account_status == "approved"
     try:
         return execute(
             """
-            INSERT INTO users (full_name, school_id, email, password_hash, role)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO users
+              (full_name, school_id, email, password_hash, role, account_status, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             """,
-            (full_name, school_id, email, password_hash, role),
+            (full_name, school_id, email, password_hash, role, account_status, is_active),
         )
     except pymysql.err.IntegrityError as error:
         if error.args and error.args[0] == 1062:
@@ -108,11 +114,43 @@ def create_user(full_name, school_id, email, password, account_type):
 def list_users():
     return query_all(
         """
-        SELECT user_id, full_name, school_id, email, role, is_active, created_at
+        SELECT user_id, full_name, school_id, email, role, is_active, account_status, created_at
         FROM users
         ORDER BY full_name, user_id
         """
     )
+
+
+def approve_user_account(user_id):
+    connection = get_db()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT account_status FROM users WHERE user_id = %s FOR UPDATE",
+                (user_id,),
+            )
+            target = cursor.fetchone()
+            if target is None:
+                connection.commit()
+                return False
+            if target["account_status"] != "pending":
+                raise UserManagementError(
+                    "not_pending",
+                    "This account request is no longer awaiting approval.",
+                )
+            cursor.execute(
+                """
+                UPDATE users
+                SET account_status = 'approved', is_active = TRUE
+                WHERE user_id = %s AND account_status = 'pending'
+                """,
+                (user_id,),
+            )
+        connection.commit()
+        return True
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def set_user_active(user_id, is_active, actor_id):

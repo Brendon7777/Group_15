@@ -620,7 +620,7 @@ def api_register():
         v._fail("confirm_password", "Passwords do not match.")
     v.done()
     try:
-        model.create_user(name, school_id, email, password, role)
+        model.create_user(name, school_id, email, password, role, account_status="pending")
     except model.UserAlreadyExistsError as error:
         field = error.field
         label = "email address" if field == "email" else "staff number"
@@ -629,7 +629,12 @@ def api_register():
             409,
             {field: "Already registered."},
         ) from error
-    return jsonify(message="Account created."), 201
+    return jsonify(
+        message=(
+            "Account request submitted. An LTSM committee member must approve it "
+            "before you can sign in."
+        )
+    ), 201
 
 
 @auth_bp.get("/api/committee/users")
@@ -644,10 +649,23 @@ def api_committee_users(user):
             "email": row["email"],
             "role": row["role"],
             "is_active": bool(row["is_active"]),
+            "account_status": row["account_status"],
             "is_current_user": row["user_id"] == user["id"],
         }
         for row in users
     ])
+
+
+@auth_bp.post("/api/committee/users/<int:user_id>/approve")
+@api_route("ltsm")
+def api_committee_approve_user(user, user_id):
+    try:
+        approved = model.approve_user_account(user_id)
+    except model.UserManagementError as error:
+        raise ApiError(str(error), 409, {"user_id": error.code}) from error
+    if not approved:
+        raise ApiError("That account request does not exist.", 404)
+    return jsonify(message="Account approved. The user can now sign in.")
 
 
 @auth_bp.post("/api/committee/users")

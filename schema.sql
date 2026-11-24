@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `role` ENUM('learner', 'staff', 'ltsm') NOT NULL,
   `grade` VARCHAR(20) DEFAULT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
+  `account_status` ENUM('pending', 'approved') NOT NULL DEFAULT 'approved',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),

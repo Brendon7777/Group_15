@@ -49,7 +49,7 @@ class BlueprintAndConfigTests(unittest.TestCase):
             for method in rule.methods & {"GET", "POST", "PUT", "PATCH", "DELETE"}:
                 registered.add((method, rule.rule))
 
-        self.assertEqual(len(registered), 46)
+        self.assertEqual(len(registered), 47)
         self.assertEqual(documented, registered)
 
     def test_environment_profiles_are_available_and_production_requires_secret(self):

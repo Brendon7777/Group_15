@@ -47,9 +47,10 @@ Successful `/api` endpoints return JSON; controlled API errors also use JSON. Pr
 | POST | `/api/notifications/<int:notification_id>/done` | Mark a notification as done. |
 | POST | `/api/login` | Authenticate a staff or committee account. |
 | POST | `/api/logout` | End the current session. |
-| POST | `/api/register` | Register a staff account. |
+| POST | `/api/register` | Submit a staff account request for LTSM approval. |
 | GET | `/api/committee/users` | List accounts for committee administration. |
 | POST | `/api/committee/users` | Create a staff or committee account. |
+| POST | `/api/committee/users/<int:user_id>/approve` | Approve a pending staff account request. |
 | POST | `/api/committee/users/<int:user_id>/status` | Activate or deactivate an account. |
 | GET | `/api/resources` | Search the public resource catalogue by name or category. |
 | POST | `/api/suggestions` | Submit a resource suggestion. |

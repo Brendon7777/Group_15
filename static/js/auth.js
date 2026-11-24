@@ -43,8 +43,7 @@
 				password: v.password,
 				confirm_password: v.confirm_password
 			}),
-			success: () => "Account created. Taking you to sign in…",
-			onSuccess: () => { setTimeout(() => window.location.assign("/login"), 1200); }
+			success: (data) => data.message
 		});
 	}
 })();

@@ -374,7 +374,7 @@
 		});
 	}
 
-	/* User management: committee-only account listing, creation and access toggles. */
+	/* User management: committee-only account listing, approval and access toggles. */
 	const usersBody = $("#users-table tbody");
 	if (usersBody) {
 		const feedback = $("#users-list-feedback");
@@ -385,13 +385,17 @@
 			load: async () => (await api.get("/api/committee/users")).items,
 			renderRow: (user) => {
 				const role = { learner: "Learner", staff: "Teacher / staff", ltsm: "LTSM committee" }[user.role] || user.role;
-				const access = user.role === "learner"
-					? user.is_active ? "Borrower only; sign-in disabled" : "Deactivated"
-					: user.is_active ? "Active" : "Deactivated";
-				const action = user.is_current_user
-					? '<span class="muted">Current account</span>'
-					: `<button class="button button-secondary" type="button" data-user-id="${esc(user.id)}" data-active="${user.is_active ? "true" : "false"}">${user.is_active ? "Deactivate" : "Reactivate"}</button>`;
-				return `<tr><td>${esc(user.name)}</td><td>${esc(user.school_id)}</td><td>${esc(user.email)}</td><td>${esc(role)}</td><td>${esc(access)}</td><td class="account-actions">${action}</td></tr>`;
+				const status = user.account_status === "pending"
+					? "Awaiting LTSM approval"
+					: user.role === "learner"
+						? user.is_active ? "Borrower only; sign-in disabled" : "Deactivated"
+						: user.is_active ? "Active" : "Deactivated";
+				const action = user.account_status === "pending"
+					? `<button class="button" type="button" data-approve-user-id="${esc(user.id)}">Approve</button>`
+					: user.is_current_user
+						? '<span class="muted">Current account</span>'
+						: `<button class="button button-secondary" type="button" data-user-id="${esc(user.id)}" data-active="${user.is_active ? "true" : "false"}">${user.is_active ? "Deactivate" : "Reactivate"}</button>`;
+				return `<tr><td>${esc(user.name)}</td><td>${esc(user.school_id)}</td><td>${esc(user.email)}</td><td>${esc(role)}</td><td>${esc(status)}</td><td class="account-actions">${action}</td></tr>`;
 			}
 		});
 		reloadUsers();
@@ -412,6 +416,20 @@
 		});
 
 		usersBody.addEventListener("click", async (event) => {
+			const approveButton = event.target.closest("[data-approve-user-id]");
+			if (approveButton) {
+				ui.hideFeedback(feedback);
+				ui.setBusy(approveButton, true, "Approving…");
+				try {
+					const result = await api.post(`/api/committee/users/${encodeURIComponent(approveButton.dataset.approveUserId)}/approve`);
+					ui.showFeedback(feedback, "success", result.message);
+					await reloadUsers();
+				} catch (error) {
+					ui.showFeedback(feedback, "error", error.message);
+					ui.setBusy(approveButton, false);
+				}
+				return;
+			}
 			const button = event.target.closest("[data-user-id]");
 			if (!button) return;
 			const isActive = button.dataset.active === "true";

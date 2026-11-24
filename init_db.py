@@ -189,6 +189,23 @@ def ensure_user_active_column(cursor):
         )
 
 
+def ensure_user_account_status_column(cursor):
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS column_count
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'users'
+          AND column_name = 'account_status'
+        """
+    )
+    if cursor.fetchone()["column_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `users` ADD COLUMN `account_status` "
+            "ENUM('pending', 'approved') NOT NULL DEFAULT 'approved'"
+        )
+
+
 def ensure_notification_done_column(cursor):
     cursor.execute(
         """
@@ -833,6 +850,7 @@ def main():
                 count = run_sql_file(cursor, filename)
                 if Path(filename).name == "schema.sql":
                     ensure_user_active_column(cursor)
+                    ensure_user_account_status_column(cursor)
                     ensure_notification_done_column(cursor)
                     ensure_demo_data_columns(cursor)
                     ensure_demand_history_source_column(cursor)
