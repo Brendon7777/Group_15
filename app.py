@@ -62,6 +62,7 @@ def today():
 
 
 CATEGORIES = ["Textbooks", "Stationery", "Consumables", "Equipment", "Other"]
+INVENTORY_CATEGORIES = ["Textbooks", "Stationery", "Equipment", "Other"]
 FOUNDATION_PHASE_GRADES = ("Grade 1", "Grade 2", "Grade 3")
 CATEGORY_WORD = {"Textbooks": "textbook", "Stationery": "stationery", "Consumables": "consumable", "Equipment": "equipment", "Other": "other"}
 REQUEST_TONES = {"In review": "warning", "Approved": "ok", "Ready for collection": "blue", "Fulfilled": "ok", "Declined": "danger"}
@@ -1038,7 +1039,7 @@ def api_inventory(user):
 def api_add_inventory(user):
     v = Validator(json_body())
     name = v.text("item_name", "Item name", 1, 100)
-    category = v.choice("category", "Category", CATEGORIES)
+    category = v.choice("category", "Category", INVENTORY_CATEGORIES)
     grade = v.choice("grade", "Grade", FOUNDATION_PHASE_GRADES) if category == "Textbooks" else None
     inventory_type = v.choice("inventory_type", "Inventory type", ("consumable", "non_consumable"))
     stock = v.integer("quantity", "Quantity", 0, 10000)
@@ -1101,7 +1102,7 @@ def api_add_inventory(user):
 def api_update_inventory(user, item_id):
     v = Validator(json_body())
     name = v.text("item_name", "Item name", 1, 100)
-    category = v.choice("category", "Category", CATEGORIES)
+    category = v.choice("category", "Category", INVENTORY_CATEGORIES)
     grade = v.text("grade", "Grade", 1, 20) if category == "Textbooks" else None
     inventory_type = v.choice("inventory_type", "Inventory type", ("consumable", "non_consumable"))
     reorder = v.integer("reorder_level", "Reorder level", 0, 10000)

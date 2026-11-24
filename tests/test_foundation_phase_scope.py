@@ -106,6 +106,66 @@ class FoundationPhaseScopeTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         get_db.assert_not_called()
 
+    def test_inventory_api_rejects_consumables_category(self):
+        client = app.app.test_client()
+        with client.session_transaction() as session:
+            session["uid"] = 25
+        payload = {
+            "item_name": "Consumables category item",
+            "category": "Consumables",
+            "inventory_type": "consumable",
+            "quantity": 0,
+            "reorder_level": 0,
+            "description": "",
+            "unit": "units",
+            "storage_location": "",
+            "unit_price": None,
+        }
+
+        with (
+            patch("app.model.get_user_by_id", return_value={"id": 25, "role": "ltsm"}),
+            patch("app.db.get_db") as get_db,
+        ):
+            response = client.post("/api/inventory", json=payload)
+
+        self.assertEqual(response.status_code, 400)
+        get_db.assert_not_called()
+
+    def test_inventory_edit_api_rejects_consumables_category(self):
+        client = app.app.test_client()
+        with client.session_transaction() as session:
+            session["uid"] = 26
+        payload = {
+            "item_name": "Existing inventory item",
+            "category": "Consumables",
+            "inventory_type": "consumable",
+            "reorder_level": 0,
+            "description": "",
+            "unit": "units",
+            "storage_location": "",
+            "unit_price": None,
+        }
+
+        with (
+            patch("app.model.get_user_by_id", return_value={"id": 26, "role": "ltsm"}),
+            patch("app.db.get_db") as get_db,
+        ):
+            response = client.put("/api/inventory/9", json=payload)
+
+        self.assertEqual(response.status_code, 400)
+        get_db.assert_not_called()
+
+    def test_manage_inventory_forms_omit_consumables_category_option(self):
+        client = app.app.test_client()
+        with client.session_transaction() as session:
+            session["uid"] = 27
+
+        with patch("app.model.get_user_by_id", return_value={"id": 27, "role": "ltsm"}):
+            response = client.get("/manage-inventory.html")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("<option>Consumables</option>", response.get_data(as_text=True))
+
     def test_inventory_list_hides_textbooks_outside_foundation_grades(self):
         client = app.app.test_client()
         with client.session_transaction() as session:

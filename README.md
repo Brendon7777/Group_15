@@ -143,9 +143,13 @@ Successful `/api` endpoints return JSON; controlled API errors also use JSON. Pr
 
 This is a full-stack Flask and MySQL application, not a front-end-only prototype. Flask renders the Jinja pages and provides the JSON API; MySQL stores application data. Do not open the templates with Live Server.
 
-### Clone and run locally
+### Method 1: Sign in using the hosted portal
 
-The portal is also available at [the hosted application](https://group-15-1.onrender.com/). To run it locally, start Flask to serve the Jinja pages and JSON API.
+Open the [LTSM Portal](https://group-15-1.onrender.com/) and sign in with your account. New teacher/staff users can register there; an LTSM Committee Member must approve the request before sign-in. Use the credentials provided for the hosted service.
+
+### Method 2: Run locally
+
+Follow these steps to run Flask and MySQL on your own computer. Do not open the templates directly or use Live Server.
 
 1. Install Git and Python, then clone the repository and enter its folder:
 
@@ -230,7 +234,7 @@ The booking form shows each equipment item's available count and recorded storag
 
 ### Inventory classification and forecasts
 
-Inventory keeps its detailed category (such as Textbooks or Equipment) and has a separate Consumable/Non-consumable type. The additive migration suggests a type for known categories; existing `Other` items remain unclassified until an LTSM member edits them. Enter unit prices on the inventory page for monetary totals. The LTSM dashboard ABC dropdown lets staff switch between value and annual usage. Value mode retains annual usage value for consumables and on-hand value for non-consumables. Annual-usage mode uses forecast annual quantities for consumables and recorded issues in the previous 12 months for reusable items. Each item type is classified separately; items without the required type, price, or usable history remain unclassified rather than receiving guessed values.
+Inventory keeps its detailed category (such as Textbooks or Equipment) and has a separate Consumable/Non-consumable type. The inventory add/edit forms do not offer a Consumables category; consumable classification remains available through the separate inventory type field. The additive migration suggests a type for known categories; existing `Other` items remain unclassified until an LTSM member edits them. Enter unit prices on the inventory page for monetary totals. The LTSM dashboard ABC dropdown lets staff switch between value and annual usage. Value mode retains annual usage value for consumables and on-hand value for non-consumables. Annual-usage mode uses forecast annual quantities for consumables and recorded issues in the previous 12 months for reusable items. Each item type is classified separately; items without the required type, price, or usable history remain unclassified rather than receiving guessed values.
 
 ### Audit history and reporting
 
