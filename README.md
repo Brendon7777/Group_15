@@ -145,7 +145,7 @@ This is a full-stack Flask and MySQL application, not a front-end-only prototype
 
 ### Method 1: Sign in using the hosted portal
 
-Open the [LTSM Portal](https://group-15-1.onrender.com/) and sign in with your account. New teacher/staff users can register there; an LTSM Committee Member must approve the request before sign-in. Use the credentials provided for the hosted service.
+Open the [LTSM Portal](https://group-15-1.onrender.com/) and sign in with your account. New teacher/staff users can register there; an LTSM Committee Member must approve the request before sign-in. Use the credentials provided for the hosted service. Note : Chrome might throw an error when used to open the application please use microsoft edge in that instance. The password and login details are provided on clickup.
 
 ### Method 2: Run locally
 
@@ -285,3 +285,4 @@ The LTSM circulation desk at `issue-return.html` issues resources to active, reg
 | Tebogo Napyane | 20553596 | Focused on backend development and deployment; contributed to the report and PowerPoint video with the group. |
 | Phiwayinkhosi Nxumalo (Phiwa) | 22780450 | Focused on microflows and contributed to frontend development; contributed to the report and PowerPoint video with the group. |
 | Kimberleigh Hartley (Kim) | 19008423 | Focused on microflows and contributed to frontend development; contributed to the report and PowerPoint video with the group. |
+| Copilot | - | Used to organize the readme|
