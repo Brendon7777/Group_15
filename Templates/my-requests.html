@@ -2,7 +2,7 @@
 {% set active_page = "my-requests" %}
 <!-- Shows request statuses and updates, with a filter for tracking submitted requests. -->
 {% block title %}My Requests | LTSM Portal{% endblock %}
-{% block role %}Teacher / Learner{% endblock %}
+{% block role %}Teacher / Staff{% endblock %}
 {% block head %}
 	<!-- SECTION 1: Request tracking page theme and responsive table styles. -->
 	<style>
@@ -98,6 +98,8 @@
 	<section class="panel" data-notification-history="my-requests">
 		<div class="panel-heading"><div><h2>Request notifications</h2><p>Updates from the LTSM committee about your requests.</p></div></div>
 		<ul class="notification-list" data-notification-items><li>Loading notifications…</li></ul>
+		<button class="button button-secondary button-small" type="button" data-notification-more hidden>Load more</button>
+		<p class="notification-status" data-notification-status role="status" aria-live="polite"></p>
 	</section>
 
 	<!-- SECTION 3: Filterable table of submitted request statuses and updates. -->

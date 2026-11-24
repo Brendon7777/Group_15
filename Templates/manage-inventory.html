@@ -93,7 +93,7 @@
 			border-color: #008bb2;
 		}
 		.inventory-page .table-wrap { overflow-x: auto; border: 1px solid #e1e7eb; border-radius: 10px; background: #fff; }
-		.inventory-page table { width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; }
+		.inventory-page table { width: 100%; min-width: 1240px; border-collapse: separate; border-spacing: 0; }
 		.inventory-page table thead { background: #eaf2f5; }
 		.inventory-page table th { padding: .95rem .75rem; color: #035e82; font-size: .75rem; letter-spacing: .05em; text-align: left; }
 		.inventory-page table td { padding: 1rem .75rem; border-bottom: 1px solid #e9eef1; color: #46545d; overflow-wrap: anywhere; }
@@ -150,15 +150,16 @@
 	<div class="content-grid">
 		<!-- SECTION 3: Searchable and filterable inventory catalogue. -->
 		<section class="panel">
-			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Current quantities and reorder points.</p></div></div>
+			<div class="panel-heading"><div><h2>Inventory catalogue</h2><p>Current quantities and reorder points. Older-grade book records stay here for history but are hidden from the teacher catalogue.</p></div></div>
 			<div class="toolbar">
 				<label for="inventory-search" style="position:absolute;left:-10000px">Search inventory</label>
 				<input id="inventory-search" class="search-input" type="search" placeholder="Search inventory" data-filter-input="inventory-table">
 				<select class="search-input" aria-label="Filter inventory category" data-category-filter="inventory-table"><option value="">All categories</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select>
+				<select class="search-input" aria-label="Filter consumable type" data-type-filter="inventory-table"><option value="">All item types</option><option value="consumable">Consumable</option><option value="non_consumable">Non-consumable</option></select>
 			</div>
 			<div class="table-wrap">
 				<table id="inventory-table">
-					<thead><tr><th>Item</th><th>Category</th><th>Quantity</th><th>Reorder at</th><th>Storage location</th><th>Status</th><th>Actions</th></tr></thead>
+					<thead><tr><th>Item</th><th>Category</th><th>Type</th><th>Quantity</th><th>Unit price</th><th>Reorder at</th><th>Storage location</th><th>Status</th><th>Actions</th></tr></thead>
 					<tbody></tbody>
 				</table>
 			</div>
@@ -169,6 +170,8 @@
 			<form id="inventory-form">
 				<div class="form-field"><label for="item-name">Item name</label><input id="item-name" name="item_name" required maxlength="100"></div>
 				<div class="form-field"><label for="item-category">Category</label><select id="item-category" name="category" required><option value="" selected disabled>Select category</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select></div>
+				<div class="form-field" id="item-grade-field" hidden><label for="item-grade">Book grade</label><select id="item-grade" name="grade"><option value="" selected disabled>Select grade</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option></select></div>
+				<div class="form-field"><label for="item-type">Inventory type</label><select id="item-type" name="inventory_type" required><option value="" selected disabled>Select type</option><option value="consumable">Consumable</option><option value="non_consumable">Non-consumable</option></select></div>
 				<div class="form-grid">
 					<div class="form-field"><label for="item-quantity">Quantity</label><input id="item-quantity" name="quantity" type="number" min="0" max="10000" required></div>
 					<div class="form-field"><label for="reorder-level">Reorder level</label><input id="reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
@@ -178,6 +181,7 @@
 					<div class="form-field"><label for="item-unit">Unit of measure</label><input id="item-unit" name="unit" maxlength="45" value="units" required></div>
 					<div class="form-field"><label for="item-location">Storage location</label><input id="item-location" name="storage_location" maxlength="120" placeholder="e.g. Store room A, shelf 2"></div>
 				</div>
+				<div class="form-field"><label for="item-price">Unit price (R, optional)</label><input id="item-price" name="unit_price" type="number" min="0" max="99999999.99" step="0.01"><small>Enter the price for one stock unit. Consumable ABC classes also need valid usage history in the existing forecast model.</small></div>
 				<div id="inventory-feedback" class="form-feedback" role="status" hidden></div>
 				<button class="button inventory-action-button" type="submit">Add item</button>
 			</form>
@@ -188,12 +192,15 @@
 					<input type="hidden" name="item_id">
 					<div class="form-field"><label for="edit-item-name">Item name</label><input id="edit-item-name" name="item_name" maxlength="100" required></div>
 					<div class="form-field"><label for="edit-item-category">Category</label><select id="edit-item-category" name="category" required><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select></div>
+					<div class="form-field" id="edit-item-grade-field" hidden><label for="edit-item-grade">Book grade</label><select id="edit-item-grade" name="grade"><option value="" selected disabled>Select grade</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option></select><small>An older grade can be kept for an existing record; it stays out of the teacher catalogue.</small></div>
+					<div class="form-field"><label for="edit-item-type">Inventory type</label><select id="edit-item-type" name="inventory_type" required><option value="" selected disabled>Choose type</option><option value="consumable">Consumable</option><option value="non_consumable">Non-consumable</option></select></div>
 					<div class="form-grid">
 						<div class="form-field"><label for="edit-reorder-level">Reorder level</label><input id="edit-reorder-level" name="reorder_level" type="number" min="0" max="10000" required></div>
 						<div class="form-field"><label for="edit-item-unit">Unit of measure</label><input id="edit-item-unit" name="unit" maxlength="45" required></div>
 					</div>
 					<div class="form-field"><label for="edit-item-description">Description</label><input id="edit-item-description" name="description" maxlength="255"></div>
 					<div class="form-field"><label for="edit-item-location">Storage location</label><input id="edit-item-location" name="storage_location" maxlength="120"></div>
+					<div class="form-field"><label for="edit-item-price">Unit price (R, optional)</label><input id="edit-item-price" name="unit_price" type="number" min="0" max="99999999.99" step="0.01"></div>
 					<div id="inventory-edit-feedback" class="form-feedback" role="status" hidden></div>
 					<div class="form-actions"><button class="button inventory-action-button" type="submit">Save changes</button><button class="button button-secondary inventory-action-button" id="cancel-inventory-edit" type="button">Cancel</button></div>
 				</form>

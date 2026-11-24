@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% set active_page = "bookings" %}
-<!-- Lets teachers and learners request shared equipment and review upcoming sample bookings. -->
+<!-- Lets teachers and staff request shared equipment and review upcoming sample bookings. -->
 {% block title %}Equipment Bookings | LTSM Portal{% endblock %}
-{% block role %}Teacher / Learner{% endblock %}
+{% block role %}Teacher / Staff{% endblock %}
 {% block head %}
 	<!-- SECTION 1: Booking page theme, form styling and responsive layout. -->
 	<style>
@@ -120,7 +120,7 @@
 					<div class="form-field"><label for="start-time">Start time</label><input id="start-time" name="start_time" type="time" required></div>
 					<div class="form-field"><label for="end-time">End time</label><input id="end-time" name="end_time" type="time" required></div>
 					<div class="form-field"><label for="room">Room where you will use it</label><input id="room" name="room" maxlength="80" placeholder="e.g. Room 12" required></div>
-					<div class="form-field"><label for="booking-purpose">Purpose</label><input id="booking-purpose" name="purpose" maxlength="160" placeholder="e.g. Grade 8 science lesson" required></div>
+					<div class="form-field"><label for="booking-purpose">Purpose</label><input id="booking-purpose" name="purpose" maxlength="160" placeholder="e.g. Grade 2 classroom lesson" required></div>
 				</div>
 				<div id="booking-feedback" class="form-feedback" role="status" hidden></div>
 				<div class="form-actions"><button class="button" type="submit">Request booking</button></div>
@@ -137,6 +137,8 @@
 	<section class="panel" data-notification-history="bookings">
 		<div class="panel-heading"><div><h2>Booking notifications</h2><p>Updates from the LTSM committee about your equipment reservations.</p></div></div>
 		<ul class="notification-list" data-notification-items><li>Loading notifications…</li></ul>
+		<button class="button button-secondary button-small" type="button" data-notification-more hidden>Load more</button>
+		<p class="notification-status" data-notification-status role="status" aria-live="polite"></p>
 	</section>
 	</div>
 {% endblock %}

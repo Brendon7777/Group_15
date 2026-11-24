@@ -42,7 +42,7 @@ policies = {
 MODEL_INPUT_SQL = """
 SELECT r.resource_id, r.resource_name, r.grade, r.review_policy,
        r.unit_of_measure, r.unit_price, r.quantity_in_stock AS A,
-       h.history_start, h.history_end, h.demand_values
+       h.history_start, h.history_end, h.demand_values, h.history_source
 FROM resource AS r
 LEFT JOIN consumable_demand_history AS h
   ON h.resource_id = r.resource_id
@@ -103,17 +103,29 @@ def stockout_risk(A, average, lead_time, SS):
     Returns:
         (expected_remaining, colour, risk). Expected remaining stock is
         A-average*lead_time. Red means it is <=0; yellow means it is >0
-        but <=SS; green means it is >SS. These thresholds are an illustrative
-        warning rule, not probabilities. This function is not used for books.
+        but <=SS;         green means it is >SS. These thresholds are an illustrative
+        warning rule, not probabilities.
     """
     expected_remaining = A - average * lead_time
+    colour, risk = _risk_category(expected_remaining, SS)
+    return expected_remaining, colour, risk
+
+
+def annual_stockout_risk(A, average, SS):
+    """Compare on-hand books with the next annual issue and its safety buffer."""
+    expected_remaining = A - average
+    colour, risk = _risk_category(expected_remaining, SS)
+    return expected_remaining, colour, risk
+
+
+def _risk_category(expected_remaining, SS):
     if expected_remaining <= 0:
         colour, risk = 'red', 'High risk'
     elif expected_remaining <= SS:
         colour, risk = 'yellow', 'Elevated risk'
     else:
         colour, risk = 'green', 'Low risk'
-    return expected_remaining, colour, risk
+    return colour, risk
 
 def average_annual_demand(annual_demand):
     """Estimate the quantity required for one annual book distribution.
@@ -257,6 +269,7 @@ def products_from_rows(rows, warnings=None):
             products[resource_id] = {
                 'resource_name': row['resource_name'], 'grade': row.get('grade'),
                 'policy': policy, 'unit': unit,
+                'history_source': row.get('history_source') or 'unverified',
                 'unit_price': _number(row['unit_price'], label + ' unit_price'),
                 'A': _number(row['A'], label + ' A', whole=True),
                 'history_start': start, 'history_end': end,
@@ -302,7 +315,7 @@ def calculate_results(product_inputs, selected_service_level=service_level):
             average = average_annual_demand(history)
             sigma = annual_demand_std_dev(history)
             SS, S, quantity = annual_recommended_quantity(A, average, sigma, z)
-            expected_remaining, colour, risk = None, None, None
+            expected_remaining, colour, risk = annual_stockout_risk(A, average, SS)
         else:
             history = inputs['monthly_demand']
             average = average_monthly_demand(history)
@@ -315,6 +328,7 @@ def calculate_results(product_inputs, selected_service_level=service_level):
         results[resource_id] = {
             'resource_id': resource_id, 'resource_name': inputs['resource_name'],
             'grade': inputs.get('grade'), 'policy': policy_key, 'unit': inputs['unit'],
+            'history_source': inputs['history_source'],
             'history_start': inputs['history_start'], 'history_end': inputs['history_end'],
             'history': list(history), 'historical_demand_total': sum(history),
             'average': average, 'sigma': sigma, 'A': A, 'SS': SS, 'S': S,

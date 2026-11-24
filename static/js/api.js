@@ -1,7 +1,7 @@
 /*
  * LTSM Portal – shared fetch() helpers (Task 3A).
  * Loaded on every page (base.html, login.html, register.html). Exposes window.LTSM = { api, ui }.
- * Every call goes to the Flask JSON API under /api – see API_CONTRACT.md.
+ * Every call goes to the Flask JSON API under /api; see the endpoint inventory in README.md.
  */
 (function () {
 	"use strict";

@@ -68,13 +68,17 @@
 		.panel-heading h2 { margin: 0; }
 		.panel-heading p { margin: .3rem 0 0; color: var(--muted); font-size: .88rem; }
 		.notification-list { margin: 0; padding: 0; display: grid; gap: .55rem; list-style: none; }
-		.notification-item { padding: .8rem .9rem; border: 1px solid var(--line); border-left: 4px solid #d93025; border-radius: 8px; background: #fff; }
+		.notification-item { padding: .8rem .9rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; border: 1px solid var(--line); border-left: 4px solid #d93025; border-radius: 8px; background: #fff; }
 		.notification-item--read { border-left-color: #b8c5bf; }
-		.notification-item a { display: block; color: var(--green); text-decoration: none; }
+		.notification-item--done { border-left-color: var(--green); background: #f7fbf8; }
+		.notification-item a { min-width: 0; flex: 1 1 250px; display: block; color: var(--green); text-decoration: none; }
 		.notification-item a:hover { text-decoration: underline; text-underline-offset: 3px; }
 		.notification-item strong { display: block; margin-bottom: .15rem; }
 		.notification-item p { margin: 0; color: var(--muted); font-size: .86rem; }
 		.notification-item time { display: block; margin-top: .35rem; color: var(--muted); font-size: .74rem; }
+		.notification-item__actions { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; }
+		.notification-done-status { color: var(--green); font-size: .82rem; font-weight: 750; }
+		.notification-status { min-height: 1.2em; margin: .55rem 0 0; color: var(--muted); font-size: .82rem; }
 		.stats-grid { margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 		.stat-card { min-height: 132px; padding: 1.15rem; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
 		.stat-label { margin-bottom: .65rem; display: block; color: var(--muted); font-size: .83rem; font-weight: 600; }
@@ -129,9 +133,10 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/selects.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/page-transitions.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/api-states.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-layout.css') }}">
 	{% block head %}{% endblock %}
 </head>
-<body data-notification-module="{% if active_page == 'request-management' %}request-management{% elif active_page == 'my-requests' %}my-requests{% elif active_page == 'bookings' %}bookings{% endif %}">
+<body data-dashboard-user="{% if user is defined and user %}{{ user.id }}{% endif %}" data-notification-module="{% if active_page == 'request-management' %}request-management{% elif active_page == 'my-requests' %}my-requests{% elif active_page == 'bookings' %}bookings{% endif %}">
 	<div class="page-loading" role="status" aria-live="polite" hidden>
 		<span class="page-loading__spinner" aria-hidden="true"></span>
 		<span>Loading page…</span>

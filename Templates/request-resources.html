@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% set active_page = "request" %}
-<!-- Lets teachers and learners enter and validate a resource request for committee review. -->
+<!-- Lets teachers and staff enter and validate a resource request for committee review. -->
 {% block title %}Request Resources | LTSM Portal{% endblock %}
-{% block role %}Teacher / Learner{% endblock %}
+{% block role %}Teacher / Staff{% endblock %}
 {% block head %}
 	<!-- SECTION 1: Resource request theme, form controls and responsive layout. -->
 	<style>
@@ -163,7 +163,7 @@
 				<div class="table-wrap">
 					<table class="request-details-table">
 						<tbody>
-							<tr><th scope="row"><label for="resource-name">Resource name</label></th><td><div class="form-field"><input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required><datalist id="catalogue-items"><option value="Natural Sciences Grade 8 textbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist></div></td></tr>
+							<tr><th scope="row"><label for="resource-name">Resource name</label></th><td><div class="form-field"><input id="resource-name" name="resource_name" list="catalogue-items" autocomplete="off" required><datalist id="catalogue-items"><option value="Grade 1 Life Skills workbook"><option value="Grade 2 DBE English workbook"><option value="Grade 3 DBE Mathematics workbook"><option value="A4 exercise books"><option value="Whiteboard markers"><option value="Classroom projector"></datalist><small>Book requests are for Grades 1–3. Include the grade in the book name if it is not in the catalogue.</small></div></td></tr>
 							<tr><th scope="row"><label for="category">Category</label></th><td><div class="form-field"><select id="category" name="category" required><option value="" disabled selected>Select a category</option><option>Textbooks</option><option>Stationery</option><option>Consumables</option><option>Equipment</option><option>Other</option></select></div></td></tr>
 							<tr><th scope="row"><label for="quantity">Quantity</label></th><td><div class="form-field"><input id="quantity" name="quantity" type="number" min="1" max="100" value="1" required><small id="available-quantity" aria-live="polite">Enter a product name to check current availability.</small></div></td></tr>
 							<tr><th scope="row"><label for="needed-by">Needed by</label></th><td><div class="form-field"><input id="needed-by" name="needed_by" type="date" required></div></td></tr>

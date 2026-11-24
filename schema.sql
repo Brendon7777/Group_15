@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `grade` VARCHAR(20) DEFAULT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `users_school_id_unique` (`school_id`)
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `resource` (
   `resource_id` INT NOT NULL AUTO_INCREMENT,
   `resource_name` VARCHAR(100) NOT NULL,
   `category` ENUM('Textbooks', 'Stationery', 'Consumables', 'Equipment', 'Other') NOT NULL,
+  `inventory_type` ENUM('consumable', 'non_consumable') DEFAULT NULL,
   `grade` VARCHAR(20) DEFAULT NULL,
   `quantity_owned` INT NOT NULL DEFAULT 0,
   `quantity_in_stock` INT NOT NULL DEFAULT 0,
@@ -27,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `resource` (
   `review_policy` ENUM('six_month', 'annual') DEFAULT NULL,
   `storage_location` VARCHAR(120) DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`resource_id`),
   UNIQUE KEY `resource_name_unique` (`resource_name`, `grade`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -40,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `user_notification` (
   `target_url` VARCHAR(255) NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `read_at` TIMESTAMP NULL DEFAULT NULL,
+  `done_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`notification_id`),
   KEY `user_notification_unread_idx` (`user_id`, `module`, `read_at`, `created_at`),
   CONSTRAINT `user_notification_user_fk`
@@ -54,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `consumable_demand_history` (
   `history_start` DATE NOT NULL,
   `history_end` DATE NOT NULL,
   `demand_values` JSON NOT NULL,
+  `history_source` ENUM('recorded', 'illustrative', 'unverified') NOT NULL DEFAULT 'unverified',
   PRIMARY KEY (`history_id`),
   KEY `consumable_demand_resource_idx` (`resource_id`),
   CONSTRAINT `consumable_demand_resource_fk`
@@ -67,6 +72,7 @@ CREATE TABLE IF NOT EXISTS `collection_location` (
   `location_name` VARCHAR(100) NOT NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`location_id`),
   UNIQUE KEY `collection_location_name_unique` (`location_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -85,6 +91,9 @@ CREATE TABLE IF NOT EXISTS `resource_request` (
   `purpose` VARCHAR(500) NOT NULL,
   `submitted_date` DATE NOT NULL,
   `submitted_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `ready_at` DATETIME(6) DEFAULT NULL,
+  `fulfilled_at` DATETIME(6) DEFAULT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `status` ENUM('In review', 'Approved', 'Ready for collection', 'Declined', 'Fulfilled') NOT NULL DEFAULT 'In review',
   `latest_update` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`request_id`),
@@ -106,6 +115,71 @@ CREATE TABLE IF NOT EXISTS `resource_request` (
     ON UPDATE CASCADE
     ON DELETE SET NULL,
   CONSTRAINT `resource_request_quantity_check` CHECK (`quantity` BETWEEN 1 AND 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `operational_measurement` (
+  `measurement_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `metric_key` ENUM('unnecessary_trip', 'follow_up_enquiry', 'incorrect_fulfillment',
+                    'report_preparation', 'equipment_downtime', 'inventory_count',
+                    'booking_conflict', 'motion_time') NOT NULL,
+  `occurred_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `ended_at` DATETIME(6) DEFAULT NULL,
+  `duration_minutes` DECIMAL(10,2) DEFAULT NULL,
+  `resource_id` INT DEFAULT NULL,
+  `request_id` INT DEFAULT NULL,
+  `expected_quantity` INT DEFAULT NULL,
+  `actual_quantity` INT DEFAULT NULL,
+  `notes` VARCHAR(500) NOT NULL,
+  `recorded_by_user_id` INT DEFAULT NULL,
+  `is_demo` BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (`measurement_id`),
+  KEY `operational_measurement_metric_date_idx` (`metric_key`, `occurred_at`),
+  KEY `operational_measurement_resource_idx` (`resource_id`),
+  CONSTRAINT `operational_measurement_resource_fk`
+    FOREIGN KEY (`resource_id`) REFERENCES `resource` (`resource_id`)
+    ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT `operational_measurement_request_fk`
+    FOREIGN KEY (`request_id`) REFERENCES `resource_request` (`request_id`)
+    ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT `operational_measurement_user_fk`
+    FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `evidence_baseline` (
+  `baseline_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `metric_key` VARCHAR(40) NOT NULL,
+  `period_start` DATE NOT NULL,
+  `period_end` DATE NOT NULL,
+  `measure_value` DECIMAL(12,2) NOT NULL,
+  `sample_count` INT NOT NULL DEFAULT 0,
+  `notes` VARCHAR(500) DEFAULT NULL,
+  `recorded_by_user_id` INT DEFAULT NULL,
+  `is_demo` BOOLEAN NOT NULL DEFAULT FALSE,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`baseline_id`),
+  UNIQUE KEY `evidence_baseline_metric_unique` (`metric_key`),
+  CONSTRAINT `evidence_baseline_user_fk`
+    FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT `evidence_baseline_period_check` CHECK (`period_end` >= `period_start`),
+  CONSTRAINT `evidence_baseline_sample_check` CHECK (`sample_count` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `evidence_period_completion` (
+  `completion_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `metric_key` VARCHAR(40) NOT NULL,
+  `period_start` DATE NOT NULL,
+  `period_end` DATE NOT NULL,
+  `completed_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `recorded_by_user_id` INT DEFAULT NULL,
+  `is_demo` BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (`completion_id`),
+  UNIQUE KEY `evidence_period_completion_unique` (`metric_key`, `period_start`, `period_end`),
+  CONSTRAINT `evidence_period_completion_user_fk`
+    FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT `evidence_period_completion_dates_check` CHECK (`period_end` >= `period_start`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `resource_suggestion` (
@@ -130,13 +204,16 @@ CREATE TABLE IF NOT EXISTS `equipment_booking` (
   `booking_date` DATE NOT NULL,
   `start_time` TIME NOT NULL,
   `end_time` TIME NOT NULL,
+  `requested_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `room` VARCHAR(80) NOT NULL,
   `purpose` VARCHAR(160) NOT NULL,
   `status` ENUM('Awaiting approval', 'Confirmed', 'Declined') NOT NULL DEFAULT 'Awaiting approval',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`booking_id`),
   KEY `equipment_booking_user_idx` (`user_id`),
   KEY `equipment_booking_resource_idx` (`resource_id`),
+  KEY `equipment_booking_requested_at_idx` (`requested_at`),
   KEY `equipment_booking_slot_idx` (`resource_id`, `booking_date`, `start_time`, `end_time`),
   CONSTRAINT `equipment_booking_user_fk`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
@@ -152,6 +229,7 @@ CREATE TABLE IF NOT EXISTS `equipment_booking` (
 CREATE TABLE IF NOT EXISTS `item_movement` (
   `movement_id` INT NOT NULL AUTO_INCREMENT,
   `resource_id` INT NOT NULL,
+  `borrower_user_id` INT DEFAULT NULL,
   `borrower_id` VARCHAR(40) NOT NULL,
   `borrower_name` VARCHAR(100) NOT NULL,
   `movement_type` ENUM('issue', 'return', 'lost', 'damaged') NOT NULL,
@@ -164,17 +242,23 @@ CREATE TABLE IF NOT EXISTS `item_movement` (
   `active_loan` BOOLEAN NOT NULL DEFAULT FALSE,
   `recorded_by_user_id` INT DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`movement_id`),
   KEY `item_movement_resource_idx` (`resource_id`),
   KEY `item_movement_borrower_idx` (`borrower_id`),
   KEY `item_movement_type_idx` (`movement_type`, `active_loan`),
   KEY `item_movement_related_issue_idx` (`related_issue_movement_id`),
+  KEY `item_movement_borrower_user_idx` (`borrower_user_id`),
   CONSTRAINT `item_movement_resource_fk`
     FOREIGN KEY (`resource_id`) REFERENCES `resource` (`resource_id`)
     ON UPDATE CASCADE
     ON DELETE RESTRICT,
   CONSTRAINT `item_movement_recorded_by_fk`
     FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`user_id`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `item_movement_borrower_user_fk`
+    FOREIGN KEY (`borrower_user_id`) REFERENCES `users` (`user_id`)
     ON UPDATE CASCADE
     ON DELETE SET NULL,
   CONSTRAINT `item_movement_related_issue_fk`
@@ -227,6 +311,7 @@ CREATE TABLE IF NOT EXISTS `maintenance_issue` (
   `description` VARCHAR(500) NOT NULL,
   `status` ENUM('Open', 'In repair', 'Out of service', 'Resolved') NOT NULL DEFAULT 'Open',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`issue_id`),
   KEY `maintenance_resource_idx` (`resource_id`),
   KEY `maintenance_status_idx` (`status`),

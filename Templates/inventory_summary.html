@@ -20,13 +20,95 @@
 		.inventory-summary .warning-notice h2 { margin-top: 0; font-size: 1.1rem; }
 		.inventory-summary .warning-notice ul { margin-bottom: 0; }
 		.inventory-summary .variable-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .75rem 1rem; margin: 1rem 0 0; }
-		.inventory-summary .variable-list div { padding: .8rem; border-radius: 8px; background: #f4f8fa; }
-		.inventory-summary .variable-list dt { color: #035e82; font-weight: 700; }
-		.inventory-summary .variable-list dd { margin: .25rem 0 0; color: var(--muted); line-height: 1.5; }
+		.inventory-summary .variable-tile { min-width: 0; border: 1px solid #dce5e9; border-radius: 8px; background: #f4f8fa; }
+		.inventory-summary .variable-tile:hover, .inventory-summary .variable-tile[open] { border-color: #9dc3d0; background: #fff; }
+		.inventory-summary .variable-tile summary { padding: .85rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: #035e82; font-weight: 700; list-style: none; cursor: pointer; }
+		.inventory-summary .variable-tile summary::-webkit-details-marker { display: none; }
+		.inventory-summary .variable-tile summary::marker { content: ""; }
+		.inventory-summary .variable-tile summary::after { width: .5rem; height: .5rem; flex: 0 0 auto; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; content: ""; transform: rotate(45deg); transition: transform .25s ease; }
+		.inventory-summary .variable-tile.is-expanded summary::after { transform: rotate(225deg); }
+		.inventory-summary .variable-tile.is-collapsing summary::after { transform: rotate(45deg); }
+		.inventory-summary .variable-tile summary:focus-visible { outline: 3px solid rgba(0, 139, 178, .35); outline-offset: -3px; border-radius: 8px; }
+		.inventory-summary .variable-tile__content { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s ease, opacity .25s ease; }
+		.inventory-summary .variable-tile.is-expanded .variable-tile__content { grid-template-rows: 1fr; opacity: 1; }
+		.inventory-summary .variable-tile.is-collapsing .variable-tile__content { grid-template-rows: 0fr; opacity: 0; }
+		.inventory-summary .variable-tile__content > div { min-height: 0; overflow: hidden; }
+		.inventory-summary .variable-tile p { margin: 0; padding: 0 .85rem .85rem; color: var(--muted); line-height: 1.5; }
+		@media (prefers-reduced-motion: reduce) {
+			.inventory-summary .variable-tile summary::after,
+			.inventory-summary .variable-tile__content { transition: none; }
+		}
 	</style>
 {% endblock %}
 {% block content %}
 	<div class="inventory-summary">
 		{% include "inventory_template.html" %}
 	</div>
+{% endblock %}
+{% block scripts %}
+	<script>
+		document.querySelectorAll(".inventory-summary .variable-tile").forEach((tile) => {
+			const summary = tile.querySelector("summary");
+			const content = tile.querySelector(".variable-tile__content");
+			let collapseTimer;
+			let collapseFallback;
+			let transitionHandler;
+
+			const cancelCollapse = () => {
+				window.clearTimeout(collapseFallback);
+				if (transitionHandler) content.removeEventListener("transitionend", transitionHandler);
+				transitionHandler = null;
+				tile.classList.remove("is-collapsing");
+				tile.classList.add("is-expanded");
+			};
+
+			const scheduleCollapse = () => {
+				window.clearTimeout(collapseTimer);
+				collapseTimer = window.setTimeout(collapse, 4000);
+			};
+
+			const collapse = () => {
+				window.clearTimeout(collapseTimer);
+				if (!tile.open || tile.classList.contains("is-collapsing")) return;
+				tile.classList.remove("is-expanded");
+				tile.classList.add("is-collapsing");
+				const finish = () => {
+					window.clearTimeout(collapseFallback);
+					if (transitionHandler) content.removeEventListener("transitionend", transitionHandler);
+					transitionHandler = null;
+					tile.open = false;
+					tile.classList.remove("is-collapsing");
+				};
+				transitionHandler = (event) => {
+					if (event.target === content && event.propertyName === "grid-template-rows") finish();
+				};
+				content.addEventListener("transitionend", transitionHandler);
+				collapseFallback = window.setTimeout(finish, 350);
+			};
+
+			tile.addEventListener("toggle", () => {
+				if (tile.open) {
+					window.requestAnimationFrame(() => {
+						if (tile.open && !tile.classList.contains("is-collapsing")) {
+							tile.classList.add("is-expanded");
+							scheduleCollapse();
+						}
+					});
+				} else {
+					window.clearTimeout(collapseTimer);
+					tile.classList.remove("is-expanded");
+				}
+			});
+			summary.addEventListener("click", (event) => {
+				if (tile.classList.contains("is-collapsing")) {
+					event.preventDefault();
+					cancelCollapse();
+					scheduleCollapse();
+				} else if (tile.open) {
+					event.preventDefault();
+					collapse();
+				}
+			});
+		});
+	</script>
 {% endblock %}

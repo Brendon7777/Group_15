@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% set active_page = "dashboard" %}
-<!-- Teacher and learner dashboard showing activity summaries, resource categories, issued items, and bookings. -->
+<!-- Teacher and staff dashboard showing activity summaries, resource categories, issued items, and bookings. -->
 {% block title %}My Dashboard | LTSM Portal{% endblock %}
-{% block role %}Teacher / Learner{% endblock %}
+{% block role %}Teacher / Staff{% endblock %}
 {% block head %}
 	<!-- SECTION 1: User dashboard theme, activity cards and responsive layout. -->
 	<style>
@@ -298,23 +298,28 @@
 	<section class="dashboard-overview" aria-labelledby="activity-heading">
 		<h2 class="dashboard-overview__heading" id="activity-heading">Your activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of your resources, requests, bookings and issued items.</p>
+		<div class="dashboard-layout-controls" data-dashboard-layout-controls>
+			<button class="button button-secondary" type="button" data-layout-toggle>Rearrange tiles</button>
+			<button class="button button-secondary" type="button" data-layout-reset hidden>Reset layout</button>
+			<span data-layout-status role="status" aria-live="polite"></span>
+		</div>
 	</section>
 	<div id="dashboard-feedback" class="form-feedback" role="alert" hidden></div>
 	<div class="dashboard-stats-viewport">
-		<section id="dashboard-activity-tiles" class="stats-grid dashboard-stats" aria-label="Your activity summary">
-			<article class="stat-card dashboard-stat dashboard-stat--green">
+		<section id="dashboard-activity-tiles" class="stats-grid dashboard-stats" aria-label="Your activity summary" data-reorderable-grid="user-summary">
+			<article class="stat-card dashboard-stat dashboard-stat--green" data-dashboard-tile="available-resources">
 				<div class="dashboard-stat__top"><span class="stat-label">Available resources</span><span class="dashboard-stat__icon" aria-hidden="true">▤</span></div>
 				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="available_resources">…</p><p class="stat-note" data-kpi-note="available_resources">Loading…</p></div>
 			</article>
-			<article class="stat-card dashboard-stat dashboard-stat--gold">
+			<article class="stat-card dashboard-stat dashboard-stat--gold" data-dashboard-tile="open-requests">
 				<div class="dashboard-stat__top"><span class="stat-label">Open requests</span><span class="dashboard-stat__icon" aria-hidden="true">↗</span></div>
 				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="open_requests">…</p><p class="stat-note" data-kpi-note="open_requests">Loading…</p></div>
 			</article>
-			<article class="stat-card dashboard-stat dashboard-stat--blue">
+			<article class="stat-card dashboard-stat dashboard-stat--blue" data-dashboard-tile="equipment-bookings">
 				<div class="dashboard-stat__top"><span class="stat-label">Equipment bookings</span><span class="dashboard-stat__icon" aria-hidden="true">⌁</span></div>
 				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="bookings">…</p><p class="stat-note" data-kpi-note="bookings">Loading…</p></div>
 			</article>
-			<article class="stat-card dashboard-stat dashboard-stat--red">
+			<article class="stat-card dashboard-stat dashboard-stat--red" data-dashboard-tile="issued-items">
 				<div class="dashboard-stat__top"><span class="stat-label">Items issued to you</span><span class="dashboard-stat__icon" aria-hidden="true">✓</span></div>
 				<div class="dashboard-stat__reading"><p class="stat-value" data-kpi="issued">…</p><p class="stat-note" data-kpi-note="issued">Loading…</p></div>
 			</article>
@@ -331,10 +336,10 @@
 			</div>
 			<span class="dashboard-launchpad-heading__icon" aria-hidden="true">▤</span>
 		</header>
-		<div class="card-grid dashboard-resource-grid">
-			<a class="resource-card dashboard-resource dashboard-resource--green" href="view-resources.html" data-category="Textbooks"><span class="resource-icon" aria-hidden="true">▤</span><h3>Textbooks</h3><p>Prescribed books and classroom learning materials.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
-			<a class="resource-card dashboard-resource dashboard-resource--gold" href="view-resources.html" data-category="Stationery"><span class="resource-icon" aria-hidden="true">✎</span><h3>Stationery</h3><p>Everyday supplies for lessons and schoolwork.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
-			<a class="resource-card dashboard-resource dashboard-resource--blue" href="view-resources.html" data-category="Equipment"><span class="resource-icon" aria-hidden="true">⌁</span><h3>Equipment</h3><p>Shared devices and teaching equipment to book.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
+		<div class="card-grid dashboard-resource-grid" data-reorderable-grid="user-categories">
+			<a class="resource-card dashboard-resource dashboard-resource--green" href="view-resources.html" data-category="Textbooks" data-dashboard-tile="textbooks"><span class="resource-icon" aria-hidden="true">▤</span><h3>Textbooks</h3><p>Prescribed books and classroom learning materials.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--gold" href="view-resources.html" data-category="Stationery" data-dashboard-tile="stationery"><span class="resource-icon" aria-hidden="true">✎</span><h3>Stationery</h3><p>Everyday supplies for lessons and schoolwork.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
+			<a class="resource-card dashboard-resource dashboard-resource--blue" href="view-resources.html" data-category="Equipment" data-dashboard-tile="equipment"><span class="resource-icon" aria-hidden="true">⌁</span><h3>Equipment</h3><p>Shared devices and teaching equipment to book.</p><span class="resource-card__footer"><span data-cat-count>…</span><span class="badge" data-cat-badge>…</span></span></a>
 		</div>
 	</section>
 
@@ -361,5 +366,6 @@
 {% endblock %}
 {% block scripts %}
 	<!-- SECTION 7: Load the dashboard summary from GET /api/dashboard/user (static/js/dashboard-pages.js). -->
+	<script src="{{ url_for('static', filename='js/dashboard-layout.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

@@ -24,7 +24,7 @@
 			<div>
 				<p class="eyebrow">Committee tools</p>
 				<h1>Manage user accounts</h1>
-				<p>View accounts that can sign in, create accounts, or deactivate/reactivate access.</p>
+				<p>Manage teacher and committee access. Existing active learner records remain available as circulation recipients but cannot sign in.</p>
 			</div>
 		</header>
 
@@ -34,8 +34,8 @@
 			<form id="user-management-form">
 				<div class="form-grid">
 					<div class="form-field"><label for="user-full-name">Full name</label><input id="user-full-name" name="full_name" maxlength="100" required></div>
-					<div class="form-field"><label for="user-role">Role</label><select id="user-role" name="role" required><option value="" selected disabled>Select role</option><option value="learner">Learner</option><option value="staff">Teacher / staff</option><option value="ltsm">LTSM committee member</option></select></div>
-					<div class="form-field"><label for="user-school-id">Student / staff ID</label><input id="user-school-id" name="school_id" maxlength="40" required></div>
+					<div class="form-field"><label for="user-role">Role</label><select id="user-role" name="role" required><option value="" selected disabled>Select role</option><option value="staff">Teacher / staff</option><option value="ltsm">LTSM committee member</option></select></div>
+					<div class="form-field"><label for="user-school-id">Staff / committee ID</label><input id="user-school-id" name="school_id" maxlength="40" required></div>
 					<div class="form-field"><label for="user-email">Email</label><input id="user-email" name="email" type="email" maxlength="100" required></div>
 					<div class="form-field"><label for="user-password">Temporary password</label><input id="user-password" name="password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></div>
 				</div>

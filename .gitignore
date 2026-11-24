@@ -2,3 +2,15 @@
 venv/
 .venv/
 __pycache__/
+backups/
+
+# Local TLS certificates and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c

@@ -1,4 +1,4 @@
-/* Teacher / learner pages: browse resources, request a resource, my requests, equipment bookings (Task 3A). */
+/* Teacher / staff pages: browse resources, request a resource, my requests, equipment bookings (Task 3A). */
 (function () {
 	"use strict";
 	const { api, ui } = window.LTSM;
@@ -24,7 +24,8 @@
 				const quantityLabel = item.category === "Equipment"
 					? `${item.stock} available`
 					: `${item.stock} ${item.unit} in stock`;
-				return `<tr><td><div class="catalogue-item">${visual}<span><span class="catalogue-item__name">${esc(item.name)}</span><span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td>${esc(quantityLabel)}</td><td>${action}</td></tr>`;
+				const grade = item.category === "Textbooks" && item.grade ? `<span class="catalogue-item__description">${esc(item.grade)}</span>` : "";
+				return `<tr><td><div class="catalogue-item">${visual}<span><span class="catalogue-item__name">${esc(item.name)}</span>${grade}<span class="catalogue-item__description">${esc(item.description)}</span></span></div></td><td><span class="badge catalogue-category">${esc(item.category)}</span></td><td>${ui.badge(item.availability, item.tone)}</td><td>${esc(quantityLabel)}</td><td>${action}</td></tr>`;
 			}
 		});
 		search.addEventListener("input", ui.debounce(reload));

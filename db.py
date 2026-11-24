@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 import pymysql
@@ -10,18 +11,37 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 
-def connect():
+def database_name():
+    name = os.getenv("DB_NAME")
+    if not name:
+        raise RuntimeError("Set DB_NAME in the environment or .env file.")
+    if len(name) > 64 or re.fullmatch(r"[A-Za-z0-9_]+", name) is None:
+        raise RuntimeError("DB_NAME must be 1-64 letters, numbers, or underscores.")
+    return name
+
+
+def connect(include_database=True):
+    required = ("DB_HOST", "DB_USER", "DB_PASSWORD")
+    missing = [name for name in required if os.getenv(name) is None]
+    if include_database and not os.getenv("DB_NAME"):
+        missing.append("DB_NAME")
+    if missing:
+        raise RuntimeError(
+            "Set the required MySQL environment variables: " + ", ".join(missing)
+        )
+
     options = {
-        "host": os.getenv("DB_HOST", "127.0.0.1"),
+        "host": os.getenv("DB_HOST"),
         "port": int(os.getenv("DB_PORT", "3306")),
-        "user": os.getenv("DB_USER", "avnadmin"),
-        "password": os.getenv("DB_PASSWORD", ""),
-        "database": os.getenv("DB_NAME", "ltsm_db"),
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
         "charset": "utf8mb4",
         "cursorclass": pymysql.cursors.DictCursor,
         "autocommit": False,
         "connect_timeout": 15,
     }
+    if include_database:
+        options["database"] = database_name()
 
     ssl_enabled = os.getenv("DB_SSL", "required").lower() not in ("0", "false", "disabled")
     if ssl_enabled:

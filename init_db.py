@@ -2,7 +2,17 @@ import argparse
 import json
 from pathlib import Path
 
-from db import BASE_DIR, connect
+from db import BASE_DIR, connect, database_name
+
+
+LEGACY_DEMO_PASSWORD_HASH = (
+    "pbkdf2:sha256:150000$QjP6lQp6$"
+    "367d15a7aea2281fb9c909c809835573e338545a247cdb7b3683668beacbd4aa"
+)
+DEMO_PASSWORD_HASH = (
+    "pbkdf2:sha256:150000$vKcgYPg1Z8fcIUZF$"
+    "95ad51a4980ed781ccfdbdd8f7e6153a36b8370ab7df90230be8bab0dfc3c7d3"
+)
 
 
 def read_statements(filename):
@@ -29,9 +39,26 @@ def run_sql_file(cursor, filename):
     return len(statements)
 
 
+def ensure_database_exists():
+    name = database_name()
+    connection = connect(include_database=False)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{name}` "
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
+
 TABLES_IN_DROP_ORDER = (
     "resource_suggestion",
     "maintenance_issue",
+    "evidence_baseline",
+    "evidence_period_completion",
+    "operational_measurement",
     "user_notification",
     # Drop the audit table before the movement and resource rows it references.
     "inventory_adjustment",
@@ -60,6 +87,92 @@ def resources_are_empty(cursor):
     return cursor.fetchone()["row_count"] == 0
 
 
+def migrate_legacy_demo_password_hash(cursor):
+    cursor.execute(
+        """
+        UPDATE `users`
+        SET `password_hash` = %s
+        WHERE `password_hash` = %s
+        """,
+        (DEMO_PASSWORD_HASH, LEGACY_DEMO_PASSWORD_HASH),
+    )
+    return cursor.rowcount
+
+
+def ensure_demo_evidence_examples(cursor):
+    cursor.execute(
+        "SELECT user_id FROM `users` WHERE `role` = 'ltsm' ORDER BY user_id LIMIT 1"
+    )
+    committee = cursor.fetchone()
+    recorded_by_user_id = committee["user_id"] if committee else None
+    inserted = 0
+
+    baseline_examples = (
+        (
+            "inventory_accuracy",
+            "2025-09-01",
+            "2025-09-30",
+            92.00,
+            25,
+            "DEMO DATA ONLY: illustrative baseline - replace with measured observations.",
+        ),
+        (
+            "report_preparation",
+            "2025-09-01",
+            "2025-09-30",
+            24.00,
+            4,
+            "DEMO DATA ONLY: illustrative baseline - replace with measured observations.",
+        ),
+    )
+    for metric_key, period_start, period_end, value, sample_count, notes in baseline_examples:
+        cursor.execute(
+            """
+            INSERT IGNORE INTO `evidence_baseline`
+              (`metric_key`, `period_start`, `period_end`, `measure_value`,
+               `sample_count`, `notes`, `recorded_by_user_id`, `is_demo`)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)
+            """,
+            (
+                metric_key, period_start, period_end, value, sample_count,
+                notes, recorded_by_user_id,
+            ),
+        )
+        inserted += cursor.rowcount
+
+    observation_examples = (
+        ("inventory_count", None, 18, 18, "DEMO DATA: sample physical count matched the recorded quantity."),
+        ("report_preparation", 24.00, None, None, "DEMO DATA: sample report preparation duration."),
+    )
+    for metric_key, duration, expected_quantity, actual_quantity, notes in observation_examples:
+        cursor.execute(
+            """
+            SELECT `measurement_id` FROM `operational_measurement`
+            WHERE `is_demo` = TRUE AND `metric_key` = %s AND `notes` = %s
+            LIMIT 1
+            """,
+            (metric_key, notes),
+        )
+        if cursor.fetchone():
+            continue
+        cursor.execute(
+            """
+            INSERT INTO `operational_measurement`
+              (`metric_key`, `occurred_at`, `duration_minutes`, `expected_quantity`,
+               `actual_quantity`, `notes`, `recorded_by_user_id`, `is_demo`)
+            VALUES (%s, DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL 60 DAY), %s, %s,
+                    %s, %s, %s, TRUE)
+            """,
+            (
+                metric_key, duration, expected_quantity, actual_quantity, notes,
+                recorded_by_user_id,
+            ),
+        )
+        inserted += cursor.rowcount
+
+    return inserted
+
+
 def ensure_user_active_column(cursor):
     cursor.execute(
         """
@@ -73,6 +186,162 @@ def ensure_user_active_column(cursor):
     if cursor.fetchone()["column_count"] == 0:
         cursor.execute(
             "ALTER TABLE `users` ADD COLUMN `is_active` BOOLEAN NOT NULL DEFAULT TRUE"
+        )
+
+
+def ensure_notification_done_column(cursor):
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS column_count
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'user_notification'
+          AND column_name = 'done_at'
+        """
+    )
+    if cursor.fetchone()["column_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `user_notification` ADD COLUMN `done_at` TIMESTAMP NULL DEFAULT NULL AFTER `read_at`"
+        )
+
+
+def ensure_demo_data_columns(cursor):
+    for table in (
+        "operational_measurement",
+        "evidence_baseline",
+        "evidence_period_completion",
+    ):
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS column_count
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = %s
+              AND column_name = 'is_demo'
+            """,
+            (table,),
+        )
+        if cursor.fetchone()["column_count"] == 0:
+            cursor.execute(
+                f"ALTER TABLE `{table}` "
+                "ADD COLUMN `is_demo` BOOLEAN NOT NULL DEFAULT FALSE"
+            )
+
+
+def ensure_demand_history_source_column(cursor):
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS column_count
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'consumable_demand_history'
+          AND column_name = 'history_source'
+        """
+    )
+    if cursor.fetchone()["column_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `consumable_demand_history` "
+            "ADD COLUMN `history_source` "
+            "ENUM('recorded', 'illustrative', 'unverified') "
+            "NOT NULL DEFAULT 'unverified' AFTER `demand_values`"
+        )
+
+
+def ensure_updated_at_columns(cursor):
+    tables = {
+        "users": "created_at",
+        "resource": "created_at",
+        "resource_request": "submitted_at",
+        "equipment_booking": "created_at",
+        "item_movement": "created_at",
+        "maintenance_issue": "created_at",
+        "collection_location": "created_at",
+    }
+    for table, source_column in tables.items():
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS column_count
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = %s
+              AND column_name = 'updated_at'
+            """,
+            (table,),
+        )
+        if cursor.fetchone()["column_count"]:
+            continue
+        cursor.execute(
+            f"ALTER TABLE `{table}` "
+            "ADD COLUMN `updated_at` TIMESTAMP NULL DEFAULT NULL "
+            "ON UPDATE CURRENT_TIMESTAMP"
+        )
+        cursor.execute(
+            f"UPDATE `{table}` SET `updated_at` = `{source_column}` "
+            "WHERE `updated_at` IS NULL"
+        )
+        cursor.execute(
+            f"ALTER TABLE `{table}` MODIFY COLUMN `updated_at` "
+            "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP "
+            "ON UPDATE CURRENT_TIMESTAMP"
+        )
+
+
+def ensure_movement_borrower_user_fk(cursor):
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS column_count
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'item_movement'
+          AND column_name = 'borrower_user_id'
+        """
+    )
+    if cursor.fetchone()["column_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `item_movement` "
+            "ADD COLUMN `borrower_user_id` INT DEFAULT NULL AFTER `resource_id`"
+        )
+
+    cursor.execute(
+        """
+        UPDATE `item_movement` AS movement
+        JOIN `users` AS borrower
+          ON LOWER(borrower.`school_id`) = LOWER(movement.`borrower_id`)
+        SET movement.`borrower_user_id` = borrower.`user_id`
+        WHERE movement.`borrower_user_id` IS NULL
+        """
+    )
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS index_count
+        FROM information_schema.statistics
+        WHERE table_schema = DATABASE()
+          AND table_name = 'item_movement'
+          AND index_name = 'item_movement_borrower_user_idx'
+        """
+    )
+    if cursor.fetchone()["index_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `item_movement` "
+            "ADD KEY `item_movement_borrower_user_idx` (`borrower_user_id`)"
+        )
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS constraint_count
+        FROM information_schema.key_column_usage
+        WHERE table_schema = DATABASE()
+          AND table_name = 'item_movement'
+          AND constraint_name = 'item_movement_borrower_user_fk'
+        """
+    )
+    if cursor.fetchone()["constraint_count"] == 0:
+        cursor.execute(
+            """
+            ALTER TABLE `item_movement`
+            ADD CONSTRAINT `item_movement_borrower_user_fk`
+              FOREIGN KEY (`borrower_user_id`) REFERENCES `users` (`user_id`)
+              ON UPDATE CASCADE ON DELETE SET NULL
+            """
         )
 
 
@@ -90,6 +359,21 @@ def ensure_inventory_columns(cursor):
         cursor.execute(
             "ALTER TABLE `resource` ADD COLUMN `storage_location` VARCHAR(120) DEFAULT NULL"
         )
+    if "inventory_type" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource` ADD COLUMN `inventory_type` ENUM('consumable', 'non_consumable') DEFAULT NULL AFTER `category`"
+        )
+    cursor.execute(
+        """
+        UPDATE `resource`
+        SET `inventory_type` = CASE
+          WHEN `category` IN ('Consumables', 'Stationery') THEN 'consumable'
+          WHEN `category` IN ('Textbooks', 'Equipment') THEN 'non_consumable'
+          ELSE NULL
+        END
+        WHERE `inventory_type` IS NULL AND `category` <> 'Other'
+        """
+    )
 
     cursor.execute(
         """
@@ -146,6 +430,14 @@ def ensure_request_workflow(cursor):
         cursor.execute(
             "ALTER TABLE `resource_request` MODIFY COLUMN `submitted_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
         )
+    if "ready_at" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `ready_at` DATETIME(6) DEFAULT NULL AFTER `submitted_at`"
+        )
+    if "fulfilled_at" not in columns:
+        cursor.execute(
+            "ALTER TABLE `resource_request` ADD COLUMN `fulfilled_at` DATETIME(6) DEFAULT NULL AFTER `ready_at`"
+        )
 
     cursor.execute(
         """
@@ -198,6 +490,59 @@ def ensure_request_workflow(cursor):
           ON LOWER(TRIM(r.`resource_name`)) = LOWER(TRIM(rr.`resource_name`))
         SET rr.`resource_id` = r.`resource_id`
         WHERE rr.`resource_id` IS NULL
+        """
+    )
+
+
+def ensure_booking_evidence_timestamp(cursor):
+    cursor.execute(
+        """
+        SELECT column_name AS column_name
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'equipment_booking'
+        """
+    )
+    columns = {row["column_name"] for row in cursor.fetchall()}
+    if "requested_at" not in columns:
+        cursor.execute(
+            "ALTER TABLE `equipment_booking` ADD COLUMN `requested_at` DATETIME(6) DEFAULT NULL AFTER `end_time`"
+        )
+    cursor.execute(
+        "UPDATE `equipment_booking` SET `requested_at` = CAST(`created_at` AS DATETIME) WHERE `requested_at` IS NULL"
+    )
+    cursor.execute(
+        "ALTER TABLE `equipment_booking` MODIFY COLUMN `requested_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+    )
+    cursor.execute(
+        """
+        SELECT COUNT(*) AS index_count
+        FROM information_schema.statistics
+        WHERE table_schema = DATABASE()
+          AND table_name = 'equipment_booking'
+          AND index_name = 'equipment_booking_requested_at_idx'
+        """
+    )
+    if cursor.fetchone()["index_count"] == 0:
+        cursor.execute(
+            "ALTER TABLE `equipment_booking` ADD KEY `equipment_booking_requested_at_idx` (`requested_at`)"
+        )
+
+
+def ensure_operational_measurement_types(cursor):
+    cursor.execute(
+        """
+        ALTER TABLE `operational_measurement`
+        MODIFY COLUMN `metric_key`
+          ENUM('unnecessary_trip', 'follow_up_enquiry', 'incorrect_fulfillment',
+               'report_preparation', 'equipment_downtime', 'inventory_count',
+               'booking_conflict', 'motion_time') NOT NULL
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE `evidence_period_completion`
+        MODIFY COLUMN `metric_key` VARCHAR(40) NOT NULL
         """
     )
 
@@ -473,6 +818,7 @@ def main():
     args = parser.parse_args()
     sql_files = args.sql_files or ["schema.sql", "seed.sql"]
 
+    ensure_database_exists()
     connection = connect()
     try:
         with connection.cursor() as cursor:
@@ -487,12 +833,34 @@ def main():
                 count = run_sql_file(cursor, filename)
                 if Path(filename).name == "schema.sql":
                     ensure_user_active_column(cursor)
+                    ensure_notification_done_column(cursor)
+                    ensure_demo_data_columns(cursor)
+                    ensure_demand_history_source_column(cursor)
                     ensure_inventory_columns(cursor)
                     ensure_request_workflow(cursor)
+                    ensure_updated_at_columns(cursor)
+                    ensure_booking_evidence_timestamp(cursor)
+                    ensure_operational_measurement_types(cursor)
                     ensure_collection_locations(cursor)
                     ensure_circulation_tracking(cursor)
+                    ensure_movement_borrower_user_fk(cursor)
                 connection.commit()
                 print(f"{filename}: executed {count} SQL statements")
+            if any(Path(filename).name in ("schema.sql", "seed.sql") for filename in sql_files):
+                migrated_demo_accounts = migrate_legacy_demo_password_hash(cursor)
+                if migrated_demo_accounts:
+                    connection.commit()
+                    print(
+                        f"Updated the password hash for {migrated_demo_accounts} "
+                        "unchanged demo account(s)"
+                    )
+            if any(Path(filename).name == "seed.sql" for filename in sql_files):
+                demo_evidence_count = ensure_demo_evidence_examples(cursor)
+                if demo_evidence_count:
+                    connection.commit()
+                    print(
+                        f"Added {demo_evidence_count} illustrative demo evidence row(s)"
+                    )
             migrated_history = ensure_inventory_sample_history(cursor)
             migrated_adjustments = ensure_inventory_adjustment_history(cursor)
             if migrated_history or migrated_adjustments:

@@ -1,34 +1,46 @@
 <header class="page-heading">
 	<div>
 		<p class="eyebrow">Committee tools · Inventory planning</p>
-		<h1>Live inventory summary</h1>
-		<p>Order recommendations use current on-hand stock, saved demand history, and resource prices.</p>
+		<h1>Inventory forecasting model</h1>
 	</div>
 </header>
 
 {% if load_error %}
 	<div class="error-notice" role="alert">{{ load_error }}</div>
 {% else %}
-	<p class="summary-note">Planning preview only: this page does not create purchase orders or change inventory. Results assume no outstanding supplier orders or backorders.</p>
-	<p class="summary-note">Forecasts are ordered by review cycle: six-month products appear first, followed by annual products.</p>
 	<section class="panel" aria-labelledby="forecast-variables-heading">
-		<h2 id="forecast-variables-heading">Forecast variables explained</h2>
-		<dl class="variable-list">
-			<div><dt>A — On-hand stock</dt><dd>The current quantity in inventory when this forecast is calculated. Historical demand is not subtracted from it again.</dd></div>
-			<div><dt>Average demand</dt><dd>The mean of the saved demand history, expressed per month in the six-month section and per year in the annual section.</dd></div>
-			<div><dt>σ (sigma)</dt><dd>The population standard deviation of historical demand; it measures how much demand varies.</dd></div>
-			<div><dt>z — Service-level factor</dt><dd>The safety factor for the selected service level. This model uses a 95% target, so z = 1.65.</dd></div>
-			<div><dt>T — Review interval</dt><dd>Time between reviews: 6 months for six-month products and 12 months for annual products.</dd></div>
-			<div><dt>L — Lead time</dt><dd>Time from placing an order until receipt: 1 month for six-month products and 2 months for annual products.</dd></div>
-			<div><dt>SS — Safety stock</dt><dd>Extra stock for demand variation. Six-month formula: z × σ × √(T + L). Annual formula: z × σ.</dd></div>
-			<div><dt>S — Target stock</dt><dd>Desired stock after replenishment. Six-month formula: average demand × (T + L) + SS. Annual formula: average annual demand + SS.</dd></div>
-			<div><dt>Recommended order</dt><dd>Maximum of zero or the amount needed to reach the target: ceil(S − A). Estimated cost is this quantity × unit price.</dd></div>
-		</dl>
+		<h2 id="forecast-variables-heading">Select a figure to see what it means</h2>
+		<div class="variable-list">
+			<details class="variable-tile">
+				<summary>On hand (A)</summary>
+				<div class="variable-tile__content"><div><p>How many units are currently recorded in inventory.</p></div></div>
+			</details>
+			<details class="variable-tile">
+				<summary>Average demand</summary>
+				<div class="variable-tile__content"><div><p>About how many units are usually used per month or per year.</p></div></div>
+			</details>
+			<details class="variable-tile">
+				<summary>Demand variation (σ)</summary>
+				<div class="variable-tile__content"><div><p>How much usage has gone up or down in the past.</p></div></div>
+			</details>
+			<details class="variable-tile">
+				<summary>Safety stock (SS)</summary>
+				<div class="variable-tile__content"><div><p>Extra units the model suggests keeping in case demand is higher than usual.</p></div></div>
+			</details>
+			<details class="variable-tile">
+				<summary>Target stock (S)</summary>
+				<div class="variable-tile__content"><div><p>The total quantity the model estimates may be needed for the next period.</p></div></div>
+			</details>
+			<details class="variable-tile">
+				<summary>Recommended order</summary>
+				<div class="variable-tile__content"><div><p>The additional quantity the model estimates may be needed. Estimated cost is based on the recorded unit price.</p></div></div>
+			</details>
+		</div>
 	</section>
 	{% if summary_warnings %}
 		<section class="warning-notice" role="status" aria-labelledby="summary-data-warning">
-			<h2 id="summary-data-warning">Some inventory forecasts need attention</h2>
-			<p>Recommendations are shown for valid records. Correct these resource records to include them in the forecast:</p>
+			<h2 id="summary-data-warning">Some forecasts could not be calculated</h2>
+			<p>Check these inventory records to include them:</p>
 			<ul>{% for warning in summary_warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
 		</section>
 	{% endif %}
@@ -38,7 +50,7 @@
 			<div class="panel-heading">
 				<div>
 					<h2 id="{{ policy_key }}-heading">{{ policy.title }}</h2>
-					<p>{{ policy.review_interval }}-month review · {{ policy.lead_time }}-month lead time · {{ (service_level * 100)|round|int }}% service level</p>
+					<p>{% if policy_key == "six_month" %}Based on the past six months of use{% else %}Based on recorded yearly use{% endif %} and the time it usually takes to receive an order.</p>
 				</div>
 				<p class="summary-note">Order in {{ policy.order_month }} · receive in {{ policy.receipt_month }}</p>
 			</div>
@@ -56,14 +68,21 @@
 								<th scope="col">Recommended order</th>
 								<th scope="col">Unit price</th>
 								<th scope="col">Estimated cost</th>
-								{% if policy_key == "six_month" %}<th scope="col">Stockout warning</th>{% endif %}
+								<th scope="col">Stockout warning</th>
 							</tr>
 						</thead>
 						<tbody>
 							{% for result in results[policy_key] %}
 								<tr>
 									<th scope="row">{{ result.resource_name }}{% if result.grade %} · {{ result.grade }}{% endif %}</th>
-									<td>{{ result.history_start.strftime("%d %b %Y") }} – {{ result.history_end.strftime("%d %b %Y") }}</td>
+									<td>
+										{{ result.history_start.strftime("%d %b %Y") }} – {{ result.history_end.strftime("%d %b %Y") }}
+										<br><small>
+											{% if result.history_source == "illustrative" %}Illustrative sample data
+											{% elif result.history_source == "recorded" %}Recorded demand
+											{% else %}Source not verified{% endif %}
+										</small>
+									</td>
 									<td>{{ result.A }} {{ result.unit }}</td>
 									<td>{{ result.average|round|int }} {{ result.unit }}{% if policy_key == "six_month" %}/month{% else %}/year{% endif %}</td>
 									<td>{{ result.SS|round(0, "ceil")|int }}</td>
@@ -71,18 +90,16 @@
 									<td><strong>{{ result.quantity }} {{ result.unit }}</strong></td>
 									<td>R{{ "%.2f"|format(result.unit_price) }}</td>
 									<td>R{{ "%.2f"|format(result.cost) }}</td>
-									{% if policy_key == "six_month" %}
-										<td><span class="risk-badge risk-{{ result.colour }}">{{ result.risk }}</span></td>
-									{% endif %}
+									<td><span class="risk-badge risk-{{ result.colour }}">{{ result.risk }}</span></td>
 								</tr>
 							{% endfor %}
 						</tbody>
 					</table>
 				</div>
 			{% else %}
-				<p class="empty-state">No products with valid {{ "six-month" if policy_key == "six_month" else "annual" }} demand history are available.</p>
+				<p class="empty-state">There are no products to show in this forecast yet.</p>
 			{% endif %}
 		</section>
 	{% endfor %}
-	<p class="summary-note">Displayed demand averages are rounded to the nearest whole unit. Safety and target stock are rounded up; calculations retain precision. Six-month stockout warnings are categories, not probabilities.</p>
+	<p class="summary-note">Six-month warnings compare stock with expected demand during supplier lead time. Annual warnings compare stock with the next expected annual issue and its safety buffer. Both are guidance categories, not probabilities.</p>
 {% endif %}

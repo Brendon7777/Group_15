@@ -130,8 +130,50 @@
 			color: #263746;
 			box-shadow: 0 6px 14px rgba(180, 137, 28, .26);
 		}
+		.reports-page .evidence-table { min-width: 760px; }
+		.reports-page .evidence-table td { vertical-align: top; }
+		.reports-page .evidence-table small { display: block; margin-top: .2rem; color: #64737c; }
+		.reports-page .evidence-controls { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)) max-content; align-items: end; gap: .75rem; }
+		.reports-page .evidence-controls .form-field { min-width: 0; margin-bottom: 0; }
+		.reports-page .evidence-controls > .button { white-space: nowrap; }
+		.reports-page .evidence-notes { display: grid; gap: .65rem; margin-top: .8rem; }
+		.reports-page .evidence-notes .notice { margin: 0; }
+		.reports-page .evidence-change { display: flex; min-height: 2.8rem; align-items: flex-start; line-height: 1.35; }
+		.reports-page .evidence-trend-button { width: 140px; min-height: 34px; margin-top: .45rem; box-sizing: border-box; white-space: nowrap; }
+		.reports-page .evidence-trend-button:focus-visible { outline: 3px solid rgba(3, 94, 130, .25); outline-offset: 2px; }
+		.reports-page .evidence-chart {
+			margin: 1rem 0 0;
+			padding: clamp(1rem, 2.5vw, 1.5rem);
+			overflow: hidden;
+			border: 1px solid #dce8e9;
+			border-radius: 12px;
+			background: linear-gradient(145deg, #fff 15%, #f6faf9 100%);
+			box-shadow: 0 8px 24px rgba(32, 63, 72, .08);
+			scroll-margin-top: 1rem;
+		}
+		.reports-page .evidence-chart-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+		.reports-page .evidence-chart-eyebrow { margin: 0 0 .25rem; color: #0b9678; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+		.reports-page .evidence-chart h3 { margin: 0; color: #035e82; font-size: clamp(1.15rem, 2vw, 1.4rem); }
+		.reports-page .evidence-chart-latest { min-width: 150px; padding: .65rem .9rem; border: 1px solid #d8e9e3; border-radius: 9px; background: #f0f8f4; text-align: right; }
+		.reports-page .evidence-chart-latest span,
+		.reports-page .evidence-chart-latest small { display: block; color: #527067; font-size: .75rem; }
+		.reports-page .evidence-chart-latest strong { display: block; margin: .1rem 0; color: #176b58; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+		.reports-page .evidence-chart-canvas { min-width: 0; overflow-x: auto; padding: .55rem .4rem .1rem; border: 1px solid #e5eeec; border-radius: 10px; background: rgba(255, 255, 255, .86); }
+		.reports-page .evidence-line-chart { display: block; width: 100%; min-width: 680px; height: auto; overflow: visible; }
+		.reports-page .evidence-chart-gridline { stroke: #e7efed; stroke-width: 1; }
+		.reports-page .evidence-chart-axis { fill: #73847f; font-size: 12px; font-variant-numeric: tabular-nums; }
+		.reports-page .evidence-chart-area { fill: url(#evidence-area-gradient); }
+		.reports-page .evidence-chart-line { fill: none; stroke: url(#evidence-line-gradient); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+		.reports-page .evidence-chart-point { fill: #fff; stroke: #087c68; stroke-width: 3; transition: r .15s ease, stroke-width .15s ease; }
+		.reports-page .evidence-chart-point:hover { r: 7; stroke-width: 4; }
+		.reports-page .evidence-chart p,
+		.reports-page .evidence-chart figcaption { margin: .7rem 0 0; color: #64737c; font-size: .86rem; line-height: 1.5; }
+		.reports-page .evidence-chart-empty { margin: 0; color: #64737c; }
 		@media (max-width: 850px) {
 			.reports-page .content-grid { grid-template-columns: 1fr; }
+		}
+		@media (max-width: 650px) {
+			.reports-page .evidence-controls { grid-template-columns: 1fr; }
 		}
 		@media (max-width: 560px) {
 			.reports-page { gap: 1rem; }
@@ -142,7 +184,8 @@
 		}
 		@media (prefers-reduced-motion: reduce) {
 			.reports-page tbody tr,
-			.reports-page .report-tool-button { transition: none; }
+			.reports-page .report-tool-button,
+			.reports-page .evidence-chart-point { transition: none; }
 		}
 		@media print {
 			body:has(.reports-page) { background: #fff; }
@@ -163,9 +206,40 @@
 	<!-- SECTION 2: Report heading and print action. -->
 	<div class="reports-page">
 	<header class="page-heading">
-		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Analyze stock coverage, low-stock categories and the current request queue.</p></div>
+		<div><p class="eyebrow">Committee insights</p><h1>Resource reports</h1><p>Track request and equipment-booking activity over time.</p></div>
 		<button class="button" id="print-report" type="button">Print report</button>
 	</header>
+	<section class="panel" aria-labelledby="operational-evidence-heading">
+		<div class="panel-heading">
+			<div><h2 id="operational-evidence-heading">Operational evidence</h2><p>Automatic measures from successful requests, booking attempts and recorded completion times.</p></div>
+		</div>
+		<form id="evidence-period-form" class="evidence-controls">
+			<div class="form-field"><label for="evidence-from">Current period from</label><input id="evidence-from" name="from" type="date" required></div>
+			<div class="form-field"><label for="evidence-to">Current period to</label><input id="evidence-to" name="to" type="date" required></div>
+			<button class="button" type="submit">Update comparison</button>
+		</form>
+		<div class="evidence-notes">
+			<p class="notice">The selected period is compared with the immediately preceding period of equal length. No manual before/after values are entered; each KPI is calculated from timestamped portal records. Choose “View line graph” to see daily results for a measure.</p>
+			<p id="evidence-period-note" class="notice" role="status"></p>
+		</div>
+		<div id="evidence-feedback" class="form-feedback" role="status" hidden></div>
+		<div class="table-wrap">
+			<table class="evidence-table">
+				<thead><tr><th scope="col">KPI</th><th scope="col">Previous period</th><th scope="col">Selected period</th><th scope="col">Change and trend</th></tr></thead>
+				<tbody id="evidence-table-body"><tr><td colspan="4">Loading KPIs…</td></tr></tbody>
+			</table>
+		</div>
+		<figure class="evidence-chart" id="evidence-trend-chart" aria-labelledby="evidence-trend-title">
+			<div class="evidence-chart-heading">
+				<div><p class="evidence-chart-eyebrow">Daily KPI trend</p><h3 id="evidence-trend-title">Choose a measure</h3></div>
+				<div id="evidence-trend-latest" class="evidence-chart-latest" hidden></div>
+			</div>
+			<div id="evidence-trend" class="evidence-chart-canvas" aria-live="polite">
+				<p class="evidence-chart-empty">Choose “View line graph” beside a KPI to see its daily trend.</p>
+			</div>
+			<figcaption>Points are calculated from daily request, booking and status timestamps in the selected period. Days without recorded events are not treated as zero.</figcaption>
+		</figure>
+	</section>
 	<!-- SECTION 3: Committee action summary and stock-category breakdown. -->
 	<section class="panel insights-panel" aria-labelledby="committee-summary-heading">
 		<div class="panel-heading"><div><h2 id="committee-summary-heading">Committee action summary</h2><p>Key findings from stock availability and the request queue.</p></div></div>
@@ -214,4 +288,5 @@
 		document.getElementById("print-report").addEventListener("click", () => window.print());
 	</script>
 	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/evidence.js') }}"></script>
 {% endblock %}

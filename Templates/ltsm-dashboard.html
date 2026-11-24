@@ -89,19 +89,19 @@
 			color: #fff;
 			box-shadow: 0 6px 16px rgba(40, 55, 70, .1);
 		}
-		.committee-dashboard .stat-card:nth-child(1) { --stat-glow: rgba(0, 139, 178, .48); background: linear-gradient(145deg, #035e82, #007a9d); }
-		.committee-dashboard .stat-card:nth-child(2) { --stat-glow: rgba(13, 170, 136, .46); background: linear-gradient(145deg, #0daa88, #0b9678); }
-		.committee-dashboard .stat-card:nth-child(3) {
+		.committee-dashboard .stat-card[data-dashboard-tile="inventory"] { --stat-glow: rgba(0, 139, 178, .48); background: linear-gradient(145deg, #035e82, #007a9d); }
+		.committee-dashboard .stat-card[data-dashboard-tile="pending-requests"] { --stat-glow: rgba(13, 170, 136, .46); background: linear-gradient(145deg, #0daa88, #0b9678); }
+		.committee-dashboard .stat-card[data-dashboard-tile="low-stock"] {
 			--stat-glow: rgba(232, 184, 63, .55);
 			background: linear-gradient(145deg, #f2cf68, #e8b83f);
 			color: #3c3425;
 			box-shadow: 0 6px 16px rgba(160, 121, 28, .18);
 		}
-		.committee-dashboard .stat-card:nth-child(3) .stat-label,
-		.committee-dashboard .stat-card:nth-child(3) .stat-value,
-		.committee-dashboard .stat-card:nth-child(3) .stat-note { color: #3c3425; }
-		.committee-dashboard .stat-card:nth-child(3) .stat-card__icon { background: rgba(255, 255, 255, .4); }
-		.committee-dashboard .stat-card:nth-child(4) { --stat-glow: rgba(117, 84, 166, .5); background: linear-gradient(145deg, #7554a6, #593b88); }
+		.committee-dashboard .stat-card[data-dashboard-tile="low-stock"] .stat-label,
+		.committee-dashboard .stat-card[data-dashboard-tile="low-stock"] .stat-value,
+		.committee-dashboard .stat-card[data-dashboard-tile="low-stock"] .stat-note { color: #3c3425; }
+		.committee-dashboard .stat-card[data-dashboard-tile="low-stock"] .stat-card__icon { background: rgba(255, 255, 255, .4); }
+		.committee-dashboard .stat-card[data-dashboard-tile="equipment-bookings"] { --stat-glow: rgba(117, 84, 166, .5); background: linear-gradient(145deg, #7554a6, #593b88); }
 		.committee-dashboard .stat-label, .committee-dashboard .stat-note { color: #e5f2f5; }
 		.committee-dashboard .stat-value { color: #fff; }
 		.committee-dashboard .panel {
@@ -128,6 +128,10 @@
 			font: inherit;
 			font-size: .8rem;
 			font-weight: 700;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			text-decoration: none;
 			cursor: pointer;
 		}
 		.committee-dashboard .request-decision-button:hover { background: #087b67; }
@@ -196,6 +200,12 @@
 			gap: 1.25rem;
 			align-items: start;
 		}
+		.committee-dashboard .abc-table { width: 100%; min-width: 650px; }
+		.committee-dashboard .abc-class { display: inline-block; min-width: 2rem; padding: .2rem .45rem; border-radius: 999px; background: #eaf2f5; color: #035e82; font-weight: 700; text-align: center; }
+		.committee-dashboard .abc-basis-field { margin: 1rem 0; display: grid; justify-items: start; gap: .45rem; }
+		.committee-dashboard .abc-basis-label { color: #4a5967; font-size: .86rem; font-weight: 650; }
+		.committee-dashboard .abc-basis-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+		.committee-dashboard .abc-basis-buttons [aria-pressed="true"] { border-color: #035e82; background: #035e82; color: #fff; }
 		.committee-dashboard .stack { gap: 1.25rem; }
 		.committee-dashboard .panel { min-width: 0; padding: 1.4rem; }
 		.committee-dashboard .panel-heading { margin-bottom: 1.2rem; gap: 1rem; }
@@ -279,31 +289,35 @@
 	<section class="dashboard-overview" aria-labelledby="committee-activity-heading">
 		<h2 class="dashboard-overview__heading" id="committee-activity-heading">Committee activity at a glance</h2>
 		<p class="dashboard-overview__copy">A quick summary of inventory, requests, stock alerts and bookings.</p>
+		<div class="dashboard-layout-controls" data-dashboard-layout-controls>
+			<button class="button button-secondary" type="button" data-layout-toggle>Rearrange tiles</button>
+			<button class="button button-secondary" type="button" data-layout-reset hidden>Reset layout</button>
+			<span data-layout-status role="status" aria-live="polite"></span>
+		</div>
 	</section>
 	<div id="dashboard-feedback" class="form-feedback" role="alert" hidden></div>
 	<div id="action-feedback" class="form-feedback" role="status" hidden></div>
 	<!-- SECTION 3: Inventory, request, low-stock and booking summary cards. -->
 	<div class="dashboard-stats-viewport">
-		<section class="stats-grid" aria-label="Committee summary">
-			<article class="stat-card">
+		<section class="stats-grid" aria-label="Committee summary" data-reorderable-grid="committee-summary">
+			<article class="stat-card" data-dashboard-tile="inventory">
 				<div class="stat-card__top"><span class="stat-label">Items in inventory</span><span class="stat-card__icon" aria-hidden="true">▤</span></div>
 				<div class="stat-reading"><p class="stat-value" data-kpi="inventory">…</p><p class="stat-note" data-kpi-note="inventory">Loading…</p></div>
 			</article>
-			<article class="stat-card">
+			<article class="stat-card" data-dashboard-tile="pending-requests">
 				<div class="stat-card__top"><span class="stat-label">Pending requests</span><span class="stat-card__icon" aria-hidden="true">↗</span></div>
 				<div class="stat-reading"><p class="stat-value" data-kpi="pending_requests">…</p><p class="stat-note" data-kpi-note="pending_requests">Loading…</p></div>
 			</article>
-			<article class="stat-card">
+			<article class="stat-card" data-dashboard-tile="low-stock">
 				<div class="stat-card__top"><span class="stat-label">Low-stock items</span><span class="stat-card__icon" aria-hidden="true">!</span></div>
 				<div class="stat-reading"><p class="stat-value" data-kpi="low_stock">…</p><p class="stat-note" data-kpi-note="low_stock">Loading…</p></div>
 			</article>
-			<article class="stat-card">
+			<article class="stat-card" data-dashboard-tile="equipment-bookings">
 				<div class="stat-card__top"><span class="stat-label">Equipment bookings</span><span class="stat-card__icon" aria-hidden="true">⌁</span></div>
 				<div class="stat-reading"><p class="stat-value" data-kpi="bookings">…</p><p class="stat-note" data-kpi-note="bookings">Loading…</p></div>
 			</article>
 		</section>
 	</div>
-
 	<!-- SECTION 4: Pending request reviews and equipment booking actions. -->
 	<div class="content-grid">
 		<div class="stack">
@@ -327,9 +341,32 @@
 			</section>
 		</div>
 	</div>
+	<section class="panel" aria-labelledby="abc-classification-heading">
+		<div class="panel-heading">
+			<div><h2 id="abc-classification-heading">ABC classification</h2></div>
+		</div>
+		<details>
+			<summary>Choose a basis and view item-by-item ABC classification</summary>
+			<div class="abc-basis-field">
+				<span class="abc-basis-label">Classify by</span>
+				<div class="abc-basis-buttons" role="group" aria-label="Classify by">
+					<button class="button button-secondary" type="button" data-abc-basis="value" aria-pressed="true">Value</button>
+					<button class="button button-secondary" type="button" data-abc-basis="usage" aria-pressed="false">Annual usage</button>
+				</div>
+			</div>
+			<p id="abc-basis-help">Value mode uses forecast annual usage value for consumables and current stock value for non-consumables.</p>
+			<div class="table-wrap">
+				<table class="abc-table">
+					<thead><tr><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Class</th><th scope="col" id="abc-basis-column-heading">Value basis</th><th scope="col" id="abc-value-column-heading">Value (R)</th></tr></thead>
+					<tbody id="business-abc-table"><tr><td colspan="5">Loading classifications…</td></tr></tbody>
+				</table>
+			</div>
+		</details>
+	</section>
 	</div>
 {% endblock %}
 {% block scripts %}
 	<!-- SECTION 5: KPIs and request / booking actions use the API (static/js/dashboard-pages.js). -->
+	<script src="{{ url_for('static', filename='js/dashboard-layout.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/dashboard-pages.js') }}"></script>
 {% endblock %}

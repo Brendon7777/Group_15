@@ -27,7 +27,7 @@
 		banner.querySelector("button").addEventListener("click", () => { banner.hidden = true; retry(); });
 	}
 
-	/* ---------- Teacher / learner dashboard: GET /api/dashboard/user ---------- */
+	/* ---------- Teacher / staff dashboard: GET /api/dashboard/user ---------- */
 	if ($("#dashboard-activity-tiles")) {
 		const loansBody = $(".issued-items-table tbody");
 		const issuedCount = $("#issued-count");
@@ -72,12 +72,64 @@
 	if (committeeGrid) {
 		const actionFeedback = $("#action-feedback");
 		const decisionButtons = (kind, id, name, accept) => `<div class="request-decision-actions"><button class="request-decision-button" type="button" data-kind="${kind}" data-id="${esc(id)}" data-decision="${accept}" aria-label="Accept ${esc(name)} ${kind}">Accept</button><button class="request-decision-button request-decision-button--decline" type="button" data-kind="${kind}" data-id="${esc(id)}" data-decision="Declined" aria-label="Decline ${esc(name)} ${kind}">Decline</button></div>`;
+		const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
+		const abcBasisButtons = Array.from(document.querySelectorAll("[data-abc-basis]"));
+		let abcBasis = "value";
+		let abcRequestVersion = 0;
+		function showABCClassifications(data) {
+			const usageMode = data.abc_basis_mode === "usage";
+			$("#abc-basis-column-heading").textContent = usageMode ? "Usage basis" : "Value basis";
+			$("#abc-value-column-heading").textContent = usageMode ? "Annual usage" : "Value (R)";
+			$("#abc-basis-help").textContent = usageMode
+				? "Annual usage uses forecast quantities for consumables and recorded issues in the last 12 months for reusable items. Items without recorded usage are unclassified."
+				: "Value mode uses forecast annual usage value for consumables and current stock value for non-consumables.";
+			$("#business-abc-table").innerHTML = data.abc_items.length
+				? data.abc_items.map((item) => {
+					const type = item.inventory_type === "consumable"
+						? "Consumable"
+						: item.inventory_type === "non_consumable" ? "Non-consumable" : "Choose type";
+					const value = item.abc_value === null
+						? item.abc_basis
+						: usageMode
+							? `${Number(item.abc_value).toLocaleString("en-ZA", { maximumFractionDigits: 2 })} ${item.unit}/year`
+							: currency.format(item.abc_value);
+					return `<tr><th scope="row">${esc(item.name)}</th><td>${type}</td><td><span class="abc-class">${esc(item.abc_class)}</span></td><td>${esc(item.abc_basis)}</td><td>${esc(value)}</td></tr>`;
+				}).join("")
+				: '<tr><td colspan="5">No inventory items have been added.</td></tr>';
+		}
+
+		async function loadABCClassifications() {
+			const requestVersion = ++abcRequestVersion;
+			const basis = abcBasis;
+			try {
+				const data = await api.get("/api/dashboard/business-value", {
+					basis
+				});
+				if (requestVersion !== abcRequestVersion) return;
+				showABCClassifications(data);
+			} catch (error) {
+				if (requestVersion !== abcRequestVersion) return;
+				$("#business-abc-table").innerHTML =
+					`<tr><td colspan="5">ABC classification data could not be loaded. ${esc(error.message)}</td></tr>`;
+			}
+		}
+		abcBasisButtons.forEach((button) => {
+			button.addEventListener("click", () => {
+				if (button.dataset.abcBasis === abcBasis) return;
+				abcBasis = button.dataset.abcBasis;
+				abcBasisButtons.forEach((option) => {
+					option.setAttribute("aria-pressed", String(option.dataset.abcBasis === abcBasis));
+				});
+				loadABCClassifications();
+			});
+		});
 
 		async function loadSummary() {
 			banner.hidden = true;
 			try {
 				const data = await api.get("/api/dashboard/committee");
 				showKpis(data.kpis);
+				loadABCClassifications();
 			} catch (error) {
 				showKpiError();
 				showLoadError(`Could not load the committee summary. ${error.message}`, loadSummary);

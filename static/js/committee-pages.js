@@ -385,7 +385,9 @@
 			load: async () => (await api.get("/api/committee/users")).items,
 			renderRow: (user) => {
 				const role = { learner: "Learner", staff: "Teacher / staff", ltsm: "LTSM committee" }[user.role] || user.role;
-				const access = user.is_active ? "Active" : "Deactivated";
+				const access = user.role === "learner"
+					? user.is_active ? "Borrower only; sign-in disabled" : "Deactivated"
+					: user.is_active ? "Active" : "Deactivated";
 				const action = user.is_current_user
 					? '<span class="muted">Current account</span>'
 					: `<button class="button button-secondary" type="button" data-user-id="${esc(user.id)}" data-active="${user.is_active ? "true" : "false"}">${user.is_active ? "Deactivate" : "Reactivate"}</button>`;
@@ -432,23 +434,49 @@
 	if (inventoryBody) {
 		const search = $("#inventory-search");
 		const category = $("[data-category-filter]");
+		const inventoryType = $("[data-type-filter]");
 		const inventoryById = new Map();
+		const currency = new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" });
+		const addCategory = $("#item-category");
+		const addGradeField = $("#item-grade-field");
+		const addGrade = $("#item-grade");
+		const editCategory = $("#edit-item-category");
+		const editGradeField = $("#edit-item-grade-field");
+		const editGrade = $("#edit-item-grade");
+		const updateGradeVisibility = (categorySelect, gradeField, gradeSelect) => {
+			const isTextbook = categorySelect.value === "Textbooks";
+			gradeField.hidden = !isTextbook;
+			gradeSelect.required = isTextbook;
+			if (!isTextbook) gradeSelect.value = "";
+		};
+		const updateAddGradeVisibility = () => updateGradeVisibility(addCategory, addGradeField, addGrade);
+		const updateEditGradeVisibility = () => updateGradeVisibility(editCategory, editGradeField, editGrade);
+		addCategory.addEventListener("change", updateAddGradeVisibility);
+		editCategory.addEventListener("change", updateEditGradeVisibility);
+		$("#inventory-form").addEventListener("reset", () => window.setTimeout(updateAddGradeVisibility, 0));
+		$("#inventory-edit-form").addEventListener("reset", () => window.setTimeout(updateEditGradeVisibility, 0));
 		const reload = ui.createTable({
 			tbody: inventoryBody,
-			columns: 7,
+			columns: 9,
 			emptyText: "No inventory items match your filters.",
-			load: async () => (await api.get("/api/inventory", { q: search.value, category: category.value })).items,
+			load: async () => (await api.get("/api/inventory", { q: search.value, category: category.value, type: inventoryType.value })).items,
 			renderRow: (i) => {
 				inventoryById.set(String(i.id), i);
 				const image = window.LTSMResourceImages.imageFor(i);
 				const quantityLabel = i.category === "Equipment"
 					? `${i.stock} available`
 					: `${i.stock} ${i.unit} in stock`;
-				return `<tr><td><div class="inventory-item"><img class="inventory-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(i.name)}"><span>${esc(i.name)}</span></div></td><td>${esc(i.category)}</td><td>${esc(quantityLabel)}</td><td>${esc(i.reorder_level)} ${esc(i.unit)}</td><td>${esc(i.storage_location || "Not set")}</td><td>${ui.badge(i.status, i.tone)}</td><td><button class="button button-secondary button-small" type="button" data-edit-inventory="${esc(i.id)}">Edit</button></td></tr>`;
+				const typeLabel = i.inventory_type === "consumable"
+					? "Consumable"
+					: i.inventory_type === "non_consumable" ? "Non-consumable" : "Choose type";
+				const priceLabel = i.unit_price === null ? "Not set" : currency.format(i.unit_price);
+				const gradeLabel = i.category === "Textbooks" && i.grade ? `<small>${esc(i.grade)}</small>` : "";
+				return `<tr><td><div class="inventory-item"><img class="inventory-item__image" src="${image.src}" data-image-fallback="${image.fallback}" alt="${esc(i.name)}"><span>${esc(i.name)}${gradeLabel}</span></div></td><td>${esc(i.category)}</td><td>${esc(typeLabel)}</td><td>${esc(quantityLabel)}</td><td>${esc(priceLabel)}</td><td>${esc(i.reorder_level)} ${esc(i.unit)}</td><td>${esc(i.storage_location || "Not set")}</td><td>${ui.badge(i.status, i.tone)}</td><td><button class="button button-secondary button-small" type="button" data-edit-inventory="${esc(i.id)}">Edit</button></td></tr>`;
 			}
 		});
 		search.addEventListener("input", ui.debounce(reload));
 		category.addEventListener("change", reload);
+		inventoryType.addEventListener("change", reload);
 		reload();
 
 		const adjustmentItem = $("#adjustment-item");
@@ -471,13 +499,25 @@
 			if (!button) return;
 			const item = inventoryById.get(button.dataset.editInventory);
 			if (!item) return;
+			Array.from(editGrade.options)
+				.filter((option) => option.dataset.legacyGrade === "true")
+				.forEach((option) => option.remove());
+			if (item.category === "Textbooks" && item.grade && !["Grade 1", "Grade 2", "Grade 3"].includes(item.grade)) {
+				const legacyOption = new Option(`${item.grade} (legacy; hidden from teacher catalogue)`, item.grade);
+				legacyOption.dataset.legacyGrade = "true";
+				editGrade.add(legacyOption);
+			}
 			editForm.elements.item_id.value = item.id;
 			editForm.elements.item_name.value = item.name;
 			editForm.elements.category.value = item.category;
+			editGrade.value = item.grade || "";
+			updateEditGradeVisibility();
+			editForm.elements.inventory_type.value = item.inventory_type || "";
 			editForm.elements.reorder_level.value = item.reorder_level;
 			editForm.elements.description.value = item.description || "";
 			editForm.elements.unit.value = item.unit;
 			editForm.elements.storage_location.value = item.storage_location || "";
+			editForm.elements.unit_price.value = item.unit_price === null ? "" : item.unit_price;
 			ui.hideFeedback($("#inventory-edit-feedback"));
 			editPanel.hidden = false;
 			editPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -514,11 +554,14 @@
 			payload: (v) => ({
 				item_name: v.item_name.trim(),
 				category: v.category,
+				grade: v.grade,
+				inventory_type: v.inventory_type,
 				quantity: Number(v.quantity),
 				reorder_level: Number(v.reorder_level),
 				description: v.description.trim(),
 				unit: v.unit.trim(),
-				storage_location: v.storage_location.trim()
+				storage_location: v.storage_location.trim(),
+				unit_price: v.unit_price === "" ? null : Number(v.unit_price)
 			}),
 			success: (data) => data.message,
 			onSuccess: () => Promise.all([reload(), loadAdjustmentItems()])
@@ -532,10 +575,13 @@
 				item_id: Number(v.item_id),
 				item_name: v.item_name.trim(),
 				category: v.category,
+				grade: v.grade,
+				inventory_type: v.inventory_type,
 				reorder_level: Number(v.reorder_level),
 				description: v.description.trim(),
 				unit: v.unit.trim(),
-				storage_location: v.storage_location.trim()
+				storage_location: v.storage_location.trim(),
+				unit_price: v.unit_price === "" ? null : Number(v.unit_price)
 			}),
 			success: (data) => data.message,
 			reset: false,
